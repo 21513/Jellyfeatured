@@ -9,12 +9,12 @@
         "imageUrl": "",
         "versions": [
             {
-                "version": "0.0.0.1",
-                "changelog": "Initial release",
+                "version": "0.0.0.3",
+                "changelog": "Added web injection",
                 "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.1/Jellyfeatured-v0.0.0.1.zip",
-                "checksum": "9ca25d465f9ecf22a2601da9ac9de1fd",
-                "timestamp": "2025-12-03T16:14:53Z"
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.3/Jellyfeatured-v0.0.0.3.zip",
+                "checksum": "7acad9aa7ce16f3ea4663305431733e1",
+                "timestamp": "2025-12-03T16:44:53Z"
             },
             {
                 "version": "0.0.0.2",
@@ -23,6 +23,14 @@
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.2/Jellyfeatured-v0.0.0.2.zip",
                 "checksum": "7acad9aa7ce16f3ea4663305431733e1",
                 "timestamp": "2025-12-03T16:44:53Z"
+            },
+            {
+                "version": "0.0.0.1",
+                "changelog": "Initial release",
+                "targetAbi": "10.11.4.0",
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.1/Jellyfeatured-v0.0.0.1.zip",
+                "checksum": "9ca25d465f9ecf22a2601da9ac9de1fd",
+                "timestamp": "2025-12-03T16:14:53Z"
             }
         ]
     }
