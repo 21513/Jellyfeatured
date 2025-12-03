@@ -9,12 +9,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     let autoSlideInterval;
     let isUserInteracting = false;
     
-    function isMobileDevice() {
-        return window.matchMedia('(max-width: 50em)').matches || 
-               window.matchMedia('(max-height: 40em)').matches ||
-               /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    }
-    
     function getJellyfinApiKey() {
         // Try to get API key from multiple locations
         try {
@@ -90,33 +84,22 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     function getBackdropImageUrl(title, year) {
         // Return a promise that resolves to the backdrop URL
         return searchForItem(title, year).then(item => {
-            const apiKey = getJellyfinApiKey();
-            const baseUrl = getJellyfinBaseUrl();
-            const mobile = isMobileDevice();
-            
-            if (item && apiKey) {
-                if (mobile && item.ImageTags && item.ImageTags.Primary) {
-                    // Use primary image for mobile devices
-                    return `url("${baseUrl}/Items/${item.Id}/Images/Primary?api_key=${apiKey}")`;
-                } else if (!mobile && item.BackdropImageTags && item.BackdropImageTags.length > 0) {
-                    // Use backdrop image for desktop
-                    return `url("${baseUrl}/Items/${item.Id}/Images/Backdrop?api_key=${apiKey}")`;
-                } else if (item.ImageTags && item.ImageTags.Primary) {
-                    // Fallback to primary image if no backdrop
-                    return `url("${baseUrl}/Items/${item.Id}/Images/Primary?api_key=${apiKey}")`;
-                }
+            if (item && item.BackdropImageTags && item.BackdropImageTags.length > 0) {
+                const apiKey = getJellyfinApiKey();
+                const baseUrl = getJellyfinBaseUrl();
+                return `url("${baseUrl}/Items/${item.Id}/Images/Backdrop?api_key=${apiKey}")`;
+            } else {
+                // Fallback gradient with better colors
+                const colors = [
+                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
+                    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+                ];
+                const hash = title.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
+                return colors[Math.abs(hash) % colors.length];
             }
-            
-            // Fallback gradient with better colors
-            const colors = [
-                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
-                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
-            ];
-            const hash = title.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
-            return colors[Math.abs(hash) % colors.length];
         }).catch(() => {
             // Fallback gradient
             return `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
@@ -133,11 +116,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         slide.setAttribute('role', 'button');
         slide.setAttribute('aria-label', `View ${recommendation.title}`);
         
-        const mobile = isMobileDevice();
-        if (mobile) {
-            slide.classList.add('mobile-slide');
-        }
-        
         // Set initial gradient while loading
         slide.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
         
@@ -149,22 +127,15 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             </div>
         `;
         
-        // Load image asynchronously
+        // Load backdrop image asynchronously
         try {
             const backgroundValue = await getBackdropImageUrl(recommendation.title, recommendation.year);
             slide.style.background = backgroundValue;
-            slide.style.backgroundSize = mobile ? 'contain' : 'cover';
-            slide.style.backgroundPosition = mobile ? 'center' : 'center';
+            slide.style.backgroundSize = 'cover';
+            slide.style.backgroundPosition = 'center';
             slide.style.backgroundRepeat = 'no-repeat';
-            
-            if (mobile && backgroundValue.startsWith('url(')) {
-                // Add dark overlay for mobile primary images to improve text readability
-                slide.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), ${backgroundValue}`;
-                slide.style.backgroundSize = 'contain, contain';
-                slide.style.backgroundPosition = 'center, center';
-            }
         } catch (e) {
-            console.log('Failed to load image for', recommendation.title, e);
+            console.log('Failed to load backdrop for', recommendation.title, e);
         }
         
         return slide;
@@ -346,8 +317,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         }
                     });
                     
-                    // Start auto-slide immediately with consistent timing
-                    setTimeout(startAutoSlide, 6000); // Start after 6 seconds to match interval
+                    // Start auto-slide after a short delay
+                    setTimeout(startAutoSlide, 2000); // Start after 2 seconds
                     
                     // Pause auto-slide on hover
                     featuredDiv.addEventListener('mouseenter', pauseAutoSlide);

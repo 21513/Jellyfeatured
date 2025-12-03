@@ -1,7 +1,11 @@
 /* Jellyfeatured Plugin Carousel Styles - ElegantFin Theme Compatible */
 #jellyfeatured-div:hover {
     transform: scale(1.01);
-    transition: transform 0.3s ease-out, opacity 0.8s ease-in-out;
+    transition: 0.3s ease-out;
+}
+
+#jellyfeatured-div {
+    transition: 0.3s ease-out;
 }
 
 /* Carousel Slide Styles */
@@ -25,6 +29,34 @@
     opacity: 1;
     z-index: 2;
     visibility: visible;
+}
+
+/* ElegantFin Card Hover Effect */
+.carousel-slide {
+    overflow: hidden;
+}
+
+.carousel-slide::after {
+    content: "";
+    transition: 0.5s;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%) translateX(0);
+    background: linear-gradient(0deg, transparent, rgb(255 255 255 / 100%) 45%, rgb(255 255 255 / 100%) 55%, transparent);
+    opacity: 1;
+}
+
+.carousel-slide:hover::after {
+    transform: translateY(50%) translateX(0);
+    opacity: 0;
+}
+
+.carousel-slide:hover {
+    transform: scale(1.01);
+    transition: transform 0.3s ease-out, opacity 0.8s ease-in-out;
 }
 
 
@@ -111,34 +143,22 @@
 }
 
 /* Mobile Responsive */
-@media (max-width: 50em), (max-height: 40em) {
+@media (max-width: 50em) {
     #jellyfeatured-div {
-        height: 300px;
+        height: 250px;
         margin: 15px 0;
     }
     
-    .carousel-slide.mobile-slide {
-        background-size: contain !important;
-        background-position: center !important;
-        background-color: var(--darkerGradientPoint, #111827);
-    }
-    
     .slide-content {
-        padding: 20px 15px 15px;
-        background: linear-gradient(transparent 0%, rgba(0, 0, 0, 0.9) 60%);
+        padding: 40px 15px 15px;
     }
     
     .slide-title {
-        font-size: 1.1rem;
-        font-weight: 600;
+        font-size: 1.2rem;
     }
     
     .slide-subtitle {
-        font-size: 0.75rem;
-    }
-    
-    .slide-rating {
-        font-size: 0.75rem;
+        font-size: 0.8rem;
     }
     
     .carousel-dot {
