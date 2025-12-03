@@ -13,8 +13,8 @@
                 "changelog": "Enhanced with real content recommendations featuring 5 types: recently released, recently added, and best rated movies/shows",
                 "targetAbi": "10.11.4.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.9/Jellyfeatured-v0.0.0.9.zip",
-                "checksum": "TO_BE_CALCULATED",
-                "timestamp": "2024-12-19T12:00:00Z"
+                "checksum": "7a92c215877cd4b8b12d36bbf071032d",
+                "timestamp": "2025-12-03T17:35:35Z"
             },
             {
                 "version": "0.0.0.8",
