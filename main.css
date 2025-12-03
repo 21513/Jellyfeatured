@@ -44,13 +44,13 @@
     bottom: 0;
     left: 0;
     right: 0;
-    transform: translateY(-50%) translateX(0);
-    background: linear-gradient(0deg, transparent, rgb(255 255 255 / 100%) 45%, rgb(255 255 255 / 100%) 55%, transparent);
-    opacity: 1;
+    transform: translateY(0) translateX(-50%);
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 100%) 45%, rgb(255 255 255 / 100%) 55%, transparent);
+    opacity: 0;
 }
 
 .carousel-slide:hover::after {
-    transform: translateY(50%) translateX(0);
+    transform: translateY(0) translateX(50%);
     opacity: 0;
 }
 
