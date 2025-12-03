@@ -76,7 +76,7 @@
 
 .carousel-slide:hover::after {
     transform: translateY(0) translateX(50%);
-    opacity: 1;
+    opacity: 0;
 }
 
 .slide-content {
@@ -208,8 +208,7 @@
     
     /* Smaller logo on mobile */
     .slide-logo-container {
-        max-width: 128px;
-        max-height: 128px;
+        display: none;
     }
 }
 
