@@ -87,6 +87,23 @@ console.log('🎬 Jellyfeatured: Auto-injector loaded');
 })();";
             
             File.WriteAllText(webPath, scriptContent);
+            
+            // Also try to inject into index.html if it exists
+            var indexPath = Path.Combine(applicationPaths.WebPath, "index.html");
+            if (File.Exists(indexPath))
+            {
+                var indexContent = File.ReadAllText(indexPath);
+                var scriptTag = "<script src=\"/web/jellyfeatured-inject.js\"></script>";
+                
+                if (!indexContent.Contains("jellyfeatured-inject.js"))
+                {
+                    if (indexContent.Contains("</head>"))
+                    {
+                        indexContent = indexContent.Replace("</head>", scriptTag + "\n</head>");
+                        File.WriteAllText(indexPath, indexContent);
+                    }
+                }
+            }
         }
         catch (Exception)
         {
