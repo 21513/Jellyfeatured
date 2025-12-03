@@ -24,7 +24,7 @@ public class Plugin : BasePlugin<PluginConfiguration>
     public override string Name => "Jellyfeatured";
 
     /// <inheritdoc />
-    public override string Description => "A simple Jellyfin plugin";
+    public override string Description => "Get recommendations on your home page";
 
     /// <inheritdoc />
     public override Guid Id => Guid.Parse("639b5171-918b-4b24-82e4-d35c10be63a4");
