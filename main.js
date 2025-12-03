@@ -52,7 +52,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         }
         
         try {
-            const searchUrl = `${baseUrl}/Items?searchTerm=${encodeURIComponent(title)}&Recursive=true&Fields=PrimaryImageAspectRatio,BackdropImageTags&ImageTypeLimit=1&EnableImageTypes=Primary,Backdrop&Limit=5&api_key=${apiKey}`;
+            const searchUrl = `${baseUrl}/Items?searchTerm=${encodeURIComponent(title)}&Recursive=true&Fields=PrimaryImageAspectRatio,BackdropImageTags,ImageTags&ImageTypeLimit=1&EnableImageTypes=Primary,Backdrop,Logo&Limit=5&api_key=${apiKey}`;
             
             const response = await fetch(searchUrl);
             if (!response.ok) {
@@ -119,7 +119,11 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         // Set initial gradient while loading
         slide.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
         
+        // Create slide content structure with logo placeholder
         slide.innerHTML = `
+            <div class="slide-logo-container">
+                <img class="slide-logo" style="display: none;" alt="${recommendation.title} logo" />
+            </div>
             <div class="slide-content">
                 <div class="slide-title">${recommendation.title} ${recommendation.year ? '(' + recommendation.year + ')' : ''}</div>
                 <div class="slide-subtitle">${recommendation.type}</div>
@@ -127,15 +131,48 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             </div>
         `;
         
-        // Load backdrop image asynchronously
+        // Load media item data and images asynchronously
         try {
-            const backgroundValue = await getBackdropImageUrl(recommendation.title, recommendation.year);
-            slide.style.background = backgroundValue;
-            slide.style.backgroundSize = 'cover';
-            slide.style.backgroundPosition = 'center';
-            slide.style.backgroundRepeat = 'no-repeat';
+            const item = await searchForItem(recommendation.title, recommendation.year);
+            
+            if (item) {
+                // Set backdrop image
+                if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
+                    const apiKey = getJellyfinApiKey();
+                    const baseUrl = getJellyfinBaseUrl();
+                    const backdropUrl = `${baseUrl}/Items/${item.Id}/Images/Backdrop?api_key=${apiKey}`;
+                    slide.style.background = `url("${backdropUrl}")`;
+                    slide.style.backgroundSize = 'cover';
+                    slide.style.backgroundPosition = 'center';
+                    slide.style.backgroundRepeat = 'no-repeat';
+                }
+                
+                // Set logo image if available
+                if (item.ImageTags && item.ImageTags.Logo) {
+                    const apiKey = getJellyfinApiKey();
+                    const baseUrl = getJellyfinBaseUrl();
+                    const logoUrl = `${baseUrl}/Items/${item.Id}/Images/Logo?api_key=${apiKey}`;
+                    const logoImg = slide.querySelector('.slide-logo');
+                    logoImg.src = logoUrl;
+                    logoImg.style.display = 'block';
+                    
+                    // Hide the text title when logo is available
+                    const titleElement = slide.querySelector('.slide-title');
+                    titleElement.style.display = 'none';
+                }
+            }
         } catch (e) {
-            console.log('Failed to load backdrop for', recommendation.title, e);
+            console.log('Failed to load images for', recommendation.title, e);
+            // Fallback to colorful gradient
+            const colors = [
+                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
+                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+            ];
+            const hash = recommendation.title.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
+            slide.style.background = colors[Math.abs(hash) % colors.length];
         }
         
         return slide;
