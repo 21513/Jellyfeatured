@@ -5,14 +5,14 @@
     "overview": "This is a basic Jellyfin plugin with no functionality",
     "owner": "Plugin Developer",
     "category": "General",
-    "imageUrl": "",
+    "imageUrl": "https://baeac.xyz/articles/thumbnails/ascii-earth.jpg",
     "versions": [
         {
             "version": "0.0.0.1",
             "changelog": "Initial release",
             "targetAbi": "10.11.4.0",
-            "sourceUrl": "",
-            "checksum": "",
+            "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.1/Jellyfeatured-v0.0.0.1.zip",
+            "checksum": "9CA25D465F9ECF22A2601DA9AC9DE1FD",
             "timestamp": "2025-12-03T00:00:00Z"
         }
     ]
