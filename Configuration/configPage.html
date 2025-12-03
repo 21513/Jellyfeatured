@@ -15,92 +15,14 @@
                     
                     <div class="verticalSection">
                         <div class="sectionTitleContainer flex align-items-center">
-                            <h3 class="sectionTitle">Carousel Settings</h3>
-                        </div>
-                        
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="chkEnableAutoSlide" />
-                                <span>Enable auto-slide</span>
-                            </label>
-                            <div class="fieldDescription">
-                                Automatically advance carousel slides
-                            </div>
-                        </div>
-                        
-                        <div class="inputContainer">
-                            <label class="inputLabel" for="txtAutoSlideInterval">Auto-slide interval (seconds)</label>
-                            <input is="emby-input" type="number" id="txtAutoSlideInterval" min="3" max="30" step="1" />
-                            <div class="fieldDescription">
-                                How often slides change automatically (3-30 seconds)
-                            </div>
-                        </div>
-                        
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="chkEnableHoverEffect" />
-                                <span>Enable hover effect</span>
-                            </label>
-                            <div class="fieldDescription">
-                                Show animated light sweep when hovering over slides
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="verticalSection">
-                        <div class="sectionTitleContainer flex align-items-center">
-                            <h3 class="sectionTitle">Content Settings</h3>
-                        </div>
-                        
-                        <div class="inputContainer">
-                            <label class="inputLabel" for="txtRecommendationsPerCategory">Recommendations per category</label>
-                            <input is="emby-input" type="number" id="txtRecommendationsPerCategory" min="1" max="20" step="1" />
-                            <div class="fieldDescription">
-                                Number of items per category (set to 1 for single recommendations)
-                            </div>
-                        </div>
-                        
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="chkShowMovieRecommendations" />
-                                <span>Show movie recommendations</span>
-                            </label>
-                            <div class="fieldDescription">
-                                Include movies in carousel recommendations
-                            </div>
-                        </div>
-                        
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="chkShowSeriesRecommendations" />
-                                <span>Show series recommendations</span>
-                            </label>
-                            <div class="fieldDescription">
-                                Include TV series in carousel recommendations
-                            </div>
-                        </div>
-                        
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="chkShowRatings" />
-                                <span>Show ratings</span>
-                            </label>
-                            <div class="fieldDescription">
-                                Display star ratings on carousel slides
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="verticalSection">
-                        <div class="sectionTitleContainer flex align-items-center">
-                            <h3 class="sectionTitle">Admin's Pick</h3>
+                            <h3 class="sectionTitle">Admin's Pick (Optional)</h3>
                         </div>
                         
                         <div class="inputContainer">
                             <label class="inputLabel" for="txtAdminPickTitle">Admin's Pick Title</label>
-                            <input is="emby-input" type="text" id="txtAdminPickTitle" />
+                            <input is="emby-input" type="text" id="txtAdminPickTitle" placeholder="Enter movie or series title..." />
                             <div class="fieldDescription">
-                                Enter the title of a movie or series for the admin's pick (6th category). Leave blank to disable.
+                                Enter the title of a movie or series to feature as a 6th recommendation category. Leave blank to show only the default 5 categories.
                             </div>
                         </div>
                     </div>
@@ -122,13 +44,6 @@
             function loadConfiguration() {
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    document.querySelector('#chkEnableAutoSlide').checked = config.EnableAutoSlide || false;
-                    document.querySelector('#txtAutoSlideInterval').value = config.AutoSlideInterval || 6;
-                    document.querySelector('#txtRecommendationsPerCategory').value = config.RecommendationsPerCategory || 1;
-                    document.querySelector('#chkShowMovieRecommendations').checked = config.ShowMovieRecommendations !== false;
-                    document.querySelector('#chkShowSeriesRecommendations').checked = config.ShowSeriesRecommendations !== false;
-                    document.querySelector('#chkEnableHoverEffect').checked = config.EnableHoverEffect !== false;
-                    document.querySelector('#chkShowRatings').checked = config.ShowRatings !== false;
                     document.querySelector('#txtAdminPickTitle').value = config.AdminPickTitle || '';
                     Dashboard.hideLoadingMsg();
                 });
@@ -139,14 +54,7 @@
                 Dashboard.showLoadingMsg();
 
                 var config = {
-                    EnableAutoSlide: document.querySelector('#chkEnableAutoSlide').checked,
-                    AutoSlideInterval: parseInt(document.querySelector('#txtAutoSlideInterval').value) || 6,
-                    RecommendationsPerCategory: parseInt(document.querySelector('#txtRecommendationsPerCategory').value) || 1,
-                    ShowMovieRecommendations: document.querySelector('#chkShowMovieRecommendations').checked,
-                    ShowSeriesRecommendations: document.querySelector('#chkShowSeriesRecommendations').checked,
-                    EnableHoverEffect: document.querySelector('#chkEnableHoverEffect').checked,
-                    ShowRatings: document.querySelector('#chkShowRatings').checked,
-                    AdminPickTitle: document.querySelector('#txtAdminPickTitle').value || ''
+                    AdminPickTitle: document.querySelector('#txtAdminPickTitle').value.trim() || ''
                 };
 
                 ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
