@@ -156,9 +156,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     logoImg.src = logoUrl;
                     logoImg.style.display = 'block';
                     
-                    // Hide the text title when logo is available
-                    const titleElement = slide.querySelector('.slide-title');
-                    titleElement.style.display = 'none';
+                    // Keep the text title visible alongside the logo
+                    // Logo and title will both be shown
                 }
             }
         } catch (e) {

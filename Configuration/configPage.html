@@ -56,7 +56,7 @@
                             <label class="inputLabel" for="txtRecommendationsPerCategory">Recommendations per category</label>
                             <input is="emby-input" type="number" id="txtRecommendationsPerCategory" min="1" max="20" step="1" />
                             <div class="fieldDescription">
-                                Number of items to randomly choose from per category (1-20)
+                                Number of items per category (set to 1 for single recommendations)
                             </div>
                         </div>
                         
@@ -91,6 +91,20 @@
                         </div>
                     </div>
                     
+                    <div class="verticalSection">
+                        <div class="sectionTitleContainer flex align-items-center">
+                            <h3 class="sectionTitle">Admin's Pick</h3>
+                        </div>
+                        
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtAdminPickTitle">Admin's Pick Title</label>
+                            <input is="emby-input" type="text" id="txtAdminPickTitle" />
+                            <div class="fieldDescription">
+                                Enter the title of a movie or series for the admin's pick (6th category). Leave blank to disable.
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block">
                             <span>Save</span>
@@ -110,11 +124,12 @@
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                     document.querySelector('#chkEnableAutoSlide').checked = config.EnableAutoSlide || false;
                     document.querySelector('#txtAutoSlideInterval').value = config.AutoSlideInterval || 6;
-                    document.querySelector('#txtRecommendationsPerCategory').value = config.RecommendationsPerCategory || 5;
+                    document.querySelector('#txtRecommendationsPerCategory').value = config.RecommendationsPerCategory || 1;
                     document.querySelector('#chkShowMovieRecommendations').checked = config.ShowMovieRecommendations !== false;
                     document.querySelector('#chkShowSeriesRecommendations').checked = config.ShowSeriesRecommendations !== false;
                     document.querySelector('#chkEnableHoverEffect').checked = config.EnableHoverEffect !== false;
                     document.querySelector('#chkShowRatings').checked = config.ShowRatings !== false;
+                    document.querySelector('#txtAdminPickTitle').value = config.AdminPickTitle || '';
                     Dashboard.hideLoadingMsg();
                 });
             }
@@ -126,11 +141,12 @@
                 var config = {
                     EnableAutoSlide: document.querySelector('#chkEnableAutoSlide').checked,
                     AutoSlideInterval: parseInt(document.querySelector('#txtAutoSlideInterval').value) || 6,
-                    RecommendationsPerCategory: parseInt(document.querySelector('#txtRecommendationsPerCategory').value) || 5,
+                    RecommendationsPerCategory: parseInt(document.querySelector('#txtRecommendationsPerCategory').value) || 1,
                     ShowMovieRecommendations: document.querySelector('#chkShowMovieRecommendations').checked,
                     ShowSeriesRecommendations: document.querySelector('#chkShowSeriesRecommendations').checked,
                     EnableHoverEffect: document.querySelector('#chkEnableHoverEffect').checked,
-                    ShowRatings: document.querySelector('#chkShowRatings').checked
+                    ShowRatings: document.querySelector('#chkShowRatings').checked,
+                    AdminPickTitle: document.querySelector('#txtAdminPickTitle').value || ''
                 };
 
                 ApiClient.updatePluginConfiguration(pluginId, config).then(function () {

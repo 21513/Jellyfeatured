@@ -74,7 +74,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     private async Task<List<RecommendationItem>> GenerateRecommendationsAsync()
     {
         var recommendations = new List<RecommendationItem>();
-        var random = new Random();
         
         try
         {
@@ -89,105 +88,115 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             // Wait a small amount to make this truly async
             await Task.Delay(1);
             
-            // 1. Most recently released movies by release date (get top 5, pick random)
-            var latestMovies = allItems
+            // 1. Most recently released movie by release date
+            var latestMovie = allItems
                 .OfType<Movie>()
                 .Where(m => m.PremiereDate.HasValue)
                 .OrderByDescending(m => m.PremiereDate)
-                .Take(5)
-                .ToList();
+                .FirstOrDefault();
                 
-            if (latestMovies.Any())
+            if (latestMovie != null)
             {
-                var selectedMovie = latestMovies[random.Next(latestMovies.Count)];
                 recommendations.Add(new RecommendationItem
                 {
-                    Title = selectedMovie.Name,
+                    Title = latestMovie.Name,
                     Type = "Latest Release",
-                    Year = selectedMovie.PremiereDate?.Year.ToString() ?? "",
-                    Rating = selectedMovie.CommunityRating?.ToString("F1") ?? "N/A"
+                    Year = latestMovie.PremiereDate?.Year.ToString() ?? "",
+                    Rating = latestMovie.CommunityRating?.ToString("F1") ?? "N/A"
                 });
             }
             
-            // 2. Most recently added movies (get top 5, pick random)
-            var recentAddedMovies = allItems
+            // 2. Most recently added movie
+            var recentAddedMovie = allItems
                 .OfType<Movie>()
                 .OrderByDescending(m => m.DateCreated)
-                .Take(5)
-                .ToList();
+                .FirstOrDefault();
                 
-            if (recentAddedMovies.Any())
+            if (recentAddedMovie != null)
             {
-                var selectedMovie = recentAddedMovies[random.Next(recentAddedMovies.Count)];
                 recommendations.Add(new RecommendationItem
                 {
-                    Title = selectedMovie.Name,
+                    Title = recentAddedMovie.Name,
                     Type = "Recently Added in Films",
-                    Year = selectedMovie.PremiereDate?.Year.ToString() ?? "",
-                    Rating = selectedMovie.CommunityRating?.ToString("F1") ?? "N/A"
+                    Year = recentAddedMovie.PremiereDate?.Year.ToString() ?? "",
+                    Rating = recentAddedMovie.CommunityRating?.ToString("F1") ?? "N/A"
                 });
             }
             
-            // 3. Most recently added shows (get top 5, pick random)
-            var recentAddedShows = allItems
+            // 3. Most recently added show
+            var recentAddedShow = allItems
                 .OfType<Series>()
                 .OrderByDescending(s => s.DateCreated)
-                .Take(5)
-                .ToList();
+                .FirstOrDefault();
                 
-            if (recentAddedShows.Any())
+            if (recentAddedShow != null)
             {
-                var selectedShow = recentAddedShows[random.Next(recentAddedShows.Count)];
                 recommendations.Add(new RecommendationItem
                 {
-                    Title = selectedShow.Name,
+                    Title = recentAddedShow.Name,
                     Type = "Recently Added in Series",
-                    Year = selectedShow.PremiereDate?.Year.ToString() ?? "",
-                    Rating = selectedShow.CommunityRating?.ToString("F1") ?? "N/A"
+                    Year = recentAddedShow.PremiereDate?.Year.ToString() ?? "",
+                    Rating = recentAddedShow.CommunityRating?.ToString("F1") ?? "N/A"
                 });
             }
             
-            // 4. Best rated movies (get top 5, pick random)
-            var bestMovies = allItems
+            // 4. Best rated movie
+            var bestMovie = allItems
                 .OfType<Movie>()
                 .Where(m => m.CommunityRating.HasValue && m.CommunityRating > 0 && m.CommunityRating < 10.0)
                 .OrderByDescending(m => m.CommunityRating)
-                .Take(5)
-                .ToList();
+                .FirstOrDefault();
                 
-            if (bestMovies.Any())
+            if (bestMovie != null)
             {
-                var selectedMovie = bestMovies[random.Next(bestMovies.Count)];
                 recommendations.Add(new RecommendationItem
                 {
-                    Title = selectedMovie.Name,
+                    Title = bestMovie.Name,
                     Type = "Best Rated in Films",
-                    Year = selectedMovie.PremiereDate?.Year.ToString() ?? "",
-                    Rating = selectedMovie.CommunityRating?.ToString("F1") ?? "N/A"
+                    Year = bestMovie.PremiereDate?.Year.ToString() ?? "",
+                    Rating = bestMovie.CommunityRating?.ToString("F1") ?? "N/A"
                 });
             }
             
-            // 5. Best rated shows (get top 5, pick random)
-            var bestShows = allItems
+            // 5. Best rated show
+            var bestShow = allItems
                 .OfType<Series>()
                 .Where(s => s.CommunityRating.HasValue && s.CommunityRating > 0 && s.CommunityRating < 10.0)
                 .OrderByDescending(s => s.CommunityRating)
-                .Take(5)
-                .ToList();
+                .FirstOrDefault();
                 
-            if (bestShows.Any())
+            if (bestShow != null)
             {
-                var selectedShow = bestShows[random.Next(bestShows.Count)];
                 recommendations.Add(new RecommendationItem
                 {
-                    Title = selectedShow.Name,
+                    Title = bestShow.Name,
                     Type = "Best Rated in Series",
-                    Year = selectedShow.PremiereDate?.Year.ToString() ?? "",
-                    Rating = selectedShow.CommunityRating?.ToString("F1") ?? "N/A"
+                    Year = bestShow.PremiereDate?.Year.ToString() ?? "",
+                    Rating = bestShow.CommunityRating?.ToString("F1") ?? "N/A"
                 });
             }
             
-            _logger.LogInformation($"✅ Generated {recommendations.Count} randomized recommendations from top candidates");
+            // 6. Admin's Pick (if configured)
+            if (!string.IsNullOrWhiteSpace(Configuration.AdminPickTitle))
+            {
+                // Search for the admin's pick by title
+                var adminPick = allItems
+                    .Where(item => item.Name.Contains(Configuration.AdminPickTitle, StringComparison.OrdinalIgnoreCase))
+                    .FirstOrDefault();
+                    
+                if (adminPick != null)
+                {
+                    recommendations.Add(new RecommendationItem
+                    {
+                        Title = adminPick.Name,
+                        Type = "Admin's Pick",
+                        Year = adminPick.PremiereDate?.Year.ToString() ?? "",
+                        Rating = adminPick.CommunityRating?.ToString("F1") ?? "N/A"
+                    });
+                }
+            }
+            
+            _logger.LogInformation($"✅ Generated {recommendations.Count} recommendations");
         }
         catch (Exception ex)
         {
