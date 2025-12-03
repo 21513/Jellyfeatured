@@ -1,19 +1,21 @@
 #jellyfeatured-div:hover {
-    transform: scale(1.01);
-    transition: 0.3s ease-out;
+    transform: scale(1.02);
+    border-color: white !important;
+    transition: transform 125ms, border-color 125ms;
 }
 
 #jellyfeatured-div {
     width: 90%;
     margin: auto;
     position: relative;
-    font-family: 'Inter', sans-serif;
-    border-radius: var(--largeRadius, 1em);
+    font-family: "Inter", sans-serif;
+    border-radius: var(--largeRadius);
     overflow: hidden;
-    box-shadow: 0.1em 0.1em 0.15em hsla(0, 0%, 0%, 0.3);
-    border: var(--borderWidth, 0.06em) solid var(--borderColor, hsl(214, 13%, 32%));
+    box-shadow: var(--shadow);
+    border: var(--borderWidthDouble) solid var(--darkerBorderColor);
     height: 60vh;
-    transition: 0.3s ease-out;
+    transition: transform 125ms, border-color 125ms;
+    background: var(--cardBackgroundGradient);
 }
 
 #recommendations-carousel {
@@ -29,11 +31,10 @@
     right: 0;
     transform: translateX(-50%);
     display: flex;
-    padding: 4px;
+    gap: 8px;
     z-index: 10;
 }
 
-/* Carousel Slide Styles */
 .carousel-slide {
     position: absolute;
     top: 0;
@@ -69,7 +70,7 @@
     left: 0;
     right: 0;
     transform: translateY(0) translateX(-50%);
-    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 20%) 45%, rgb(255 255 255 / 20%) 55%, transparent);
+    background: var(--hoverGradientH);
     opacity: 0;
 }
 
@@ -83,21 +84,21 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    background: var(--cardFooterGradient);
     padding: 60px 20px 20px;
-    color: var(--textColor, rgb(209, 213, 219));
+    color: var(--textColor);
     font-family: "Inter", sans-serif;
     display: flex;
     align-items: flex-end;
     gap: 12px;
+    text-shadow: var(--shadow);
 }
 
-/* Logo Container - Small icon next to text */
 .slide-logo-container {
     flex-shrink: 0;
-    max-width: 64px;
-    max-height: 64px;
-    margin-bottom: 2px; /* Align with text baseline */
+    max-width: 128px;
+    max-height: 128px;
+    margin-bottom: 2px;
 }
 
 .slide-logo {
@@ -109,7 +110,7 @@
 
 .slide-text-content {
     flex: 1;
-    min-width: 0; /* Prevent flex overflow */
+    min-width: 0;
 }
 
 .slide-title {
@@ -124,7 +125,7 @@
     font-size: 0.9rem;
     font-weight: 400;
     margin: 0 0 8px 0;
-    color: var(--dimTextColor, rgb(156, 163, 175));
+    color: var(--dimTextColor);
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
 }
 
@@ -136,12 +137,11 @@
     font-weight: 600;
     background: rgba(0, 0, 0, 0.6);
     padding: 4px 8px;
-    border-radius: var(--smallerRadius, 0.375em);
-    border: var(--borderWidth, 0.06em) solid rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(5px);
+    border-radius: var(--smallerRadius);
+    border: var(--borderWidth) solid var(--lighterBorderColor);
+    backdrop-filter: var(--blurDefault);
 }
 
-/* Navigation Dots */
 .carousel-dot {
     width: 10px;
     height: 10px;
@@ -153,7 +153,7 @@
 }
 
 .carousel-dot.active {
-    background: var(--textColor, rgb(209, 213, 219));
+    background: var(--textColor);
     transform: scale(1.2);
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
@@ -163,7 +163,6 @@
     transform: scale(1.1);
 }
 
-/* Loading State */
 .loading-slide {
     display: flex;
     align-items: center;
@@ -173,7 +172,7 @@
 
 .loading-text {
     opacity: 0.8;
-    color: var(--dimTextColor, rgb(156, 163, 175));
+    color: var(--dimTextColor);
     margin: 0;
     padding: 1em;
     text-align: center;
@@ -186,7 +185,7 @@
 @media (max-width: 50em) {
     #jellyfeatured-div {
         height: 250px;
-        margin: 15px 0;
+        margin: auto;
     }
     
     .slide-content {
@@ -209,19 +208,19 @@
     
     /* Smaller logo on mobile */
     .slide-logo-container {
-        max-width: 30px;
-        max-height: 30px;
+        max-width: 128px;
+        max-height: 128px;
     }
 }
 
 /* Focus states for accessibility */
 .carousel-slide:focus {
-    outline: 2px solid var(--highlightOutlineColor, rgb(37, 99, 235));
+    outline: 2px solid var(--highlightOutlineColor);
     outline-offset: 2px;
 }
 
 .carousel-dot:focus {
-    outline: 2px solid var(--highlightOutlineColor, rgb(37, 99, 235));
+    outline: 2px solid var(--highlightOutlineColor);
     outline-offset: 2px;
 }
 

@@ -244,22 +244,27 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     function goToSlide(index) {
-        const slides = document.querySelectorAll('.carousel-slide');
-        const dots = document.querySelectorAll('.carousel-dot');
+        const carouselContainer = document.querySelector('#recommendations-carousel');
+        if (!carouselContainer) return;
         
-        if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
+        const slides = carouselContainer.querySelectorAll('.carousel-slide');
+        const dots = document.querySelectorAll('#carousel-dots .carousel-dot');
+        
+        if (slides.length === 0 || index >= slides.length) return;
+        
+        // Don't return early if index === currentSlide, allow re-activation
+        console.log(`🎬 Jellyfeatured: Going to slide ${index}, current: ${currentSlide}`);
         
         // Remove active and entering classes from all slides and dots
         slides.forEach((slide, i) => {
-            if (i !== index) {
-                slide.classList.remove('active', 'entering');
-            }
+            slide.classList.remove('active', 'entering');
         });
         dots.forEach(dot => dot.classList.remove('active'));
         
         // Add active class to current slide and dot with smoother transition
         if (slides[index]) {
             slides[index].classList.add('active');
+            console.log(`✅ Jellyfeatured: Activated slide ${index}`);
         }
         
         if (dots[index]) {
@@ -271,12 +276,14 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     function nextSlide() {
         const nextIndex = (currentSlide + 1) % recommendations.length;
+        console.log(`🎬 Jellyfeatured: Auto-advancing from slide ${currentSlide} to ${nextIndex}`);
         goToSlide(nextIndex);
     }
     
     function startAutoSlide() {
         if (recommendations.length > 1) {
             clearInterval(autoSlideInterval); // Clear any existing interval
+            console.log('🎬 Jellyfeatured: Starting auto-slide timer');
             autoSlideInterval = setInterval(() => {
                 if (!isUserInteracting) {
                     nextSlide();
@@ -380,6 +387,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     
                     // Wait for all slides to be created
                     const slides = await Promise.all(slidePromises);
+                    console.log(`🎬 Jellyfeatured: Created ${slides.length} slides for ${recommendations.length} recommendations`);
                     
                     // Add all slides and dots to DOM and show first slide immediately
                     slides.forEach((slide, index) => {
@@ -387,10 +395,13 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         const dot = createNavigationDot(index);
                         dotsContainer.appendChild(dot);
                         
+                        console.log(`🎬 Jellyfeatured: Added slide ${index} to DOM`);
+                        
                         // Make first slide visible immediately
                         if (index === 0) {
                             slide.classList.add('active');
                             dot.classList.add('active');
+                            console.log(`✅ Jellyfeatured: Set slide 0 as active`);
                         }
                     });
                     
