@@ -1,5 +1,5 @@
 /* Jellyfeatured Plugin Carousel Styles - ElegantFin Theme Compatible */
-.jellyfeatured-div:hover {
+#jellyfeatured-div:hover {
     transform: scale(1.01);
     transition: transform 0.3s ease-out, opacity 0.8s ease-in-out;
 }
@@ -18,11 +18,13 @@
     background-position: center;
     background-repeat: no-repeat;
     z-index: 1;
+    visibility: hidden;
 }
 
 .carousel-slide.active {
     opacity: 1;
     z-index: 2;
+    visibility: visible;
 }
 
 

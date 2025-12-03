@@ -277,15 +277,21 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     // Wait for all slides to be created
                     const slides = await Promise.all(slidePromises);
                     
-                    // Add all slides and dots to DOM
+                    // Add all slides and dots to DOM and show first slide immediately
                     slides.forEach((slide, index) => {
                         carouselContainer.appendChild(slide);
                         const dot = createNavigationDot(index);
                         dotsContainer.appendChild(dot);
+                        
+                        // Make first slide visible immediately
+                        if (index === 0) {
+                            slide.classList.add('active');
+                            dot.classList.add('active');
+                        }
                     });
                     
-                    // Show first slide immediately
-                    goToSlide(0);
+                    // Set current slide to 0
+                    currentSlide = 0;
                     
                     // Add centralized click handler for the carousel container
                     carouselContainer.addEventListener('click', async (e) => {
