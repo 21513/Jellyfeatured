@@ -111,6 +111,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         const slide = document.createElement('div');
         slide.className = 'carousel-slide';
         slide.setAttribute('data-index', index);
+        slide.setAttribute('data-title', recommendation.title);
+        slide.setAttribute('data-year', recommendation.year || '');
         slide.setAttribute('tabindex', '0');
         slide.setAttribute('role', 'button');
         slide.setAttribute('aria-label', `View ${recommendation.title}`);
@@ -136,19 +138,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         } catch (e) {
             console.log('Failed to load backdrop for', recommendation.title, e);
         }
-        
-        // Add click handler to navigate to media
-        slide.addEventListener('click', () => {
-            navigateToMedia(recommendation.title, recommendation.year);
-        });
-        
-        // Add keyboard support
-        slide.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                navigateToMedia(recommendation.title, recommendation.year);
-            }
-        });
         
         return slide;
     }
@@ -181,22 +170,19 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         const slides = document.querySelectorAll('.carousel-slide');
         const dots = document.querySelectorAll('.carousel-dot');
         
-        if (slides.length === 0 || index >= slides.length) return;
+        if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
         
         // Remove active and entering classes from all slides and dots
-        slides.forEach(slide => {
-            slide.classList.remove('active', 'entering');
+        slides.forEach((slide, i) => {
+            if (i !== index) {
+                slide.classList.remove('active', 'entering');
+            }
         });
         dots.forEach(dot => dot.classList.remove('active'));
         
-        // Add active class to current slide and dot with proper transition
+        // Add active class to current slide and dot with smoother transition
         if (slides[index]) {
             slides[index].classList.add('active');
-            // Small delay to ensure the transition is smooth
-            requestAnimationFrame(() => {
-                slides[index].classList.add('entering');
-                setTimeout(() => slides[index].classList.remove('entering'), 600);
-            });
         }
         
         if (dots[index]) {
@@ -286,6 +272,30 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         carouselContainer.appendChild(slide);
                         const dot = createNavigationDot(index);
                         dotsContainer.appendChild(dot);
+                    });
+                    
+                    // Add centralized click handler for the carousel container
+                    carouselContainer.addEventListener('click', (e) => {
+                        // Only handle clicks on active slides
+                        const activeSlide = carouselContainer.querySelector('.carousel-slide.active');
+                        if (activeSlide && (e.target === activeSlide || activeSlide.contains(e.target))) {
+                            const title = activeSlide.getAttribute('data-title');
+                            const year = activeSlide.getAttribute('data-year');
+                            navigateToMedia(title, year);
+                        }
+                    });
+                    
+                    // Add keyboard support for carousel
+                    carouselContainer.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            const activeSlide = carouselContainer.querySelector('.carousel-slide.active');
+                            if (activeSlide && (e.target === activeSlide || activeSlide.contains(e.target))) {
+                                e.preventDefault();
+                                const title = activeSlide.getAttribute('data-title');
+                                const year = activeSlide.getAttribute('data-year');
+                                navigateToMedia(title, year);
+                            }
+                        }
                     });
                     
                     // Wait a frame for DOM updates, then show first slide

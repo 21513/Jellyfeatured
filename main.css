@@ -8,20 +8,22 @@
     width: 100%;
     height: 100%;
     opacity: 0;
-    transition: opacity 1s ease-in-out;
+    transition: opacity 0.8s ease-in-out;
     cursor: pointer;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    z-index: 1;
 }
 
 .carousel-slide.active {
     opacity: 1;
+    z-index: 2;
 }
 
 .carousel-slide:hover {
-    transform: scale(1.02);
-    transition: transform 0.3s ease-out, opacity 1s ease-in-out;
+    transform: scale(1.01);
+    transition: transform 0.3s ease-out, opacity 0.8s ease-in-out;
 }
 
 /* Slide Content Overlay */

@@ -142,7 +142,7 @@ public class Plugin : BasePlugin<PluginConfiguration>
             // 4. Best rated movie
             var bestMovie = allItems
                 .OfType<Movie>()
-                .Where(m => m.CommunityRating.HasValue && m.CommunityRating > 0)
+                .Where(m => m.CommunityRating.HasValue && m.CommunityRating > 0 && m.CommunityRating < 10.0)
                 .OrderByDescending(m => m.CommunityRating)
                 .FirstOrDefault();
                 
@@ -160,7 +160,7 @@ public class Plugin : BasePlugin<PluginConfiguration>
             // 5. Best rated show
             var bestShow = allItems
                 .OfType<Series>()
-                .Where(s => s.CommunityRating.HasValue && s.CommunityRating > 0)
+                .Where(s => s.CommunityRating.HasValue && s.CommunityRating > 0 && s.CommunityRating < 10.0)
                 .OrderByDescending(s => s.CommunityRating)
                 .FirstOrDefault();
                 
