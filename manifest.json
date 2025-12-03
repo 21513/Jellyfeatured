@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.0.0.26",
+                "changelog": "Fixed API calls for featured images",
+                "targetAbi": "10.11.4.0",
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.26/Jellyfeatured-v0.0.0.26.zip",
+                "checksum": "1c33396576b931cc2f1205a107b8e331",
+                "timestamp": "2025-12-04T00:27:51Z"
+            },
+            {
                 "version": "0.0.0.25",
                 "changelog": "Updated styles and fixed logo display issue",
                 "targetAbi": "10.11.4.0",
