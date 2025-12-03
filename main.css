@@ -96,8 +96,8 @@
 
 .slide-logo-container {
     flex-shrink: 0;
-    max-width: 128px;
-    max-height: 128px;
+    max-width: 256px;
+    max-height: 256px;
     margin-bottom: 2px;
 }
 

@@ -54,12 +54,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         
         // Rate limiting to prevent API flooding
         const now = Date.now();
-        if (now - lastApiCall < 500) { // Reduce to 500ms between API calls for faster loading
+        if (now - lastApiCall < 100) { // Very short delay to prevent simultaneous calls
             console.log('🎬 Jellyfeatured: API rate limited, skipping call');
             return null;
         }
         
-        if (apiCallCount > 20) { // Increase limit to 20 API calls per session for more slides
+        if (apiCallCount > 50) { // Higher limit for more slides
             console.log('🎬 Jellyfeatured: API call limit reached, skipping call');
             return null;
         }
@@ -173,14 +173,11 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             </div>
         `;
         
-        // Load media item data and images asynchronously with delay to avoid rate limiting
+        // Load media item data and images asynchronously
         try {
-            // Add a small delay based on index to stagger API calls
-            await new Promise(resolve => setTimeout(resolve, index * 200));
             const item = await searchForItem(recommendation.title, recommendation.year);
             
             if (item) {
-                console.log(`🎬 Jellyfeatured: Found item for ${recommendation.title}:`, item.Name, 'ID:', item.Id);
                 // Set backdrop image
                 if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
                     const apiKey = getJellyfinApiKey();
@@ -190,9 +187,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     slide.style.backgroundSize = 'cover';
                     slide.style.backgroundPosition = 'center';
                     slide.style.backgroundRepeat = 'no-repeat';
-                    console.log(`✅ Jellyfeatured: Set backdrop for ${recommendation.title}`);
-                } else {
-                    console.log(`⚠️ Jellyfeatured: No backdrop available for ${recommendation.title}`);
                 }
                 
                 // Set logo image if available
@@ -203,12 +197,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     const logoImg = slide.querySelector('.slide-logo');
                     logoImg.src = logoUrl;
                     logoImg.style.display = 'block';
-                    console.log(`✅ Jellyfeatured: Set logo for ${recommendation.title}`);
-                } else {
-                    console.log(`⚠️ Jellyfeatured: No logo available for ${recommendation.title}`);
                 }
-            } else {
-                console.log(`❌ Jellyfeatured: No item found for ${recommendation.title}`);
             }
         } catch (e) {
             console.log('Failed to load images for', recommendation.title, e);
