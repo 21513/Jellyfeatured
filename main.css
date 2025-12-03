@@ -1,122 +1,159 @@
-/* Jellyfeatured Plugin Styles - ElegantFin Theme Compatible */
+/* Jellyfeatured Plugin Carousel Styles - ElegantFin Theme Compatible */
 
-.recommendation-item {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 12px;
-    border-radius: 0.5em; /* --smallRadius */
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 0.06em solid rgba(29, 38, 53, 0.3); /* --borderWidth solid --gradientPointAlpha */
-    transition: all 0.125s;
-    margin-bottom: 0.5em;
+/* Carousel Slide Styles */
+.carousel-slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    cursor: pointer;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
-.recommendation-item:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.2); /* --lighterBorderColor */
+.carousel-slide.active {
+    opacity: 1;
+}
+
+.carousel-slide:hover {
     transform: scale(1.02);
+    transition: transform 0.3s ease-out, opacity 1s ease-in-out;
 }
 
-.recommendation-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.recommendation-title {
-    font-weight: 600;
-    font-size: 1rem;
-    color: rgb(209, 213, 219); /* --textColor */
+/* Slide Content Overlay */
+.slide-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    padding: 60px 20px 20px;
+    color: var(--textColor, rgb(209, 213, 219));
     font-family: "Inter", sans-serif;
-    margin-bottom: 0.25em;
+}
+
+.slide-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
     line-height: 1.2;
 }
 
-.recommendation-type {
-    font-size: 0.75em;
-    opacity: 0.8;
-    color: rgb(156, 163, 175); /* --dimTextColor */
+.slide-subtitle {
+    font-size: 0.9rem;
     font-weight: 400;
-    font-family: "Inter", sans-serif;
+    margin: 0 0 8px 0;
+    color: var(--dimTextColor, rgb(156, 163, 175));
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
 }
 
-.recommendation-rating {
-    font-size: 0.875em;
+.slide-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    font-size: 0.8rem;
     font-weight: 600;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 0.25em 0.5em;
-    border-radius: 0.375em; /* --smallerRadius */
-    color: rgb(209, 213, 219); /* --textColor */
-    border: 0.06em solid rgba(255, 255, 255, 0.2); /* --borderWidth solid --lighterBorderColor */
-    font-family: "Inter", sans-serif;
-    min-width: 3em;
-    text-align: center;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 4px 8px;
+    border-radius: var(--smallerRadius, 0.375em);
+    border: var(--borderWidth, 0.06em) solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(5px);
+}
+
+/* Navigation Dots */
+.carousel-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.carousel-dot.active {
+    background: var(--textColor, rgb(209, 213, 219));
+    transform: scale(1.2);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+.carousel-dot:hover {
+    background: rgba(255, 255, 255, 0.8);
+    transform: scale(1.1);
+}
+
+/* Loading State */
+.loading-slide {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.25em;
+    background: linear-gradient(0deg, var(--darkerGradientPoint, #111827) 35%, var(--lighterGradientPoint, #1d2635));
 }
 
 .loading-text {
     opacity: 0.8;
-    color: rgb(156, 163, 175); /* --dimTextColor */
+    color: var(--dimTextColor, rgb(156, 163, 175));
     margin: 0;
     padding: 1em;
     text-align: center;
     font-style: italic;
     font-family: "Inter", sans-serif;
+    font-size: 1.1rem;
 }
 
-/* Mobile responsive adjustments */
+/* Mobile Responsive */
 @media (max-width: 50em) {
-    .recommendation-item {
-        padding: 10px;
-        margin-bottom: 0.25em;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5em;
+    #jellyfeatured-div {
+        height: 250px;
+        margin: 15px 0;
     }
     
-    .recommendation-title {
-        font-size: 0.9rem;
+    .slide-content {
+        padding: 40px 15px 15px;
     }
     
-    .recommendation-type {
-        font-size: 0.7em;
+    .slide-title {
+        font-size: 1.2rem;
     }
     
-    .recommendation-rating {
-        align-self: flex-end;
-        font-size: 0.8em;
+    .slide-subtitle {
+        font-size: 0.8rem;
+    }
+    
+    .carousel-dot {
+        width: 8px;
+        height: 8px;
     }
 }
 
 /* Focus states for accessibility */
-.recommendation-item:focus-within {
-    outline: 0.06em solid rgb(37, 99, 235); /* --highlightOutlineColor */
+.carousel-slide:focus {
+    outline: 2px solid var(--highlightOutlineColor, rgb(37, 99, 235));
     outline-offset: 2px;
 }
 
-/* Animation for smooth entrance */
-@keyframes fadeInUp {
+.carousel-dot:focus {
+    outline: 2px solid var(--highlightOutlineColor, rgb(37, 99, 235));
+    outline-offset: 2px;
+}
+
+/* Animation for slide entrance */
+@keyframes slideIn {
     from {
         opacity: 0;
-        transform: translateY(1em);
+        transform: translateX(20px);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateX(0);
     }
 }
 
-.recommendation-item {
-    animation: fadeInUp 0.3s ease-out forwards;
+.carousel-slide.entering {
+    animation: slideIn 0.5s ease-out;
 }
-
-/* Stagger animation delay for multiple items */
-.recommendation-item:nth-child(1) { animation-delay: 0ms; }
-.recommendation-item:nth-child(2) { animation-delay: 100ms; }
-.recommendation-item:nth-child(3) { animation-delay: 200ms; }
-.recommendation-item:nth-child(4) { animation-delay: 300ms; }
-.recommendation-item:nth-child(5) { animation-delay: 400ms; }

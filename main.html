@@ -1,33 +1,74 @@
 <div id="jellyfeatured-div" style="
     width: 100%;
     margin: 20px 0;
-    padding: 20px;
-    background: linear-gradient(0deg, var(--darkerGradientPoint, #111827) 35%, var(--lighterGradientPoint, #1d2635));
-    border-radius: var(--largeRadius, 1em);
-    color: var(--textColor, rgb(209, 213, 219));
     position: relative;
     z-index: 1000;
+    font-family: 'Inter', sans-serif;
+    border-radius: var(--largeRadius, 1em);
+    overflow: hidden;
     box-shadow: 0.1em 0.1em 0.15em hsla(0, 0%, 0%, 0.3);
     border: var(--borderWidth, 0.06em) solid var(--borderColor, hsl(214, 13%, 32%));
-    font-family: 'Inter', sans-serif;
+    height: 300px;
 ">
     <style>{{CSS_STYLES}}</style>
-    <h2 style="
-        margin: 0 0 15px 0; 
-        font-size: 1.5rem; 
-        font-weight: 600; 
-        color: var(--textColor, rgb(209, 213, 219));
-        font-family: 'Inter', sans-serif;
-        display: flex;
-        align-items: center;
-        gap: 0.5em;
-    ">🎬 Featured Recommendations</h2>
-    <div id="recommendations-container" style="
-        display: grid; 
-        gap: 0.5em;
-        grid-template-columns: 1fr;
+    
+    <!-- Carousel Container -->
+    <div id="recommendations-carousel" style="
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
     ">
-        <!-- Recommendations will be populated here by JavaScript -->
-        <p class="loading-text">Loading recommendations...</p>
+        <!-- Slides will be populated here by JavaScript -->
+        <div class="loading-slide" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(0deg, var(--darkerGradientPoint, #111827) 35%, var(--lighterGradientPoint, #1d2635));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--dimTextColor, rgb(156, 163, 175));
+        ">
+            <p class="loading-text">Loading recommendations...</p>
+        </div>
+    </div>
+    
+    <!-- Navigation Dots -->
+    <div id="carousel-dots" style="
+        position: absolute;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        z-index: 10;
+    ">
+        <!-- Dots will be populated by JavaScript -->
+    </div>
+    
+    <!-- Title Overlay -->
+    <div style="
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 8px 16px;
+        border-radius: var(--smallRadius, 0.5em);
+        backdrop-filter: blur(5px);
+    ">
+        <h2 style="
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--textColor, rgb(209, 213, 219));
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+        ">🎬 Featured</h2>
     </div>
 </div>
