@@ -54,12 +54,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         
         // Rate limiting to prevent API flooding
         const now = Date.now();
-        if (now - lastApiCall < 100) { // Very short delay to prevent simultaneous calls
+        if (now - lastApiCall < 1000) { // At least 1 second between API calls
             console.log('🎬 Jellyfeatured: API rate limited, skipping call');
             return null;
         }
         
-        if (apiCallCount > 50) { // Higher limit for more slides
+        if (apiCallCount > 10) { // Max 10 API calls per session
             console.log('🎬 Jellyfeatured: API call limit reached, skipping call');
             return null;
         }
@@ -197,6 +197,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     const logoImg = slide.querySelector('.slide-logo');
                     logoImg.src = logoUrl;
                     logoImg.style.display = 'block';
+                    
+                    // Keep the text title visible alongside the logo
+                    // Logo and title will both be shown
                 }
             }
         } catch (e) {
@@ -241,27 +244,22 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     function goToSlide(index) {
-        const carouselContainer = document.querySelector('#recommendations-carousel');
-        if (!carouselContainer) return;
+        const slides = document.querySelectorAll('.carousel-slide');
+        const dots = document.querySelectorAll('.carousel-dot');
         
-        const slides = carouselContainer.querySelectorAll('.carousel-slide');
-        const dots = document.querySelectorAll('#carousel-dots .carousel-dot');
-        
-        if (slides.length === 0 || index >= slides.length) return;
-        
-        // Don't return early if index === currentSlide, allow re-activation
-        console.log(`🎬 Jellyfeatured: Going to slide ${index}, current: ${currentSlide}`);
+        if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
         
         // Remove active and entering classes from all slides and dots
         slides.forEach((slide, i) => {
-            slide.classList.remove('active', 'entering');
+            if (i !== index) {
+                slide.classList.remove('active', 'entering');
+            }
         });
         dots.forEach(dot => dot.classList.remove('active'));
         
         // Add active class to current slide and dot with smoother transition
         if (slides[index]) {
             slides[index].classList.add('active');
-            console.log(`✅ Jellyfeatured: Activated slide ${index}`);
         }
         
         if (dots[index]) {
@@ -273,14 +271,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     function nextSlide() {
         const nextIndex = (currentSlide + 1) % recommendations.length;
-        console.log(`🎬 Jellyfeatured: Auto-advancing from slide ${currentSlide} to ${nextIndex}`);
         goToSlide(nextIndex);
     }
     
     function startAutoSlide() {
         if (recommendations.length > 1) {
             clearInterval(autoSlideInterval); // Clear any existing interval
-            console.log('🎬 Jellyfeatured: Starting auto-slide timer');
             autoSlideInterval = setInterval(() => {
                 if (!isUserInteracting) {
                     nextSlide();
@@ -384,7 +380,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     
                     // Wait for all slides to be created
                     const slides = await Promise.all(slidePromises);
-                    console.log(`🎬 Jellyfeatured: Created ${slides.length} slides for ${recommendations.length} recommendations`);
                     
                     // Add all slides and dots to DOM and show first slide immediately
                     slides.forEach((slide, index) => {
@@ -392,13 +387,10 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         const dot = createNavigationDot(index);
                         dotsContainer.appendChild(dot);
                         
-                        console.log(`🎬 Jellyfeatured: Added slide ${index} to DOM`);
-                        
                         // Make first slide visible immediately
                         if (index === 0) {
                             slide.classList.add('active');
                             dot.classList.add('active');
-                            console.log(`✅ Jellyfeatured: Set slide 0 as active`);
                         }
                     });
                     
