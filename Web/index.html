@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script type="text/javascript">
+        // Simple injection that works with Jellyfin 10.11.4
+        (function() {
+            'use strict';
+            
+            function injectBlackDiv() {
+                // Only inject on home/main pages
+                if (!window.location.pathname.includes('configurationpage')) {
+                    // Look for main content containers
+                    const containers = [
+                        '.homePage',
+                        '.homePageContent', 
+                        '[data-role="main"]',
+                        '.mainDrawer-content',
+                        '.view',
+                        '.pageContainer',
+                        '#homeTab',
+                        '.scrollY'
+                    ];
+                    
+                    let homeContainer = null;
+                    for (const selector of containers) {
+                        homeContainer = document.querySelector(selector);
+                        if (homeContainer) break;
+                    }
+                    
+                    if (homeContainer && !document.getElementById('jellyfeatured-div')) {
+                        const blackDiv = document.createElement('div');
+                        blackDiv.id = 'jellyfeatured-div';
+                        blackDiv.style.cssText = 'width: 100%; height: 200px; background-color: black; margin: 20px 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; font-weight: bold; position: relative; z-index: 1000;';
+                        blackDiv.innerHTML = 'Jellyfeatured Plugin - Active!';
+                        
+                        // Try to insert at a good location
+                        const firstChild = homeContainer.querySelector('.sections, .verticalSection, .homePageSection') || homeContainer.firstElementChild;
+                        if (firstChild) {
+                            homeContainer.insertBefore(blackDiv, firstChild);
+                        } else {
+                            homeContainer.appendChild(blackDiv);
+                        }
+                        
+                        console.log('Jellyfeatured: Black div injected successfully!');
+                    }
+                }
+            }
+            
+            // Multiple injection strategies
+            function tryInject() {
+                setTimeout(injectBlackDiv, 100);
+                setTimeout(injectBlackDiv, 500);
+                setTimeout(injectBlackDiv, 1000);
+            }
+            
+            // Initial load
+            tryInject();
+            
+            // DOM ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', tryInject);
+            }
+            
+            // Page changes (SPA navigation)
+            let lastUrl = location.href;
+            new MutationObserver(() => {
+                const url = location.href;
+                if (url !== lastUrl) {
+                    lastUrl = url;
+                    tryInject();
+                }
+            }).observe(document, {subtree: true, childList: true});
+            
+            // Hash changes
+            window.addEventListener('hashchange', tryInject);
+            window.addEventListener('popstate', tryInject);
+            
+        })();
+    </script>
+</head>
+<body>
+    <div style="display:none;">Jellyfeatured Plugin Web Interface</div>
+</body>
+</html>
