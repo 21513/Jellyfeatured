@@ -1,40 +1,122 @@
+/* Jellyfeatured Plugin Styles - ElegantFin Theme Compatible */
+
 .recommendation-item {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
     padding: 12px;
-    border-radius: 8px;
+    border-radius: 0.5em; /* --smallRadius */
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border: 0.06em solid rgba(29, 38, 53, 0.3); /* --borderWidth solid --gradientPointAlpha */
+    transition: all 0.125s;
+    margin-bottom: 0.5em;
+}
+
+.recommendation-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2); /* --lighterBorderColor */
+    transform: scale(1.02);
 }
 
 .recommendation-content {
     flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .recommendation-title {
-    font-weight: bold;
-    font-size: 16px;
-    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    color: rgb(209, 213, 219); /* --textColor */
+    font-family: "Inter", sans-serif;
+    margin-bottom: 0.25em;
+    line-height: 1.2;
 }
 
 .recommendation-type {
-    font-size: 12px;
+    font-size: 0.75em;
     opacity: 0.8;
-    margin-top: 2px;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgb(156, 163, 175); /* --dimTextColor */
+    font-weight: 400;
+    font-family: "Inter", sans-serif;
 }
 
 .recommendation-rating {
-    font-size: 14px;
-    font-weight: bold;
-    background: rgba(255,255,255,0.2);
-    padding: 4px 8px;
-    border-radius: 4px;
-    color: white;
+    font-size: 0.875em;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25em 0.5em;
+    border-radius: 0.375em; /* --smallerRadius */
+    color: rgb(209, 213, 219); /* --textColor */
+    border: 0.06em solid rgba(255, 255, 255, 0.2); /* --borderWidth solid --lighterBorderColor */
+    font-family: "Inter", sans-serif;
+    min-width: 3em;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25em;
 }
 
 .loading-text {
     opacity: 0.8;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgb(156, 163, 175); /* --dimTextColor */
     margin: 0;
+    padding: 1em;
+    text-align: center;
+    font-style: italic;
+    font-family: "Inter", sans-serif;
 }
+
+/* Mobile responsive adjustments */
+@media (max-width: 50em) {
+    .recommendation-item {
+        padding: 10px;
+        margin-bottom: 0.25em;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5em;
+    }
+    
+    .recommendation-title {
+        font-size: 0.9rem;
+    }
+    
+    .recommendation-type {
+        font-size: 0.7em;
+    }
+    
+    .recommendation-rating {
+        align-self: flex-end;
+        font-size: 0.8em;
+    }
+}
+
+/* Focus states for accessibility */
+.recommendation-item:focus-within {
+    outline: 0.06em solid rgb(37, 99, 235); /* --highlightOutlineColor */
+    outline-offset: 2px;
+}
+
+/* Animation for smooth entrance */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(1em);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.recommendation-item {
+    animation: fadeInUp 0.3s ease-out forwards;
+}
+
+/* Stagger animation delay for multiple items */
+.recommendation-item:nth-child(1) { animation-delay: 0ms; }
+.recommendation-item:nth-child(2) { animation-delay: 100ms; }
+.recommendation-item:nth-child(3) { animation-delay: 200ms; }
+.recommendation-item:nth-child(4) { animation-delay: 300ms; }
+.recommendation-item:nth-child(5) { animation-delay: 400ms; }

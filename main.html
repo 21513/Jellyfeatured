@@ -2,17 +2,31 @@
     width: 100%;
     margin: 20px 0;
     padding: 20px;
-    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-    border-radius: 12px;
-    color: white;
+    background: linear-gradient(0deg, var(--darkerGradientPoint, #111827) 35%, var(--lighterGradientPoint, #1d2635));
+    border-radius: var(--largeRadius, 1em);
+    color: var(--textColor, rgb(209, 213, 219));
     position: relative;
     z-index: 1000;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0.1em 0.1em 0.15em hsla(0, 0%, 0%, 0.3);
+    border: var(--borderWidth, 0.06em) solid var(--borderColor, hsl(214, 13%, 32%));
+    font-family: 'Inter', sans-serif;
 ">
     <style>{{CSS_STYLES}}</style>
-    <h2 style="margin: 0 0 15px 0; font-size: 24px;">🎬 Featured Recommendations</h2>
-    <div id="recommendations-container" style="display: grid; gap: 10px;">
+    <h2 style="
+        margin: 0 0 15px 0; 
+        font-size: 1.5rem; 
+        font-weight: 600; 
+        color: var(--textColor, rgb(209, 213, 219));
+        font-family: 'Inter', sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+    ">🎬 Featured Recommendations</h2>
+    <div id="recommendations-container" style="
+        display: grid; 
+        gap: 0.5em;
+        grid-template-columns: 1fr;
+    ">
         <!-- Recommendations will be populated here by JavaScript -->
         <p class="loading-text">Loading recommendations...</p>
     </div>
