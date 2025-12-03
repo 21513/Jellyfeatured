@@ -99,7 +99,7 @@ public class Plugin : BasePlugin<PluginConfiguration>
                 recommendations.Add(new RecommendationItem
                 {
                     Title = latestMovie.Name,
-                    Type = "Most Recently Released Movie",
+                    Type = "Latest Release",
                     Year = latestMovie.PremiereDate?.Year.ToString() ?? "",
                     Rating = latestMovie.CommunityRating?.ToString("F1") ?? "N/A"
                 });
@@ -116,7 +116,7 @@ public class Plugin : BasePlugin<PluginConfiguration>
                 recommendations.Add(new RecommendationItem
                 {
                     Title = recentAddedMovie.Name,
-                    Type = "Most Recently Added Movie",
+                    Type = "Recently Added in Films",
                     Year = recentAddedMovie.PremiereDate?.Year.ToString() ?? "",
                     Rating = recentAddedMovie.CommunityRating?.ToString("F1") ?? "N/A"
                 });
@@ -133,7 +133,7 @@ public class Plugin : BasePlugin<PluginConfiguration>
                 recommendations.Add(new RecommendationItem
                 {
                     Title = recentAddedShow.Name,
-                    Type = "Most Recently Added Show",
+                    Type = "Recently Added in Series",
                     Year = recentAddedShow.PremiereDate?.Year.ToString() ?? "",
                     Rating = recentAddedShow.CommunityRating?.ToString("F1") ?? "N/A"
                 });
@@ -151,7 +151,7 @@ public class Plugin : BasePlugin<PluginConfiguration>
                 recommendations.Add(new RecommendationItem
                 {
                     Title = bestMovie.Name,
-                    Type = "Best Rated Movie",
+                    Type = "Best Rated in Films",
                     Year = bestMovie.PremiereDate?.Year.ToString() ?? "",
                     Rating = bestMovie.CommunityRating?.ToString("F1") ?? "N/A"
                 });
@@ -169,7 +169,7 @@ public class Plugin : BasePlugin<PluginConfiguration>
                 recommendations.Add(new RecommendationItem
                 {
                     Title = bestShow.Name,
-                    Type = "Best Rated Show",
+                    Type = "Best Rated in Series",
                     Year = bestShow.PremiereDate?.Year.ToString() ?? "",
                     Rating = bestShow.CommunityRating?.ToString("F1") ?? "N/A"
                 });
