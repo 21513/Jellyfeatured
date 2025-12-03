@@ -219,12 +219,23 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         }, 10000);
     }
     
-    function navigateToMedia(title, year) {
-        // This would ideally use Jellyfin's search to find and navigate to the media
-        // For now, we'll try a basic search approach
+    async function navigateToMedia(title, year) {
         console.log(`🎬 Navigating to: ${title} ${year ? '(' + year + ')' : ''}`);
         
-        // Try to trigger Jellyfin's search
+        try {
+            // Search for the item to get its ID
+            const item = await searchForItem(title, year);
+            if (item && item.Id) {
+                // Navigate directly to the item's detail page
+                const detailUrl = `${window.location.origin}/web/index.html#!/details?id=${item.Id}`;
+                window.location.href = detailUrl;
+                return;
+            }
+        } catch (e) {
+            console.log('Failed to find item for navigation:', e);
+        }
+        
+        // Fallback to search if we can't find the specific item
         const searchQuery = encodeURIComponent(title);
         const searchUrl = `${window.location.origin}/web/index.html#!/search.html?query=${searchQuery}`;
         window.location.href = searchUrl;
@@ -274,37 +285,35 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         dotsContainer.appendChild(dot);
                     });
                     
+                    // Show first slide immediately
+                    goToSlide(0);
+                    
                     // Add centralized click handler for the carousel container
-                    carouselContainer.addEventListener('click', (e) => {
+                    carouselContainer.addEventListener('click', async (e) => {
                         // Only handle clicks on active slides
                         const activeSlide = carouselContainer.querySelector('.carousel-slide.active');
                         if (activeSlide && (e.target === activeSlide || activeSlide.contains(e.target))) {
                             const title = activeSlide.getAttribute('data-title');
                             const year = activeSlide.getAttribute('data-year');
-                            navigateToMedia(title, year);
+                            await navigateToMedia(title, year);
                         }
                     });
                     
                     // Add keyboard support for carousel
-                    carouselContainer.addEventListener('keydown', (e) => {
+                    carouselContainer.addEventListener('keydown', async (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             const activeSlide = carouselContainer.querySelector('.carousel-slide.active');
                             if (activeSlide && (e.target === activeSlide || activeSlide.contains(e.target))) {
                                 e.preventDefault();
                                 const title = activeSlide.getAttribute('data-title');
                                 const year = activeSlide.getAttribute('data-year');
-                                navigateToMedia(title, year);
+                                await navigateToMedia(title, year);
                             }
                         }
                     });
                     
-                    // Wait a frame for DOM updates, then show first slide
-                    requestAnimationFrame(() => {
-                        goToSlide(0);
-                        
-                        // Start auto-slide after everything is loaded and displayed
-                        setTimeout(startAutoSlide, 3000); // Start after 3 seconds
-                    });
+                    // Start auto-slide after a short delay
+                    setTimeout(startAutoSlide, 2000); // Start after 2 seconds
                     
                     // Pause auto-slide on hover
                     featuredDiv.addEventListener('mouseenter', pauseAutoSlide);

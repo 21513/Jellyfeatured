@@ -1,4 +1,8 @@
 /* Jellyfeatured Plugin Carousel Styles - ElegantFin Theme Compatible */
+.jellyfeatured-div:hover {
+    transform: scale(1.01);
+    transition: transform 0.3s ease-out, opacity 0.8s ease-in-out;
+}
 
 /* Carousel Slide Styles */
 .carousel-slide {
@@ -21,10 +25,6 @@
     z-index: 2;
 }
 
-.carousel-slide:hover {
-    transform: scale(1.01);
-    transition: transform 0.3s ease-out, opacity 0.8s ease-in-out;
-}
 
 /* Slide Content Overlay */
 .slide-content {
