@@ -111,22 +111,34 @@
 }
 
 /* Mobile Responsive */
-@media (max-width: 50em) {
+@media (max-width: 50em), (max-height: 40em) {
     #jellyfeatured-div {
-        height: 250px;
+        height: 300px;
         margin: 15px 0;
     }
     
+    .carousel-slide.mobile-slide {
+        background-size: contain !important;
+        background-position: center !important;
+        background-color: var(--darkerGradientPoint, #111827);
+    }
+    
     .slide-content {
-        padding: 40px 15px 15px;
+        padding: 20px 15px 15px;
+        background: linear-gradient(transparent 0%, rgba(0, 0, 0, 0.9) 60%);
     }
     
     .slide-title {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
+        font-weight: 600;
     }
     
     .slide-subtitle {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+    }
+    
+    .slide-rating {
+        font-size: 0.75rem;
     }
     
     .carousel-dot {
