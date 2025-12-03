@@ -5,7 +5,33 @@
 }
 
 #jellyfeatured-div {
+    width: 90%;
+    margin: auto;
+    position: relative;
+    font-family: 'Inter', sans-serif;
+    border-radius: var(--largeRadius, 1em);
+    overflow: hidden;
+    box-shadow: 0.1em 0.1em 0.15em hsla(0, 0%, 0%, 0.3);
+    border: var(--borderWidth, 0.06em) solid var(--borderColor, hsl(214, 13%, 32%));
+    height: 60vh;
     transition: 0.3s ease-out;
+}
+
+#recommendations-carousel {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+#carousel-dots {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
 }
 
 /* Carousel Slide Styles */

@@ -1,6 +1,3 @@
-// Jellyfeatured Auto-Injector with Carousel Slideshow
-console.log('🎬 Jellyfeatured: Auto-injector loaded');
-
 const recommendations = [{{RECOMMENDATIONS_DATA}}];
 const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
