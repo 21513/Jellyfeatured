@@ -10,11 +10,20 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     let isUserInteracting = false;
     
     function getJellyfinApiKey() {
-        // Try to get API key from localStorage or other common locations
+        // Try to get API key from multiple locations
         try {
+            // Check for API client instance
+            if (window.ApiClient && window.ApiClient.accessToken) {
+                return window.ApiClient.accessToken();
+            }
+            
+            // Check for credentials in localStorage
             const authData = localStorage.getItem('jellyfin_credentials');
             if (authData) {
                 const parsed = JSON.parse(authData);
+                if (parsed.Servers && parsed.Servers.length > 0) {
+                    return parsed.Servers[0].AccessToken;
+                }
                 return parsed.AccessToken || parsed.accessToken;
             }
         } catch (e) {
@@ -23,37 +32,91 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         return null;
     }
     
-    function getBackdropImageUrl(title, year) {
-        // Create backdrop URL for Jellyfin images
-        // This uses Jellyfin's search API to find the item and get its backdrop
-        const baseUrl = window.location.origin;
-        const apiKey = getJellyfinApiKey();
-        
-        if (!apiKey) {
-            // Fallback to a gradient if no API key
-            return `linear-gradient(135deg, 
-                var(--darkerGradientPoint, #111827), 
-                var(--lighterGradientPoint, #1d2635))`;
+    function getJellyfinBaseUrl() {
+        try {
+            if (window.ApiClient && window.ApiClient.serverAddress) {
+                return window.ApiClient.serverAddress();
+            }
+            return window.location.origin;
+        } catch (e) {
+            return window.location.origin;
         }
-        
-        // For now, use a placeholder approach since we need item IDs for proper backdrop URLs
-        // In a real implementation, you'd search for the item first to get its ID
-        return `linear-gradient(135deg, 
-            rgba(0,0,0,0.7), 
-            transparent), 
-            linear-gradient(45deg, 
-            var(--darkerGradientPoint, #111827), 
-            var(--lighterGradientPoint, #1d2635))`;
     }
     
-    function createCarouselSlide(recommendation, index) {
+    async function searchForItem(title, year) {
+        const apiKey = getJellyfinApiKey();
+        const baseUrl = getJellyfinBaseUrl();
+        
+        if (!apiKey) {
+            return null;
+        }
+        
+        try {
+            const searchUrl = `${baseUrl}/Items?searchTerm=${encodeURIComponent(title)}&Recursive=true&Fields=PrimaryImageAspectRatio,BackdropImageTags&ImageTypeLimit=1&EnableImageTypes=Primary,Backdrop&Limit=5&api_key=${apiKey}`;
+            
+            const response = await fetch(searchUrl);
+            if (!response.ok) {
+                throw new Error(`Search failed: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            if (data.Items && data.Items.length > 0) {
+                // Find exact match or closest match by year
+                let bestMatch = data.Items[0];
+                
+                if (year) {
+                    const yearMatch = data.Items.find(item => 
+                        item.PremiereDate && new Date(item.PremiereDate).getFullYear().toString() === year
+                    );
+                    if (yearMatch) {
+                        bestMatch = yearMatch;
+                    }
+                }
+                
+                return bestMatch;
+            }
+        } catch (e) {
+            console.log(`Failed to search for ${title}:`, e);
+        }
+        
+        return null;
+    }
+    
+    function getBackdropImageUrl(title, year) {
+        // Return a promise that resolves to the backdrop URL
+        return searchForItem(title, year).then(item => {
+            if (item && item.BackdropImageTags && item.BackdropImageTags.length > 0) {
+                const apiKey = getJellyfinApiKey();
+                const baseUrl = getJellyfinBaseUrl();
+                return `url("${baseUrl}/Items/${item.Id}/Images/Backdrop?api_key=${apiKey}")`;
+            } else {
+                // Fallback gradient with better colors
+                const colors = [
+                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
+                    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+                ];
+                const hash = title.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
+                return colors[Math.abs(hash) % colors.length];
+            }
+        }).catch(() => {
+            // Fallback gradient
+            return `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+        });
+    }
+    
+    async function createCarouselSlide(recommendation, index) {
         const slide = document.createElement('div');
         slide.className = 'carousel-slide';
-        slide.style.background = getBackdropImageUrl(recommendation.title, recommendation.year);
         slide.setAttribute('data-index', index);
         slide.setAttribute('tabindex', '0');
         slide.setAttribute('role', 'button');
         slide.setAttribute('aria-label', `View ${recommendation.title}`);
+        
+        // Set initial gradient while loading
+        slide.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
         
         slide.innerHTML = `
             <div class="slide-content">
@@ -62,6 +125,17 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 <div class="slide-rating">⭐ ${recommendation.rating}</div>
             </div>
         `;
+        
+        // Load backdrop image asynchronously
+        try {
+            const backgroundValue = await getBackdropImageUrl(recommendation.title, recommendation.year);
+            slide.style.background = backgroundValue;
+            slide.style.backgroundSize = 'cover';
+            slide.style.backgroundPosition = 'center';
+            slide.style.backgroundRepeat = 'no-repeat';
+        } catch (e) {
+            console.log('Failed to load backdrop for', recommendation.title, e);
+        }
         
         // Add click handler to navigate to media
         slide.addEventListener('click', () => {
@@ -107,15 +181,22 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         const slides = document.querySelectorAll('.carousel-slide');
         const dots = document.querySelectorAll('.carousel-dot');
         
-        // Remove active class from all slides and dots
-        slides.forEach(slide => slide.classList.remove('active'));
+        if (slides.length === 0 || index >= slides.length) return;
+        
+        // Remove active and entering classes from all slides and dots
+        slides.forEach(slide => {
+            slide.classList.remove('active', 'entering');
+        });
         dots.forEach(dot => dot.classList.remove('active'));
         
-        // Add active class to current slide and dot
+        // Add active class to current slide and dot with proper transition
         if (slides[index]) {
             slides[index].classList.add('active');
-            slides[index].classList.add('entering');
-            setTimeout(() => slides[index].classList.remove('entering'), 500);
+            // Small delay to ensure the transition is smooth
+            requestAnimationFrame(() => {
+                slides[index].classList.add('entering');
+                setTimeout(() => slides[index].classList.remove('entering'), 600);
+            });
         }
         
         if (dots[index]) {
@@ -132,11 +213,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     function startAutoSlide() {
         if (recommendations.length > 1) {
+            clearInterval(autoSlideInterval); // Clear any existing interval
             autoSlideInterval = setInterval(() => {
                 if (!isUserInteracting) {
                     nextSlide();
                 }
-            }, 5000); // Change slide every 5 seconds
+            }, 6000); // Change slide every 6 seconds for better viewing
         }
     }
     
@@ -162,7 +244,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         window.location.href = searchUrl;
     }
     
-    function createFeaturedCarousel() {
+    async function createFeaturedCarousel() {
         if (document.getElementById('jellyfeatured-div')) return;
         
         const pathname = window.location.pathname;
@@ -189,21 +271,30 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         loadingSlide.remove();
                     }
                     
-                    // Create slides
-                    recommendations.forEach((rec, index) => {
-                        const slide = createCarouselSlide(rec, index);
+                    // Create slides asynchronously and wait for all to be ready
+                    const slidePromises = [];
+                    for (let i = 0; i < recommendations.length; i++) {
+                        const rec = recommendations[i];
+                        slidePromises.push(createCarouselSlide(rec, i));
+                    }
+                    
+                    // Wait for all slides to be created
+                    const slides = await Promise.all(slidePromises);
+                    
+                    // Add all slides and dots to DOM
+                    slides.forEach((slide, index) => {
                         carouselContainer.appendChild(slide);
-                        
-                        // Create navigation dot
                         const dot = createNavigationDot(index);
                         dotsContainer.appendChild(dot);
                     });
                     
-                    // Show first slide
-                    goToSlide(0);
-                    
-                    // Start auto-slide
-                    setTimeout(startAutoSlide, 2000); // Start after 2 seconds
+                    // Wait a frame for DOM updates, then show first slide
+                    requestAnimationFrame(() => {
+                        goToSlide(0);
+                        
+                        // Start auto-slide after everything is loaded and displayed
+                        setTimeout(startAutoSlide, 3000); // Start after 3 seconds
+                    });
                     
                     // Pause auto-slide on hover
                     featuredDiv.addEventListener('mouseenter', pauseAutoSlide);
@@ -230,12 +321,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     // Multiple injection attempts
     createFeaturedCarousel();
-    setTimeout(createFeaturedCarousel, 500);
-    setTimeout(createFeaturedCarousel, 1000);
-    setTimeout(createFeaturedCarousel, 2000);
+    setTimeout(() => createFeaturedCarousel(), 500);
+    setTimeout(() => createFeaturedCarousel(), 1000);
+    setTimeout(() => createFeaturedCarousel(), 2000);
     
     // Watch for navigation changes
-    const observer = new MutationObserver(() => setTimeout(createFeaturedCarousel, 300));
+    const observer = new MutationObserver(() => setTimeout(() => createFeaturedCarousel(), 300));
     if (document.body) observer.observe(document.body, { childList: true, subtree: true });
     
     // URL change detection
@@ -243,7 +334,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     setInterval(() => {
         if (location.href !== lastUrl) {
             lastUrl = location.href;
-            setTimeout(createFeaturedCarousel, 200);
+            setTimeout(() => createFeaturedCarousel(), 200);
         }
     }, 1000);
 })();
