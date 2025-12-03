@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Jellyfeatured Configuration</title>
+</head>
+<body>
+    <div id="jellyfeaturedConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input,emby-checkbox,emby-select">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="jellyfeaturedConfigForm">
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h2 class="sectionTitle">🎬 Jellyfeatured Configuration</h2>
+                    </div>
+                    
+                    <div class="verticalSection">
+                        <div class="sectionTitleContainer flex align-items-center">
+                            <h3 class="sectionTitle">Carousel Settings</h3>
+                        </div>
+                        
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="chkEnableAutoSlide" />
+                                <span>Enable auto-slide</span>
+                            </label>
+                            <div class="fieldDescription">
+                                Automatically advance carousel slides
+                            </div>
+                        </div>
+                        
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtAutoSlideInterval">Auto-slide interval (seconds)</label>
+                            <input is="emby-input" type="number" id="txtAutoSlideInterval" min="3" max="30" step="1" />
+                            <div class="fieldDescription">
+                                How often slides change automatically (3-30 seconds)
+                            </div>
+                        </div>
+                        
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="chkEnableHoverEffect" />
+                                <span>Enable hover effect</span>
+                            </label>
+                            <div class="fieldDescription">
+                                Show animated light sweep when hovering over slides
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="verticalSection">
+                        <div class="sectionTitleContainer flex align-items-center">
+                            <h3 class="sectionTitle">Content Settings</h3>
+                        </div>
+                        
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="txtRecommendationsPerCategory">Recommendations per category</label>
+                            <input is="emby-input" type="number" id="txtRecommendationsPerCategory" min="1" max="20" step="1" />
+                            <div class="fieldDescription">
+                                Number of items to randomly choose from per category (1-20)
+                            </div>
+                        </div>
+                        
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="chkShowMovieRecommendations" />
+                                <span>Show movie recommendations</span>
+                            </label>
+                            <div class="fieldDescription">
+                                Include movies in carousel recommendations
+                            </div>
+                        </div>
+                        
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="chkShowSeriesRecommendations" />
+                                <span>Show series recommendations</span>
+                            </label>
+                            <div class="fieldDescription">
+                                Include TV series in carousel recommendations
+                            </div>
+                        </div>
+                        
+                        <div class="checkboxContainer checkboxContainer-withDescription">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="chkShowRatings" />
+                                <span>Show ratings</span>
+                            </label>
+                            <div class="fieldDescription">
+                                Display star ratings on carousel slides
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            var pluginId = "639b5171-918b-4b24-82e4-d35c10be63a4";
+
+            function loadConfiguration() {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    document.querySelector('#chkEnableAutoSlide').checked = config.EnableAutoSlide || false;
+                    document.querySelector('#txtAutoSlideInterval').value = config.AutoSlideInterval || 6;
+                    document.querySelector('#txtRecommendationsPerCategory').value = config.RecommendationsPerCategory || 5;
+                    document.querySelector('#chkShowMovieRecommendations').checked = config.ShowMovieRecommendations !== false;
+                    document.querySelector('#chkShowSeriesRecommendations').checked = config.ShowSeriesRecommendations !== false;
+                    document.querySelector('#chkEnableHoverEffect').checked = config.EnableHoverEffect !== false;
+                    document.querySelector('#chkShowRatings').checked = config.ShowRatings !== false;
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+
+            function saveConfiguration(e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
+
+                var config = {
+                    EnableAutoSlide: document.querySelector('#chkEnableAutoSlide').checked,
+                    AutoSlideInterval: parseInt(document.querySelector('#txtAutoSlideInterval').value) || 6,
+                    RecommendationsPerCategory: parseInt(document.querySelector('#txtRecommendationsPerCategory').value) || 5,
+                    ShowMovieRecommendations: document.querySelector('#chkShowMovieRecommendations').checked,
+                    ShowSeriesRecommendations: document.querySelector('#chkShowSeriesRecommendations').checked,
+                    EnableHoverEffect: document.querySelector('#chkEnableHoverEffect').checked,
+                    ShowRatings: document.querySelector('#chkShowRatings').checked
+                };
+
+                ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
+                    Dashboard.processPluginConfigurationUpdateResult();
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                loadConfiguration();
+                document.querySelector('#jellyfeaturedConfigForm').addEventListener('submit', saveConfiguration);
+            });
+        })();
+    </script>
+</body>
+</html>

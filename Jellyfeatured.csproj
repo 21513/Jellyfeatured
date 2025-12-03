@@ -18,6 +18,7 @@
     <EmbeddedResource Include="main.html" />
     <EmbeddedResource Include="main.js" />
     <EmbeddedResource Include="main.css" />
+    <EmbeddedResource Include="Configuration\configPage.html" />
   </ItemGroup>
 
 </Project>

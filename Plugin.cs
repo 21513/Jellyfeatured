@@ -13,6 +13,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.Querying;
+using MediaBrowser.Model.Plugins;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Data.Enums;
 
@@ -21,7 +22,7 @@ namespace Jellyfeatured;
 /// <summary>
 /// The main plugin class.
 /// </summary>
-public class Plugin : BasePlugin<PluginConfiguration>
+public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 {
     private readonly ILibraryManager _libraryManager;
     private readonly ILogger<Plugin> _logger;
@@ -301,6 +302,19 @@ public class Plugin : BasePlugin<PluginConfiguration>
 
     /// <inheritdoc />
     public override Guid Id => Guid.Parse("639b5171-918b-4b24-82e4-d35c10be63a4");
+
+    /// <inheritdoc />
+    public IEnumerable<PluginPageInfo> GetPages()
+    {
+        return new[]
+        {
+            new PluginPageInfo
+            {
+                Name = this.Name,
+                EmbeddedResourcePath = string.Format("{0}.Configuration.configPage.html", GetType().Namespace)
+            }
+        };
+    }
 }
 
 public class RecommendationItem
