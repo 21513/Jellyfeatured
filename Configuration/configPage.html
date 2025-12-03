@@ -3,6 +3,76 @@
 <head>
     <meta charset="utf-8">
     <title>Jellyfeatured Configuration</title>
+    <style>
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--theme-body-bg, #101010);
+            border: 1px solid var(--theme-primary-color, #00a4dc);
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .search-result-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--theme-secondary-color, #333);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .search-result-item:hover {
+            background-color: var(--theme-primary-color, #00a4dc);
+            color: white;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-result-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .search-result-details {
+            font-size: 0.9em;
+            color: var(--theme-text-color-secondary, #999);
+        }
+        
+        .search-result-item:hover .search-result-details {
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .search-result-type {
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            background: var(--theme-secondary-color, #333);
+            color: white;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .search-loading {
+            padding: 16px;
+            text-align: center;
+            color: var(--theme-text-color-secondary, #999);
+        }
+        
+        .no-results {
+            padding: 16px;
+            text-align: center;
+            color: var(--theme-text-color-secondary, #999);
+            font-style: italic;
+        }
+    </style>
 </head>
 <body>
     <div id="jellyfeaturedConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input,emby-checkbox,emby-select">
@@ -20,9 +90,14 @@
                         
                         <div class="inputContainer">
                             <label class="inputLabel" for="txtAdminPickTitle">Admin's Pick Title</label>
-                            <input is="emby-input" type="text" id="txtAdminPickTitle" placeholder="Enter movie or series title..." />
+                            <div style="position: relative;">
+                                <input is="emby-input" type="text" id="txtAdminPickTitle" placeholder="Search for a movie or series..." autocomplete="off" />
+                                <div id="searchResults" class="search-dropdown" style="display: none;">
+                                    <!-- Search results will be populated here -->
+                                </div>
+                            </div>
                             <div class="fieldDescription">
-                                Enter the title of a movie or series to feature as a 6th recommendation category. Leave blank to show only the default 5 categories.
+                                Start typing to search your library and select a movie or series to feature as a 6th recommendation category. Leave blank to show only the default 5 categories.
                             </div>
                         </div>
                     </div>
@@ -63,14 +138,102 @@
     <script type="text/javascript">
         (function () {
             var pluginId = "639b5171-918b-4b24-82e4-d35c10be63a4";
+            var searchTimeout;
+            var isSearching = false;
 
             function loadConfiguration() {
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    console.log('Loaded configuration:', config);
                     document.querySelector('#txtAdminPickTitle').value = config.AdminPickTitle || '';
                     document.querySelector('#txtRefreshIntervalHours').value = config.RefreshIntervalHours || 24;
                     Dashboard.hideLoadingMsg();
+                }).catch(function(error) {
+                    console.error('Load error:', error);
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.alert('Failed to load configuration.');
                 });
+            }
+
+            function searchLibrary(query) {
+                if (!query || query.length < 2) {
+                    hideSearchResults();
+                    return;
+                }
+
+                isSearching = true;
+                showSearchLoading();
+
+                var searchUrl = ApiClient.getUrl('Items', {
+                    searchTerm: query,
+                    Recursive: true,
+                    IncludeItemTypes: 'Movie,Series',
+                    Fields: 'BasicSyncInfo,PremiereDate',
+                    Limit: 20
+                });
+
+                ApiClient.getJSON(searchUrl).then(function(result) {
+                    displaySearchResults(result.Items || []);
+                    isSearching = false;
+                }).catch(function(error) {
+                    console.error('Search error:', error);
+                    hideSearchResults();
+                    isSearching = false;
+                });
+            }
+
+            function showSearchLoading() {
+                var dropdown = document.getElementById('searchResults');
+                dropdown.innerHTML = '<div class="search-loading">🔍 Searching...</div>';
+                dropdown.style.display = 'block';
+            }
+
+            function displaySearchResults(items) {
+                var dropdown = document.getElementById('searchResults');
+                
+                if (items.length === 0) {
+                    dropdown.innerHTML = '<div class="no-results">No results found</div>';
+                } else {
+                    var html = '';
+                    items.forEach(function(item) {
+                        var year = '';
+                        if (item.PremiereDate) {
+                            year = new Date(item.PremiereDate).getFullYear();
+                        }
+                        
+                        var type = item.Type === 'Series' ? 'TV' : 'Movie';
+                        var details = year ? `(${year})` : '';
+                        
+                        html += `
+                            <div class="search-result-item" onclick="selectItem('${escapeHtml(item.Name)}')">
+                                <div style="flex: 1;">
+                                    <div class="search-result-title">${escapeHtml(item.Name)}</div>
+                                    <div class="search-result-details">${details}</div>
+                                </div>
+                                <div class="search-result-type">${type}</div>
+                            </div>
+                        `;
+                    });
+                    dropdown.innerHTML = html;
+                }
+                
+                dropdown.style.display = 'block';
+            }
+
+            function selectItem(title) {
+                document.querySelector('#txtAdminPickTitle').value = title;
+                hideSearchResults();
+            }
+
+            function hideSearchResults() {
+                var dropdown = document.getElementById('searchResults');
+                dropdown.style.display = 'none';
+            }
+
+            function escapeHtml(text) {
+                var div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
             }
 
             function saveConfiguration(e) {
@@ -86,8 +249,16 @@
                     RefreshIntervalHours: refreshInterval
                 };
 
+                console.log('Saving configuration:', config);
+
                 ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
-                    Dashboard.processPluginConfigurationUpdateResult();
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.alert('Configuration saved successfully!');
+                    console.log('Configuration saved successfully');
+                }).catch(function(error) {
+                    Dashboard.hideLoadingMsg();
+                    console.error('Save error:', error);
+                    Dashboard.alert('Failed to save configuration. Please try again.');
                 });
             }
 
@@ -101,8 +272,14 @@
 
                 // Get current configuration
                 ApiClient.getPluginConfiguration(pluginId).then(function(config) {
-                    // Add a timestamp to force a configuration change event
+                    console.log('Current config before manual refresh:', config);
+                    
+                    // Preserve current values and add timestamp to force refresh
+                    config.AdminPickTitle = document.querySelector('#txtAdminPickTitle').value.trim() || '';
+                    config.RefreshIntervalHours = parseInt(document.querySelector('#txtRefreshIntervalHours').value) || 24;
                     config.LastManualRefresh = Date.now();
+                    
+                    console.log('Updated config for manual refresh:', config);
                     
                     // Update configuration to trigger refresh
                     return ApiClient.updatePluginConfiguration(pluginId, config);
@@ -122,6 +299,49 @@
                 loadConfiguration();
                 document.querySelector('#jellyfeaturedConfigForm').addEventListener('submit', saveConfiguration);
                 document.querySelector('#btnManualRefresh').addEventListener('click', manualRefresh);
+                
+                // Setup search functionality
+                var searchInput = document.querySelector('#txtAdminPickTitle');
+                
+                searchInput.addEventListener('input', function(e) {
+                    clearTimeout(searchTimeout);
+                    var query = e.target.value.trim();
+                    
+                    if (query.length >= 2) {
+                        searchTimeout = setTimeout(function() {
+                            searchLibrary(query);
+                        }, 300); // Debounce search for 300ms
+                    } else {
+                        hideSearchResults();
+                    }
+                });
+                
+                // Hide results when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!e.target.closest('#txtAdminPickTitle') && !e.target.closest('#searchResults')) {
+                        hideSearchResults();
+                    }
+                });
+                
+                // Show results again when focusing on input (if there's text)
+                searchInput.addEventListener('focus', function(e) {
+                    if (e.target.value.trim().length >= 2 && !isSearching) {
+                        searchLibrary(e.target.value.trim());
+                    }
+                });
+                
+                // Handle keyboard navigation
+                searchInput.addEventListener('keydown', function(e) {
+                    var dropdown = document.getElementById('searchResults');
+                    var items = dropdown.querySelectorAll('.search-result-item');
+                    
+                    if (e.key === 'Escape') {
+                        hideSearchResults();
+                        e.preventDefault();
+                    }
+                    
+                    // You could add arrow key navigation here if desired
+                });
             });
         })();
     </script>
