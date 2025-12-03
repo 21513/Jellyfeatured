@@ -27,5 +27,5 @@ public class Plugin : BasePlugin<PluginConfiguration>
     public override string Description => "A simple Jellyfin plugin";
 
     /// <inheritdoc />
-    public override Guid Id => Guid.Parse("12345678-1234-5678-9012-123456789012");
+    public override Guid Id => Guid.Parse("639b5171-918b-4b24-82e4-d35c10be63a4");
 }
