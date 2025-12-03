@@ -1,0 +1,31 @@
+using System;
+using MediaBrowser.Common.Configuration;
+using MediaBrowser.Common.Plugins;
+using MediaBrowser.Model.Serialization;
+
+namespace Jellyfeatured;
+
+/// <summary>
+/// The main plugin class.
+/// </summary>
+public class Plugin : BasePlugin<PluginConfiguration>
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Plugin"/> class.
+    /// </summary>
+    /// <param name="applicationPaths">Instance of the <see cref="IApplicationPaths"/> interface.</param>
+    /// <param name="xmlSerializer">Instance of the <see cref="IXmlSerializer"/> interface.</param>
+    public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer)
+        : base(applicationPaths, xmlSerializer)
+    {
+    }
+
+    /// <inheritdoc />
+    public override string Name => "Jellyfeatured";
+
+    /// <inheritdoc />
+    public override string Description => "A simple Jellyfin plugin";
+
+    /// <inheritdoc />
+    public override Guid Id => Guid.Parse("12345678-1234-5678-9012-123456789012");
+}
