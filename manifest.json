@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.0.0.22",
+                "changelog": "Updated featured items",
+                "targetAbi": "10.11.4.0",
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.22/Jellyfeatured-v0.0.0.22.zip",
+                "checksum": "7d3a5f721fb6b7ca6406876e415db107",
+                "timestamp": "2025-12-03T21:21:34Z"
+            },
+            {
                 "version": "0.0.0.21",
                 "changelog": "Updated config page and fixed some other minor issues",
                 "targetAbi": "10.11.4.0",
