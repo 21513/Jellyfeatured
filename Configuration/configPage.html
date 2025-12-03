@@ -127,7 +127,11 @@
                     
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block">
-                            <span>Save</span>
+                            <span>💾 Save Settings</span>
+                        </button>
+                        
+                        <button is="emby-button" type="button" id="btnTestConfig" class="raised button-alt block" style="margin-top: 0.5em;">
+                            <span>🔧 Test Configuration API</span>
                         </button>
                     </div>
                 </form>
@@ -142,16 +146,47 @@
             var isSearching = false;
 
             function loadConfiguration() {
+                console.log('Starting to load configuration for plugin:', pluginId);
                 Dashboard.showLoadingMsg();
+                
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    console.log('Loaded configuration:', config);
-                    document.querySelector('#txtAdminPickTitle').value = config.AdminPickTitle || '';
-                    document.querySelector('#txtRefreshIntervalHours').value = config.RefreshIntervalHours || 24;
+                    console.log('Configuration loaded successfully:', config);
+                    
+                    // Set form values
+                    var titleInput = document.querySelector('#txtAdminPickTitle');
+                    var intervalInput = document.querySelector('#txtRefreshIntervalHours');
+                    
+                    if (titleInput) {
+                        titleInput.value = config.AdminPickTitle || '';
+                        console.log('Set admin pick title to:', titleInput.value);
+                    } else {
+                        console.error('Could not find admin pick title input');
+                    }
+                    
+                    if (intervalInput) {
+                        intervalInput.value = config.RefreshIntervalHours || 24;
+                        console.log('Set refresh interval to:', intervalInput.value);
+                    } else {
+                        console.error('Could not find refresh interval input');
+                    }
+                    
                     Dashboard.hideLoadingMsg();
+                    console.log('Configuration loading complete');
+                    
                 }).catch(function(error) {
-                    console.error('Load error:', error);
+                    console.error('Failed to load configuration:', error);
                     Dashboard.hideLoadingMsg();
-                    Dashboard.alert('Failed to load configuration.');
+                    
+                    var errorMsg = 'Failed to load configuration.';
+                    if (error && error.message) {
+                        errorMsg += ' Error: ' + error.message;
+                    }
+                    
+                    if (Dashboard.alert) {
+                        Dashboard.alert(errorMsg);
+                    } else {
+                        alert(errorMsg);
+                    }
                 });
             }
 
@@ -238,27 +273,51 @@
 
             function saveConfiguration(e) {
                 e.preventDefault();
+                console.log('Save button clicked, preventing default and starting save...');
                 Dashboard.showLoadingMsg();
 
+                var adminPickTitle = document.querySelector('#txtAdminPickTitle').value.trim();
                 var refreshInterval = parseInt(document.querySelector('#txtRefreshIntervalHours').value) || 24;
                 if (refreshInterval < 1) refreshInterval = 1;
                 if (refreshInterval > 168) refreshInterval = 168;
 
                 var config = {
-                    AdminPickTitle: document.querySelector('#txtAdminPickTitle').value.trim() || '',
-                    RefreshIntervalHours: refreshInterval
+                    AdminPickTitle: adminPickTitle,
+                    RefreshIntervalHours: refreshInterval,
+                    LastManualRefresh: 0
                 };
 
-                console.log('Saving configuration:', config);
+                console.log('Preparing to save config:', config);
+                console.log('Plugin ID:', pluginId);
 
-                ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
+                ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                    console.log('Save successful! Result:', result);
                     Dashboard.hideLoadingMsg();
-                    Dashboard.alert('Configuration saved successfully!');
-                    console.log('Configuration saved successfully');
+                    
+                    // Show success message
+                    if (Dashboard.alert) {
+                        Dashboard.alert('Settings saved successfully!');
+                    } else {
+                        alert('Settings saved successfully!');
+                    }
+                    
+                    // Reload configuration to verify it was saved
+                    setTimeout(loadConfiguration, 500);
+                    
                 }).catch(function(error) {
+                    console.error('Save failed! Error:', error);
                     Dashboard.hideLoadingMsg();
-                    console.error('Save error:', error);
-                    Dashboard.alert('Failed to save configuration. Please try again.');
+                    
+                    var errorMsg = 'Failed to save settings.';
+                    if (error && error.message) {
+                        errorMsg += ' Error: ' + error.message;
+                    }
+                    
+                    if (Dashboard.alert) {
+                        Dashboard.alert(errorMsg);
+                    } else {
+                        alert(errorMsg);
+                    }
                 });
             }
 
@@ -294,11 +353,50 @@
                     Dashboard.hideLoadingMsg();
                 });
             }
+            
+            function testConfiguration() {
+                console.log('Testing configuration API...');
+                Dashboard.showLoadingMsg();
+                
+                console.log('ApiClient available:', !!window.ApiClient);
+                console.log('Plugin ID:', pluginId);
+                
+                if (!window.ApiClient) {
+                    Dashboard.hideLoadingMsg();
+                    alert('ApiClient not available!');
+                    return;
+                }
+                
+                // Test loading first
+                ApiClient.getPluginConfiguration(pluginId).then(function(config) {
+                    console.log('Test load successful:', config);
+                    
+                    // Test saving with a timestamp
+                    var testConfig = {
+                        AdminPickTitle: config.AdminPickTitle || '',
+                        RefreshIntervalHours: config.RefreshIntervalHours || 24,
+                        LastManualRefresh: Date.now()
+                    };
+                    
+                    console.log('Testing save with config:', testConfig);
+                    
+                    return ApiClient.updatePluginConfiguration(pluginId, testConfig);
+                }).then(function(result) {
+                    console.log('Test save successful:', result);
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.alert('Configuration API test successful!');
+                }).catch(function(error) {
+                    console.error('Configuration API test failed:', error);
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.alert('Configuration API test failed: ' + (error.message || error));
+                });
+            }
 
             document.addEventListener('DOMContentLoaded', function () {
                 loadConfiguration();
                 document.querySelector('#jellyfeaturedConfigForm').addEventListener('submit', saveConfiguration);
                 document.querySelector('#btnManualRefresh').addEventListener('click', manualRefresh);
+                document.querySelector('#btnTestConfig').addEventListener('click', testConfiguration);
                 
                 // Setup search functionality
                 var searchInput = document.querySelector('#txtAdminPickTitle');

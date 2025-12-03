@@ -26,8 +26,8 @@
 
 #carousel-dots {
     position: absolute;
-    bottom: 15px;
-    left: 50%;
+    bottom: 16px;
+    right: 16px;
     transform: translateX(-50%);
     display: flex;
     gap: 8px;
@@ -78,11 +78,6 @@
 .carousel-slide:hover::after {
     transform: translateY(0) translateX(50%);
     opacity: 0;
-}
-
-.carousel-slide:hover {
-    transform: scale(1.01);
-    transition: transform 0.3s ease-out, opacity 0.8s ease-in-out;
 }
 
 
