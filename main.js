@@ -61,7 +61,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             
             const data = await response.json();
             if (data.Items && data.Items.length > 0) {
-                // Find exact match or closest match by year
                 let bestMatch = data.Items[0];
                 
                 if (year) {
