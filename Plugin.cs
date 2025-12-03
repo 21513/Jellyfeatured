@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Text.Json;
 using MediaBrowser.Common.Configuration;
@@ -203,102 +204,48 @@ public class Plugin : BasePlugin<PluginConfiguration>
         try
         {
             var webPath = Path.Combine(applicationPaths.WebPath, "jellyfeatured-inject.js");
+            var assembly = Assembly.GetExecutingAssembly();
+            
+            // Load templates from embedded resources
+            var htmlInject = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.html");
+            var jsInject = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.js");
+            var cssInject = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.css");
             
             // Create JavaScript array from recommendations
             var recommendationsJs = string.Join(",\n        ", recommendations.Select(r => 
                 $"{{ title: '{EscapeJs(r.Title)}', type: '{EscapeJs(r.Type)}', year: '{EscapeJs(r.Year)}', rating: '{EscapeJs(r.Rating)}' }}"));
             
-            var scriptContent = $@"
-// Jellyfeatured Auto-Injector with Recommendations
-console.log('🎬 Jellyfeatured: Auto-injector loaded');
-
-const recommendations = [
-        {recommendationsJs}
-    ];
-
-(function() {{
-    function createFeaturedDiv() {{
-        if (document.getElementById('jellyfeatured-div')) return;
-        
-        const pathname = window.location.pathname;
-        if (!pathname.includes('home') && pathname !== '/' && pathname !== '/web/' && pathname !== '/web/index.html') {{
-            return;
-        }}
-        
-        console.log('🎬 Jellyfeatured: Attempting injection...');
-        
-        const targetContainer = document.querySelector('.homePage');
-        if (targetContainer) {{
-            const featuredDiv = document.createElement('div');
-            featuredDiv.id = 'jellyfeatured-div';
-            featuredDiv.style.cssText = `
-                width: 100%;
-                margin: 20px 0;
-                padding: 20px;
-                background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-                border-radius: 12px;
-                color: white;
-                position: relative;
-                z-index: 1000;
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-            `;
-            
-            // Create recommendation HTML
-            let recommendationsHtml = '<h2 style=""margin: 0 0 15px 0; font-size: 24px;"">🎬 Featured Recommendations</h2>';
-            if (recommendations.length > 0) {{
-                recommendationsHtml += '<div style=""display: grid; gap: 10px;"">';
-                recommendations.forEach((rec, index) => {{
-                    recommendationsHtml += `
-                        <div style=""background: rgba(255,255,255,0.1); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;"">
-                            <div>
-                                <div style=""font-weight: bold; font-size: 16px;"">${{rec.title}} ${{rec.year ? '(' + rec.year + ')' : ''}}</div>
-                                <div style=""font-size: 12px; opacity: 0.8; margin-top: 2px;"">${{rec.type}}</div>
-                            </div>
-                            <div style=""font-size: 14px; font-weight: bold; background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px;"">
-                                ⭐ ${{rec.rating}}
-                            </div>
-                        </div>
-                    `;
-                }});
-                recommendationsHtml += '</div>';
-            }} else {{
-                recommendationsHtml += '<p style=""opacity: 0.8;"">Loading recommendations...</p>';
-            }}
-            
-            featuredDiv.innerHTML = recommendationsHtml;
-            
-            targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
-            console.log('✅ Jellyfeatured: Successfully injected recommendations!');
-        }}
-    }}
-    
-    // Multiple injection attempts
-    createFeaturedDiv();
-    setTimeout(createFeaturedDiv, 500);
-    setTimeout(createFeaturedDiv, 1000);
-    setTimeout(createFeaturedDiv, 2000);
-    
-    // Watch for navigation changes
-    const observer = new MutationObserver(() => setTimeout(createFeaturedDiv, 300));
-    if (document.body) observer.observe(document.body, {{ childList: true, subtree: true }});
-    
-    // URL change detection
-    let lastUrl = location.href;
-    setInterval(() => {{
-        if (location.href !== lastUrl) {{
-            lastUrl = location.href;
-            setTimeout(createFeaturedDiv, 200);
-        }}
-    }}, 1000);
-}})();";
+            // Replace placeholders in templates
+            var processedHtml = htmlInject.Replace("{{CSS_STYLES}}", cssInject);
+            var scriptContent = jsInject
+                .Replace("{{RECOMMENDATIONS_DATA}}", recommendationsJs)
+                .Replace("{{HTML_TEMPLATE}}", EscapeJs(processedHtml));
             
             await File.WriteAllTextAsync(webPath, scriptContent);
-            _logger.LogInformation("📄 Created enhanced web script with recommendations");
+            _logger.LogInformation("📄 Created enhanced web script with recommendations from templates");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "❌ Failed to create web script");
+        }
+    }
+    
+    private async Task<string> LoadEmbeddedResourceAsync(Assembly assembly, string resourceName)
+    {
+        using (var stream = assembly.GetManifestResourceStream(resourceName))
+        {
+            if (stream != null)
+            {
+                using (var reader = new StreamReader(stream))
+                {
+                    return await reader.ReadToEndAsync();
+                }
+            }
+            else
+            {
+                _logger.LogWarning($"Could not find embedded resource: {resourceName}");
+                return "";
+            }
         }
     }
     

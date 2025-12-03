@@ -15,6 +15,9 @@
 
   <ItemGroup>
     <EmbeddedResource Include="jellyfeatured\**" />
+    <EmbeddedResource Include="main.html" />
+    <EmbeddedResource Include="main.js" />
+    <EmbeddedResource Include="main.css" />
   </ItemGroup>
 
 </Project>
