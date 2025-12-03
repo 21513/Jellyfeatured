@@ -13,8 +13,8 @@
                 "changelog": "Updated featured items",
                 "targetAbi": "10.11.4.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.24/Jellyfeatured-v0.0.0.24.zip",
-                "checksum": "9c699780cd41dcd65d2297f26a8e1d14",
-                "timestamp": "2025-12-04T00:11:55Z"
+                "checksum": "7671c02ec4609fcbf51dd480b79ba6c8",
+                "timestamp": "2025-12-04T00:15:58Z"
             },
             {
                 "version": "0.0.0.23",
