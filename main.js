@@ -7,6 +7,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     let isUserInteracting = false;
     let injectionInProgress = false;
     let injectionComplete = false;
+    let apiCallCount = 0;
+    let lastApiCall = 0;
     
     function getJellyfinApiKey() {
         // Try to get API key from multiple locations
@@ -50,10 +52,47 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             return null;
         }
         
+        // Rate limiting to prevent API flooding
+        const now = Date.now();
+        if (now - lastApiCall < 1000) { // At least 1 second between API calls
+            console.log('🎬 Jellyfeatured: API rate limited, skipping call');
+            return null;
+        }
+        
+        if (apiCallCount > 10) { // Max 10 API calls per session
+            console.log('🎬 Jellyfeatured: API call limit reached, skipping call');
+            return null;
+        }
+        
+        // Avoid API calls during active media playback to prevent interference
+        if (document.querySelector('.videoPlayerContainer.active') ||
+            document.querySelector('video[src]') ||
+            document.querySelector('audio[src]') ||
+            document.querySelector('[data-playing="true"]') ||
+            window.currentlyPlaying) {
+            console.log('🎬 Jellyfeatured: Media playback active, skipping API call');
+            return null;
+        }
+
         try {
+            lastApiCall = now;
+            apiCallCount++;
+            
             const searchUrl = `${baseUrl}/Items?searchTerm=${encodeURIComponent(title)}&Recursive=true&Fields=PrimaryImageAspectRatio,BackdropImageTags,ImageTags&ImageTypeLimit=1&EnableImageTypes=Primary,Backdrop,Logo&Limit=5&api_key=${apiKey}`;
             
-            const response = await fetch(searchUrl);
+            // Use a shorter timeout to avoid blocking
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
+            const response = await fetch(searchUrl, { 
+                signal: controller.signal,
+                headers: {
+                    'Cache-Control': 'max-age=300' // Cache for 5 minutes
+                }
+            });
+            
+            clearTimeout(timeoutId);
+            
             if (!response.ok) {
                 throw new Error(`Search failed: ${response.status}`);
             }
@@ -74,13 +113,15 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 return bestMatch;
             }
         } catch (e) {
-            console.log(`Failed to search for ${title}:`, e);
+            if (e.name === 'AbortError') {
+                console.log('🎬 Jellyfeatured: API call timed out for', title);
+            } else {
+                console.log(`🎬 Jellyfeatured: API call failed for ${title}:`, e.message);
+            }
         }
         
         return null;
-    }
-    
-    function getBackdropImageUrl(title, year) {
+    }    function getBackdropImageUrl(title, year) {
         // Return a promise that resolves to the backdrop URL
         return searchForItem(title, year).then(item => {
             if (item && item.BackdropImageTags && item.BackdropImageTags.length > 0) {
@@ -120,13 +161,15 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         
         // Create slide content structure with logo placeholder
         slide.innerHTML = `
-            <div class="slide-logo-container">
-                <img class="slide-logo" style="display: none;" alt="${recommendation.title} logo" />
-            </div>
             <div class="slide-content">
-                <div class="slide-title">${recommendation.title} ${recommendation.year ? '(' + recommendation.year + ')' : ''}</div>
-                <div class="slide-subtitle">${recommendation.type}</div>
-                <div class="slide-rating">⭐ ${recommendation.rating}</div>
+                <div class="slide-logo-container">
+                    <img class="slide-logo" style="display: none;" alt="${recommendation.title} logo" />
+                </div>
+                <div class="slide-text-content">
+                    <div class="slide-title">${recommendation.title} ${recommendation.year ? '(' + recommendation.year + ')' : ''}</div>
+                    <div class="slide-subtitle">${recommendation.type}</div>
+                    <div class="slide-rating">⭐ ${recommendation.rating}</div>
+                </div>
             </div>
         `;
         
@@ -256,14 +299,24 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     async function navigateToMedia(title, year) {
         console.log(`🎬 Navigating to: ${title} ${year ? '(' + year + ')' : ''}`);
         
+        // Extra safety check before navigation
         try {
             // Search for the item to get its ID
             const item = await searchForItem(title, year);
             if (item && item.Id) {
-                // Navigate directly to the item's detail page
-                const detailUrl = `${window.location.origin}/web/index.html#!/details?id=${item.Id}`;
-                window.location.href = detailUrl;
-                return;
+                // Use Jellyfin's built-in navigation if available
+                if (window.Emby && window.Emby.Page && window.Emby.Page.show) {
+                    window.Emby.Page.show(`/details?id=${item.Id}`);
+                    return;
+                } else if (window.Dashboard && window.Dashboard.navigate) {
+                    window.Dashboard.navigate(`details?id=${item.Id}`);
+                    return;
+                } else {
+                    // Fallback to direct navigation
+                    const detailUrl = `${window.location.origin}/web/index.html#!/details?id=${item.Id}`;
+                    window.location.href = detailUrl;
+                    return;
+                }
             }
         } catch (e) {
             console.log('Failed to find item for navigation:', e);
@@ -300,8 +353,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         console.log('🎬 Jellyfeatured: Starting carousel injection...');
         injectionInProgress = true;
         
-        const targetContainer = document.querySelector('.homePage');
-        if (targetContainer) {
+        try {
+            const targetContainer = document.querySelector('.homePage');
+            if (targetContainer) {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlTemplate;
             const featuredDiv = tempDiv.firstElementChild;

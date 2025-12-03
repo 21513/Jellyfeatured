@@ -26,10 +26,10 @@
 #carousel-dots {
     position: absolute;
     bottom: 16px;
-    right: 16px;
+    right: 0;
     transform: translateX(-50%);
     display: flex;
-    gap: 8px;
+    padding: 4px;
     z-index: 10;
 }
 
@@ -87,22 +87,29 @@
     padding: 60px 20px 20px;
     color: var(--textColor, rgb(209, 213, 219));
     font-family: "Inter", sans-serif;
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
 }
 
+/* Logo Container - Small icon next to text */
 .slide-logo-container {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    z-index: 5;
-    max-width: 200px;
-    max-height: 80px;
+    flex-shrink: 0;
+    max-width: 64px;
+    max-height: 64px;
+    margin-bottom: 2px; /* Align with text baseline */
 }
 
 .slide-logo {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
-    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8));
+    filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8));
+}
+
+.slide-text-content {
+    flex: 1;
+    min-width: 0; /* Prevent flex overflow */
 }
 
 .slide-title {
@@ -184,6 +191,7 @@
     
     .slide-content {
         padding: 40px 15px 15px;
+        gap: 8px;
     }
     
     .slide-title {
@@ -201,10 +209,8 @@
     
     /* Smaller logo on mobile */
     .slide-logo-container {
-        top: 10px;
-        right: 10px;
-        max-width: 120px;
-        max-height: 50px;
+        max-width: 30px;
+        max-height: 30px;
     }
 }
 
