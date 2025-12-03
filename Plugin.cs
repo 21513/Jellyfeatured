@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Text.Json;
+using System.Threading;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Serialization;
@@ -22,11 +23,14 @@ namespace Jellyfeatured;
 /// <summary>
 /// The main plugin class.
 /// </summary>
-public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
+public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
 {
     private readonly ILibraryManager _libraryManager;
     private readonly ILogger<Plugin> _logger;
     private readonly string _recommendationsPath;
+    private readonly IApplicationPaths _applicationPaths;
+    private Timer? _refreshTimer;
+    private bool _disposed = false;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Plugin"/> class.
@@ -40,12 +44,37 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         _libraryManager = libraryManager;
         _logger = logger;
+        _applicationPaths = applicationPaths;
         _recommendationsPath = Path.Combine(applicationPaths.DataPath, "jellyfeatured-recommendations.json");
         
         _logger.LogInformation("🎬 Jellyfeatured Plugin: Starting initialization...");
         
         // Generate recommendations and create web resources
         _ = Task.Run(async () => await InitializePluginAsync(applicationPaths));
+        
+        // Start periodic refresh timer
+        StartRefreshTimer(applicationPaths);
+        
+        // Subscribe to configuration changes
+        ConfigurationChanged += OnConfigurationChanged;
+    }
+    
+    private void OnConfigurationChanged(object? sender, BasePluginConfiguration e)
+    {
+        var config = (PluginConfiguration)e;
+        
+        // Check if this is a manual refresh request
+        if (config.LastManualRefresh > 0)
+        {
+            _logger.LogInformation("🔄 Manual refresh requested, triggering immediate refresh...");
+            _ = Task.Run(async () => await RefreshRecommendations(_applicationPaths));
+        }
+        
+        _logger.LogInformation("🔧 Configuration changed, restarting refresh timer...");
+        
+        // Restart timer with new interval
+        _refreshTimer?.Dispose();
+        StartRefreshTimer(_applicationPaths);
     }
 
     private async Task InitializePluginAsync(IApplicationPaths applicationPaths)
@@ -301,6 +330,63 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         if (string.IsNullOrEmpty(input)) return "";
         return input.Replace("'", "\\'").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r");
+    }
+    
+    private void StartRefreshTimer(IApplicationPaths applicationPaths)
+    {
+        try
+        {
+            var refreshInterval = TimeSpan.FromHours(Configuration.RefreshIntervalHours);
+            _logger.LogInformation($"🕒 Setting up refresh timer for every {Configuration.RefreshIntervalHours} hours");
+            
+            _refreshTimer = new Timer(async _ => await RefreshRecommendations(applicationPaths), 
+                null, refreshInterval, refreshInterval);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Failed to start refresh timer");
+        }
+    }
+    
+    private async Task RefreshRecommendations(IApplicationPaths applicationPaths)
+    {
+        try
+        {
+            _logger.LogInformation("🔄 Starting periodic refresh of recommendations...");
+            
+            // Generate fresh recommendations
+            var recommendations = await GenerateRecommendationsAsync();
+            
+            // Save recommendations to file
+            await SaveRecommendationsAsync(recommendations);
+            
+            // Create the enhanced injection script
+            await CreateWebScriptAsync(applicationPaths, recommendations);
+            
+            _logger.LogInformation("✅ Periodic refresh completed successfully!");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Periodic refresh failed");
+        }
+    }
+    
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _refreshTimer?.Dispose();
+            }
+            _disposed = true;
+        }
     }
 
     /// <inheritdoc />
