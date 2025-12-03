@@ -445,6 +445,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 injectionComplete = true;
                 injectionInProgress = false;
                 console.log('✅ Jellyfeatured: Successfully injected carousel!');
+            }
             } else {
                 injectionInProgress = false;
                 console.log('⚠️ Jellyfeatured: Target container (.homePage) not found');
