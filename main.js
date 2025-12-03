@@ -356,8 +356,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         try {
             const targetContainer = document.querySelector('.homePage');
             if (targetContainer) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = htmlTemplate;
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlTemplate;
             const featuredDiv = tempDiv.firstElementChild;
             
             if (featuredDiv) {
