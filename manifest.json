@@ -9,6 +9,14 @@
         "imageUrl": "",
         "versions": [
             {
+                "version": "0.0.0.14",
+                "changelog": "Fixed carousel not displaying any items",
+                "targetAbi": "10.11.4.0",
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.14/Jellyfeatured-v0.0.0.14.zip",
+                "checksum": "bdaeab923d4e9310b5e2f51fff8fccdf",
+                "timestamp": "2025-12-03T18:58:54Z"
+            },
+            {
                 "version": "0.0.0.13",
                 "changelog": "Fixed carousel flickering and added better click handling",
                 "targetAbi": "10.11.4.0",
