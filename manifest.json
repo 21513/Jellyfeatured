@@ -13,8 +13,8 @@
                 "changelog": "Change media based on device width",
                 "targetAbi": "10.11.4.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.16/Jellyfeatured-v0.0.0.16.zip",
-                "checksum": "22977b4b5116f3e0a8ca015e9a7867ad",
-                "timestamp": "2025-12-03T19:24:18Z"
+                "checksum": "19cf5c77473666d1f74bec0d6c02f68a",
+                "timestamp": "2025-12-03T19:34:38Z"
             },
             {
                 "version": "0.0.0.15",
