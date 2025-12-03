@@ -5,6 +5,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     let currentSlide = 0;
     let autoSlideInterval;
     let isUserInteracting = false;
+    let injectionInProgress = false;
+    let injectionComplete = false;
     
     function getJellyfinApiKey() {
         // Try to get API key from multiple locations
@@ -274,14 +276,29 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     async function createFeaturedCarousel() {
-        if (document.getElementById('jellyfeatured-div')) return;
+        // Enhanced duplicate prevention
+        if (document.getElementById('jellyfeatured-div')) {
+            console.log('🎬 Jellyfeatured: Already exists, skipping injection');
+            return;
+        }
+        
+        if (injectionInProgress) {
+            console.log('🎬 Jellyfeatured: Injection already in progress, skipping');
+            return;
+        }
+        
+        if (injectionComplete) {
+            console.log('🎬 Jellyfeatured: Injection already completed for this session, skipping');
+            return;
+        }
         
         const pathname = window.location.pathname;
         if (!pathname.includes('home') && pathname !== '/' && pathname !== '/web/' && pathname !== '/web/index.html') {
             return;
         }
         
-        console.log('🎬 Jellyfeatured: Attempting carousel injection...');
+        console.log('🎬 Jellyfeatured: Starting carousel injection...');
+        injectionInProgress = true;
         
         const targetContainer = document.querySelector('.homePage');
         if (targetContainer) {
@@ -371,27 +388,72 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 }
                 
                 targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
+                injectionComplete = true;
+                injectionInProgress = false;
                 console.log('✅ Jellyfeatured: Successfully injected carousel!');
+            } else {
+                injectionInProgress = false;
+                console.log('⚠️ Jellyfeatured: Target container (.homePage) not found');
             }
+        } catch (error) {
+            injectionInProgress = false;
+            console.error('❌ Jellyfeatured: Injection failed:', error);
         }
     }
     
-    // Multiple injection attempts
+    // Multiple injection attempts with better control
     createFeaturedCarousel();
-    setTimeout(() => createFeaturedCarousel(), 500);
-    setTimeout(() => createFeaturedCarousel(), 1000);
-    setTimeout(() => createFeaturedCarousel(), 2000);
+    setTimeout(() => {
+        if (!injectionComplete) createFeaturedCarousel();
+    }, 500);
+    setTimeout(() => {
+        if (!injectionComplete) createFeaturedCarousel();
+    }, 1000);
+    setTimeout(() => {
+        if (!injectionComplete) createFeaturedCarousel();
+    }, 2000);
     
-    // Watch for navigation changes
-    const observer = new MutationObserver(() => setTimeout(() => createFeaturedCarousel(), 300));
-    if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+    // Watch for navigation changes with better detection
+    const observer = new MutationObserver((mutations) => {
+        // Only react to significant DOM changes
+        const hasSignificantChanges = mutations.some(mutation => 
+            mutation.type === 'childList' && 
+            mutation.addedNodes.length > 0 &&
+            Array.from(mutation.addedNodes).some(node => 
+                node.nodeType === 1 && // Element node
+                (node.classList?.contains('homePage') || 
+                 node.querySelector?.('.homePage'))
+            )
+        );
+        
+        if (hasSignificantChanges && !injectionComplete) {
+            setTimeout(() => createFeaturedCarousel(), 300);
+        }
+    });
     
-    // URL change detection
+    if (document.body) {
+        observer.observe(document.body, { 
+            childList: true, 
+            subtree: true
+        });
+    }
+    
+    // URL change detection with reset for new pages
     let lastUrl = location.href;
     setInterval(() => {
         if (location.href !== lastUrl) {
             lastUrl = location.href;
-            setTimeout(() => createFeaturedCarousel(), 200);
+            // Reset injection state for new page navigation
+            if (!location.href.includes('home') && 
+                location.pathname !== '/' && 
+                location.pathname !== '/web/' && 
+                location.pathname !== '/web/index.html') {
+                injectionComplete = false;
+                injectionInProgress = false;
+            }
+            setTimeout(() => {
+                if (!injectionComplete) createFeaturedCarousel();
+            }, 200);
         }
     }, 1000);
 })();

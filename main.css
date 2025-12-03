@@ -56,7 +56,6 @@
     visibility: visible;
 }
 
-/* ElegantFin Card Hover Effect */
 .carousel-slide {
     overflow: hidden;
 }
@@ -79,8 +78,6 @@
     opacity: 0;
 }
 
-
-/* Slide Content Overlay */
 .slide-content {
     position: absolute;
     bottom: 0;
@@ -92,15 +89,13 @@
     font-family: "Inter", sans-serif;
 }
 
-/* Logo Container */
 .slide-logo-container {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: 20px;
+    right: 20px;
     z-index: 5;
-    max-width: 60%;
-    max-height: 40%;
+    max-width: 200px;
+    max-height: 80px;
 }
 
 .slide-logo {
@@ -202,6 +197,14 @@
     .carousel-dot {
         width: 8px;
         height: 8px;
+    }
+    
+    /* Smaller logo on mobile */
+    .slide-logo-container {
+        top: 10px;
+        right: 10px;
+        max-width: 120px;
+        max-height: 50px;
     }
 }
 
