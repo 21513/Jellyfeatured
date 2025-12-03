@@ -1,1 +1,0 @@
-Fork of https://github.com/IAmParadox27/jellyfin-plugin-media-bar
