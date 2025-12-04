@@ -1,5 +1,5 @@
 #jellyfeatured-div:hover {
-    transform: scale(1.02);
+    transform: scale(1.01);
     border-color: white !important;
     transition: transform 125ms, border-color 125ms;
 }

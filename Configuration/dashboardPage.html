@@ -76,19 +76,23 @@
         
         // Global functions for inline onclick handlers (required for Jellyfin 10.11.4)
         function moveCategoryUp(index) {
+            console.log('moveCategoryUp called with index:', index);
             if (index > 0) {
                 var temp = currentCategoryOrder[index];
                 currentCategoryOrder[index] = currentCategoryOrder[index - 1];
                 currentCategoryOrder[index - 1] = temp;
+                console.log('Category moved up, new order:', currentCategoryOrder);
                 populateCategoryList();
             }
         }
         
         function moveCategoryDown(index) {
+            console.log('moveCategoryDown called with index:', index);
             if (index < currentCategoryOrder.length - 1) {
                 var temp = currentCategoryOrder[index];
                 currentCategoryOrder[index] = currentCategoryOrder[index + 1];
                 currentCategoryOrder[index + 1] = temp;
+                console.log('Category moved down, new order:', currentCategoryOrder);
                 populateCategoryList();
             }
         }
@@ -123,17 +127,26 @@
         }
         
         function populateCategoryList() {
+            console.log('populateCategoryList called, currentCategoryOrder:', currentCategoryOrder);
             var categoryList = document.getElementById('categoryList');
-            if (!categoryList) return;
+            if (!categoryList) {
+                console.log('categoryList element not found');
+                return;
+            }
             
             categoryList.innerHTML = '';
             
             currentCategoryOrder.forEach(function(categoryName, index) {
                 if (availableCategories[categoryName]) {
+                    console.log('Creating category item for:', categoryName, 'at index:', index);
                     var categoryDiv = createCategoryItem(categoryName, index);
                     categoryList.appendChild(categoryDiv);
+                } else {
+                    console.log('Category not found in availableCategories:', categoryName);
                 }
             });
+            
+            console.log('populateCategoryList completed, categoryList children:', categoryList.children.length);
         }
         
         function createCategoryItem(categoryName, index) {
@@ -151,12 +164,12 @@
             var isLast = index === currentCategoryOrder.length - 1;
             
             var upButton = isFirst ? 
-                '<button type="button" disabled style="padding: 6px 12px; margin-right: 4px; opacity: 0.5;">↑</button>' :
-                '<button type="button" onclick="moveCategoryUp(' + index + ')" style="padding: 6px 12px; margin-right: 4px; cursor: pointer; background: var(--accent-color, #007acc); color: white; border: none; border-radius: 3px;">↑</button>';
+                '<button type="button" disabled style="padding: 8px 12px; margin-right: 8px; opacity: 0.5; background: #ccc; border: 1px solid #999; border-radius: 4px;">↑</button>' :
+                '<button type="button" onclick="moveCategoryUp(' + index + ')" style="padding: 8px 12px; margin-right: 8px; cursor: pointer; background: #007acc; color: white; border: none; border-radius: 4px; font-weight: bold;">↑</button>';
             
             var downButton = isLast ?
-                '<button type="button" disabled style="padding: 6px 12px; opacity: 0.5;">↓</button>' :
-                '<button type="button" onclick="moveCategoryDown(' + index + ')" style="padding: 6px 12px; cursor: pointer; background: var(--accent-color, #007acc); color: white; border: none; border-radius: 3px;">↓</button>';
+                '<button type="button" disabled style="padding: 8px 12px; opacity: 0.5; background: #ccc; border: 1px solid #999; border-radius: 4px;">↓</button>' :
+                '<button type="button" onclick="moveCategoryDown(' + index + ')" style="padding: 8px 12px; cursor: pointer; background: #007acc; color: white; border: none; border-radius: 4px; font-weight: bold;">↓</button>';
             
             div.innerHTML = 
                 '<div style="flex: 1;">' +
@@ -256,7 +269,18 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            console.log('Jellyfeatured config page loaded');
+            
+            // Initialize with default data immediately
             populateCategoryList();
+            
+            // Set default refresh interval
+            var intervalInput = document.querySelector('#txtRefreshIntervalHours');
+            if (intervalInput) {
+                intervalInput.value = 24;
+            }
+            
+            // Load actual configuration
             loadConfiguration();
             
             var form = document.querySelector('#jellyfeaturedConfigForm');
