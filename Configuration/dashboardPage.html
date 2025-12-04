@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Jellyfeatured Settings</title>
+</head>
+<body>
+    <div id="jellyfeaturedPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input,emby-checkbox,emby-select">
+        <div data-role="content">
+            <div class="content-primary">
+                <div class="sectionTitleContainer flex align-items-center">
+                    <h2 class="sectionTitle">Jellyfeatured Settings</h2>
+                </div>
+                
+                <p class="settingsDescription">Configure your home page carousel recommendations. Changes take effect after saving and may require a page refresh.</p>
+                
+                <form id="jellyfeaturedConfigForm">
+                    <div class="verticalSection">
+                        <h3>🎬 Carousel Content Order</h3>
+                        <div class="fieldDescription">
+                            Choose which type of content appears first in your recommendations carousel. Lower numbers appear first.
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                            <div class="inputContainer">
+                                <label for="latestReleasePriority">🆕 Latest Movie Release</label>
+                                <select is="emby-select" id="latestReleasePriority">
+                                    <option value="1">1st - Show First</option>
+                                    <option value="2">2nd</option>
+                                    <option value="3">3rd</option>
+                                    <option value="4">4th</option>
+                                    <option value="5">5th - Show Last</option>
+                                </select>
+                                <div class="fieldDescription">Most recently released movie by premiere date</div>
+                            </div>
+                            
+                            <div class="inputContainer">
+                                <label for="recentFilmsPriority">🎭 New Movies in Library</label>
+                                <select is="emby-select" id="recentFilmsPriority">
+                                    <option value="1">1st - Show First</option>
+                                    <option value="2">2nd</option>
+                                    <option value="3">3rd</option>
+                                    <option value="4">4th</option>
+                                    <option value="5">5th - Show Last</option>
+                                </select>
+                                <div class="fieldDescription">Most recently added movies to your library</div>
+                            </div>
+                            
+                            <div class="inputContainer">
+                                <label for="recentSeriesPriority">📺 New TV Shows in Library</label>
+                                <select is="emby-select" id="recentSeriesPriority">
+                                    <option value="1">1st - Show First</option>
+                                    <option value="2">2nd</option>
+                                    <option value="3">3rd</option>
+                                    <option value="4">4th</option>
+                                    <option value="5">5th - Show Last</option>
+                                </select>
+                                <div class="fieldDescription">Most recently added TV series to your library</div>
+                            </div>
+                            
+                            <div class="inputContainer">
+                                <label for="bestFilmsPriority">⭐ Top Rated Movies</label>
+                                <select is="emby-select" id="bestFilmsPriority">
+                                    <option value="1">1st - Show First</option>
+                                    <option value="2">2nd</option>
+                                    <option value="3">3rd</option>
+                                    <option value="4">4th</option>
+                                    <option value="5">5th - Show Last</option>
+                                </select>
+                                <div class="fieldDescription">Highest rated movies in your library</div>
+                            </div>
+                            
+                            <div class="inputContainer">
+                                <label for="bestSeriesPriority">🌟 Top Rated TV Shows</label>
+                                <select is="emby-select" id="bestSeriesPriority">
+                                    <option value="1">1st - Show First</option>
+                                    <option value="2">2nd</option>
+                                    <option value="3">3rd</option>
+                                    <option value="4">4th</option>
+                                    <option value="5">5th - Show Last</option>
+                                </select>
+                                <div class="fieldDescription">Highest rated TV shows in your library</div>
+                            </div>
+                        </div>
+                        
+                        <button is="emby-button" type="button" id="btnResetOrder" class="raised button-alt" style="margin-top: 1em;">
+                            🔄 Reset to Recommended Order
+                        </button>
+                    </div>
+                    
+                    <div class="verticalSection">
+                        <h3>⏰ Refresh Settings</h3>
+                        <div class="fieldDescription">
+                            Control how often the carousel updates with new recommendations.
+                        </div>
+                        
+                        <div class="inputContainer">
+                            <label for="txtRefreshIntervalHours">Automatic Refresh Every (hours)</label>
+                            <select is="emby-select" id="txtRefreshIntervalHours">
+                                <option value="1">1 hour</option>
+                                <option value="6">6 hours</option>
+                                <option value="12">12 hours</option>
+                                <option value="24">24 hours (Daily)</option>
+                                <option value="48">48 hours (Every 2 days)</option>
+                                <option value="72">72 hours (Every 3 days)</option>
+                                <option value="168">168 hours (Weekly)</option>
+                            </select>
+                            <div class="fieldDescription">
+                                How often to automatically refresh recommendations. More frequent updates use more server resources.
+                            </div>
+                        </div>
+                        
+                        <button is="emby-button" type="button" id="btnManualRefresh" class="raised button-alt" style="margin-top: 1em;">
+                            ⚡ Refresh Recommendations Now
+                        </button>
+                    </div>
+                    
+                    <div class="verticalSection" id="statusSection" style="display: none; padding: 15px; border-radius: 6px; margin-top: 20px;">
+                        <h4 id="statusTitle"></h4>
+                        <p id="statusMessage"></p>
+                    </div>
+                    
+                    <br>
+                    <button is="emby-button" type="submit" class="raised button-submit">
+                        Save Settings
+                    </button>
+                </form>
+                
+                <script type="text/javascript">
+                    (function() {
+                        var pluginId = "639b5171-918b-4b24-82e4-d35c10be63a4";
+                        
+                        var categoryMapping = {
+                            "latestReleasePriority": "Latest Release",
+                            "recentFilmsPriority": "Recently Added in Films", 
+                            "recentSeriesPriority": "Recently Added in Series",
+                            "bestFilmsPriority": "Best Rated in Films",
+                            "bestSeriesPriority": "Best Rated in Series"
+                        };
+                        
+                        function showStatus(title, message, isSuccess) {
+                            var statusSection = document.getElementById('statusSection');
+                            var statusTitle = document.getElementById('statusTitle');
+                            var statusMessage = document.getElementById('statusMessage');
+                            
+                            statusTitle.textContent = title;
+                            statusMessage.textContent = message;
+                            
+                            if (isSuccess) {
+                                statusSection.style.backgroundColor = '#d4edda';
+                                statusSection.style.borderColor = '#c3e6cb';
+                                statusSection.style.color = '#155724';
+                            } else {
+                                statusSection.style.backgroundColor = '#f8d7da';
+                                statusSection.style.borderColor = '#f5c6cb';
+                                statusSection.style.color = '#721c24';
+                            }
+                            
+                            statusSection.style.display = 'block';
+                            setTimeout(function() {
+                                statusSection.style.display = 'none';
+                            }, 5000);
+                        }
+                        
+                        function loadConfiguration() {
+                            console.log('Loading Jellyfeatured configuration...');
+                            
+                            ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                                console.log('Loaded config:', config);
+                                
+                                // Set refresh interval
+                                var refreshSelect = document.getElementById('txtRefreshIntervalHours');
+                                refreshSelect.value = (config.RefreshIntervalHours || 24).toString();
+                                
+                                // Convert category order array to priorities
+                                var categoryOrder = config.CategoryOrder || [
+                                    "Latest Release",
+                                    "Recently Added in Films", 
+                                    "Recently Added in Series",
+                                    "Best Rated in Films",
+                                    "Best Rated in Series"
+                                ];
+                                
+                                console.log('Category order from config:', categoryOrder);
+                                
+                                // Reset all to default first
+                                Object.keys(categoryMapping).forEach(function(selectId, index) {
+                                    document.getElementById(selectId).value = (index + 1).toString();
+                                });
+                                
+                                // Set actual priorities based on order
+                                categoryOrder.forEach(function(categoryName, index) {
+                                    Object.keys(categoryMapping).forEach(function(selectId) {
+                                        if (categoryMapping[selectId] === categoryName) {
+                                            document.getElementById(selectId).value = (index + 1).toString();
+                                            console.log('Set', selectId, 'to priority', index + 1);
+                                        }
+                                    });
+                                });
+                                
+                                showStatus('✓ Settings Loaded', 'Configuration loaded successfully from server.', true);
+                            }).catch(function(error) {
+                                console.error('Failed to load config:', error);
+                                // Set defaults on error
+                                document.getElementById('txtRefreshIntervalHours').value = "24";
+                                document.getElementById('latestReleasePriority').value = "1";
+                                document.getElementById('recentFilmsPriority').value = "2";
+                                document.getElementById('recentSeriesPriority').value = "3";
+                                document.getElementById('bestFilmsPriority').value = "4";
+                                document.getElementById('bestSeriesPriority').value = "5";
+                                
+                                showStatus('⚠ Default Settings', 'Using default settings. Could not load saved configuration.', false);
+                            });
+                        }
+                        
+                        function saveConfiguration(e) {
+                            e.preventDefault();
+                            console.log('Saving configuration...');
+                            
+                            Dashboard.showLoadingMsg();
+                            
+                            var refreshInterval = parseInt(document.getElementById('txtRefreshIntervalHours').value) || 24;
+                            
+                            // Convert priorities back to category order
+                            var priorities = [];
+                            Object.keys(categoryMapping).forEach(function(selectId) {
+                                var priority = parseInt(document.getElementById(selectId).value);
+                                var categoryName = categoryMapping[selectId];
+                                priorities.push({ priority: priority, category: categoryName });
+                                console.log('Category:', categoryName, 'Priority:', priority);
+                            });
+                            
+                            // Sort by priority and create ordered array
+                            priorities.sort(function(a, b) { return a.priority - b.priority; });
+                            var categoryOrder = priorities.map(function(item) { return item.category; });
+                            
+                            console.log('Final category order:', categoryOrder);
+                            
+                            var config = {
+                                CategoryOrder: categoryOrder,
+                                RefreshIntervalHours: refreshInterval,
+                                LastManualRefresh: 0  // Reset manual refresh flag
+                            };
+                            
+                            console.log('Saving config:', config);
+                            
+                            ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                                console.log('Save result:', result);
+                                Dashboard.hideLoadingMsg();
+                                showStatus('✓ Settings Saved', 'Your configuration has been saved and recommendations updated! Changes are now active.', true);
+                                
+                                // Reload to verify save worked
+                                setTimeout(function() {
+                                    loadConfiguration();
+                                }, 1000);
+                            }).catch(function(error) {
+                                console.error('Save failed:', error);
+                                Dashboard.hideLoadingMsg();
+                                showStatus('❌ Save Failed', 'Could not save settings. Please try again or check server logs.', false);
+                            });
+                        }
+                        
+                        function resetToDefaults() {
+                            console.log('Resetting to defaults...');
+                            document.getElementById('latestReleasePriority').value = "1";
+                            document.getElementById('recentFilmsPriority').value = "2";
+                            document.getElementById('recentSeriesPriority').value = "3";
+                            document.getElementById('bestFilmsPriority').value = "4";
+                            document.getElementById('bestSeriesPriority').value = "5";
+                            document.getElementById('txtRefreshIntervalHours').value = "24";
+                            
+                            showStatus('🔄 Reset Complete', 'Settings have been reset to recommended defaults. Click "Save Settings" to apply.', true);
+                        }
+                        
+                        function manualRefresh() {
+                            console.log('Manual refresh triggered...');
+                            var button = document.getElementById('btnManualRefresh');
+                            var originalText = button.textContent;
+                            button.disabled = true;
+                            button.textContent = '⏳ Refreshing...';
+                            
+                            Dashboard.showLoadingMsg();
+                            
+                            // Get current configuration first, then trigger refresh
+                            ApiClient.getPluginConfiguration(pluginId).then(function(currentConfig) {
+                                var config = currentConfig || {};
+                                
+                                // Keep existing settings but set refresh timestamp
+                                config.RefreshIntervalHours = config.RefreshIntervalHours || parseInt(document.getElementById('txtRefreshIntervalHours').value) || 24;
+                                config.LastManualRefresh = Date.now();
+                                
+                                console.log('Triggering manual refresh with config:', config);
+                                
+                                return ApiClient.updatePluginConfiguration(pluginId, config);
+                            }).then(function() {
+                                Dashboard.hideLoadingMsg();
+                                button.textContent = originalText;
+                                button.disabled = false;
+                                showStatus('⚡ Refresh Complete', 'Recommendations have been refreshed immediately! New content should appear in your carousel.', true);
+                            }).catch(function(error) {
+                                console.error('Refresh failed:', error);
+                                Dashboard.hideLoadingMsg();
+                                button.textContent = originalText;
+                                button.disabled = false;
+                                showStatus('❌ Refresh Failed', 'Could not refresh recommendations. Please try again or check server logs.', false);
+                            });
+                        }
+                        
+                        // Initialize when page loads
+                        function initialize() {
+                            console.log('Jellyfeatured page initializing...');
+                            
+                            loadConfiguration();
+                            
+                            var form = document.getElementById('jellyfeaturedConfigForm');
+                            if (form) {
+                                form.addEventListener('submit', saveConfiguration);
+                            }
+                            
+                            var resetBtn = document.getElementById('btnResetOrder');
+                            if (resetBtn) {
+                                resetBtn.addEventListener('click', resetToDefaults);
+                            }
+                            
+                            var refreshBtn = document.getElementById('btnManualRefresh');
+                            if (refreshBtn) {
+                                refreshBtn.addEventListener('click', manualRefresh);
+                            }
+                            
+                            console.log('Jellyfeatured page initialized');
+                        }
+                        
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', initialize);
+                        } else {
+                            initialize();
+                        }
+                    })();
+                </script>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

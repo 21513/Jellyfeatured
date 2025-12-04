@@ -62,14 +62,32 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     private void OnConfigurationChanged(object? sender, BasePluginConfiguration e)
     {
         var config = (PluginConfiguration)e;
+        _logger.LogInformation("Configuration changed, refreshing recommendations");
 
-        if (config.LastManualRefresh > 0)
-        {
-            _ = Task.Run(async () => await RefreshRecommendations(_applicationPaths));
-        }
+        // Always refresh recommendations when configuration changes
+        // This handles both category order changes and manual refresh requests
+        _ = Task.Run(async () => await RefreshRecommendationsAsync(_applicationPaths));
         
+        // Restart the timer with the new interval
         _refreshTimer?.Dispose();
         StartRefreshTimer(_applicationPaths);
+    }
+    
+    private async Task RefreshRecommendationsAsync(IApplicationPaths applicationPaths)
+    {
+        try
+        {
+            _logger.LogInformation("Refreshing recommendations...");
+            var recommendations = await GenerateRecommendationsAsync();
+            await SaveRecommendationsAsync(recommendations);
+            await CreateWebScriptAsync(applicationPaths, recommendations);
+            await InjectIntoIndexHtmlAsync(applicationPaths);
+            _logger.LogInformation("Recommendations refreshed successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to refresh recommendations");
+        }
     }
 
     private async Task InitializePluginAsync(IApplicationPaths applicationPaths)
@@ -363,7 +381,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             new PluginPageInfo
             {
                 Name = "Jellyfeatured",
-                EmbeddedResourcePath = string.Format("{0}.Configuration.simplePage.html", GetType().Namespace),
+                EmbeddedResourcePath = string.Format("{0}.Configuration.dashboardPage.html", GetType().Namespace),
                 EnableInMainMenu = true
             }
         };
