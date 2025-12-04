@@ -450,8 +450,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         }
     }
     
-    }
-    
     private string EscapeJs(string input)
     {
         if (string.IsNullOrEmpty(input)) return "";
