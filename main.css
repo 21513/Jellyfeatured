@@ -89,7 +89,6 @@
     font-family: "Inter", sans-serif;
     display: flex;
     align-items: flex-end;
-    gap: 32px;
     text-shadow: var(--shadow);
 }
 
@@ -98,6 +97,7 @@
     max-width: 256px;
     max-height: 256px;
     margin-bottom: 2px;
+    margin-right: 32px;
 }
 
 .slide-logo {
@@ -144,7 +144,7 @@
 .carousel-dot {
     width: 16px;
     height: 16px;
-    padding: 4px;
+    margin: 4px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.6);
