@@ -12,112 +12,50 @@
                     <h2 class="sectionTitle">Jellyfeatured configuration</h2>
                 </div>
                 
-                <p class="settingsDescription">Configure your featured section here. Changes take effect after saving.</p>
+                <p class="settingsDescription">Configure your featured section by editing the JSON configuration directly.</p>
                 
                 <form id="jellyfeaturedConfigForm">
                     <div class="verticalSection">
-                        <h3>Featured categories order</h3>
+                        <h3>Plugin Configuration</h3>
                         <div class="fieldDescription">
-                            Current order of content types in your featured carousel.
-                        </div>
-                        
-                        <div id="categoryOrderList" style="margin-top: 20px;">
-                            <!-- Categories will be populated here -->
-                        </div>
-                    </div>
-
-                    <div class="verticalSection">
-                        <h3>Admin's Picks</h3>
-                        <div class="fieldDescription">
-                            Enter media item IDs to create a curated "Admin's Pick" section. Find item IDs in your Jellyfin server logs or by inspecting media URLs.
-                        </div>
-                        
-                        <div class="inputContainer" style="margin-top: 15px;">
-                            <label class="inputLabel" for="adminPickIds">
-                                Media Item IDs (one per line)
-                            </label>
-                            <textarea is="emby-textarea" id="adminPickIds" rows="6" style="width: 100%; font-family: monospace;" placeholder="Enter Jellyfin media item IDs, one per line:
-abc123def456-789
-def456ghi789-012
-ghi789jkl012-345"></textarea>
-                            <div class="fieldDescription">
-                                Enter Jellyfin media item IDs (UUIDs) one per line. These will appear as "Admin's Pick" in your carousel.
-                            </div>
-                        </div>
-                        
-                        <div class="inputContainer" style="margin-top: 10px;">
-                            <label>
-                                <input is="emby-checkbox" type="checkbox" id="enableAdminPicks" />
-                                <span>Enable Admin's Picks section</span>
-                            </label>
-                            <div class="fieldDescription">
-                                When enabled, Admin's Pick will appear in your carousel with the specified media items.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="verticalSection">
-                        <h3>Advanced Configuration</h3>
-                        <div class="fieldDescription">
-                            Edit the raw JSON configuration directly. This allows full control over category order and settings.
+                            Edit the complete JSON configuration below. Changes take effect immediately after saving.
                         </div>
                         
                         <div class="inputContainer" style="margin-top: 15px;">
                             <label class="inputLabel" for="jsonEditor">
-                                Plugin Configuration (JSON)
+                                Configuration (JSON)
                             </label>
-                            <textarea is="emby-textarea" id="jsonEditor" rows="10" style="width: 100%; font-family: monospace; font-size: 12px;"></textarea>
+                            <textarea is="emby-textarea" id="jsonEditor" rows="20" style="width: 100%; font-family: monospace; font-size: 12px;"></textarea>
                             <div class="fieldDescription">
-                                Edit the JSON directly. CategoryOrder is an array of strings that determines display order.
+                                • <strong>CategoryOrder</strong>: Array of category variables determining carousel order<br>
+                                • <strong>RefreshIntervalHours</strong>: Number (24=daily, 168=weekly, 336=biweekly, 720=monthly)<br>
+                                • <strong>EnableAdminPicks</strong>: Boolean (true/false)<br>
+                                • <strong>AdminPickIds</strong>: Array of Jellyfin media item UUIDs (can be empty)<br><br>
+                                <strong>Available Category Variables:</strong><br>
+                                • <code>featuredPick</code> - Admin's Pick (requires EnableAdminPicks: true)<br>
+                                • <code>latestRelease</code> - Latest Movie Release<br>
+                                • <code>recentlyAddedFilms</code> - Recently Added Films<br>
+                                • <code>recentlyAddedSeries</code> - Recently Added Series<br>
+                                • <code>bestRatedFilms</code> - Best Rated Films<br>
+                                • <code>bestRatedSeries</code> - Best Rated Series
                             </div>
                         </div>
                         
-                        <button is="emby-button" type="button" id="btnLoadJson" class="raised button-alt" style="margin-top: 0.5em; margin-right: 0.5em;">
-                            Load Current Config
-                        </button>
-                        
-                        <button is="emby-button" type="button" id="btnSaveJson" class="raised submit" style="margin-top: 0.5em;">
-                            Save JSON Config
-                        </button>
-                        
-                        <div id="jsonMessage" style="margin-top: 1em; display: none;">
-                        </div>
-                    </div>
-
-                    <div class="verticalSection">
-                        <h3>Refresh settings</h3>
-                        <div class="fieldDescription">
-                            Control how often the featured section updates.
+                        <div style="margin-top: 1.5em;">
+                            <button is="emby-button" type="button" id="btnSaveJson" class="raised submit" style="margin-right: 0.5em;">
+                                Save Configuration
+                            </button>
+                            
+                            <button is="emby-button" type="button" id="btnReloadJson" class="raised button-alt" style="margin-right: 0.5em;">
+                                Reload from Server
+                            </button>
+                            
+                            <button is="emby-button" type="button" id="btnManualRefresh" class="raised button-alt">
+                                Refresh Carousel Now
+                            </button>
                         </div>
                         
-                        <div class="inputContainer" style="margin-top: 15px;">
-                            <label class="inputLabel" for="refreshInterval">
-                                Automatic Refresh Interval
-                            </label>
-                            <select is="emby-select" id="refreshInterval">
-                                <option value="24">Daily</option>
-                                <option value="168">Weekly</option>
-                                <option value="336">Biweekly</option>
-                                <option value="720">Monthly</option>
-                            </select>
-                        </div>
-                        
-                        <button is="emby-button" type="button" id="btnManualRefresh" class="raised button-alt" style="margin-top: 1em;">
-                            Manual refresh
-                        </button>
-                    </div>
-                    
-                    <div style="margin-top: 2em; padding-top: 2em; border-top: 1px solid rgba(255,255,255,0.15);">
-                        <button is="emby-button" type="button" id="btnSaveSettings" class="raised submit">
-                            Save Configuration
-                        </button>
-                        
-                        <button is="emby-button" type="button" id="btnCancelSettings" class="raised button-cancel" style="margin-left: 1em;">
-                            Cancel
-                        </button>
-                        
-                        <div id="configMessage" style="margin-top: 1em; color: #52b54b; display: none;">
-                            Settings saved successfully and applied to carousel.
+                        <div id="configMessage" style="margin-top: 1em; display: none;">
                         </div>
                     </div>
                 </form>
@@ -180,19 +118,19 @@ ghi789jkl012-345"></textarea>
                 ApiClient.getPluginConfiguration('7ebedd0b-a88c-4b1c-aa2c-4e8bbb82df84').then(function(config) {
                     currentConfig = config || {};
                     
+                    // Set defaults if not present
                     if (!currentConfig.CategoryOrder || currentConfig.CategoryOrder.length === 0) {
                         currentConfig.CategoryOrder = [
-                            "Admin's Pick",
-                            "Latest Release",
-                            "Recently Added in Films",
-                            "Recently Added in Series",
-                            "Best Rated in Films",
-                            "Best Rated in Series"
+                            "latestRelease",
+                            "recentlyAddedFilms",
+                            "recentlyAddedSeries",
+                            "bestRatedFilms",
+                            "bestRatedSeries"
                         ];
                     }
                     
                     if (!currentConfig.RefreshIntervalHours) {
-                        currentConfig.RefreshIntervalHours = 24; // Default to daily
+                        currentConfig.RefreshIntervalHours = 24;
                     }
                     
                     if (!currentConfig.AdminPickIds) {
@@ -203,10 +141,23 @@ ghi789jkl012-345"></textarea>
                         currentConfig.EnableAdminPicks = false;
                     }
                     
-                    renderCategoryList();
-                    document.getElementById('refreshInterval').value = currentConfig.RefreshIntervalHours;
-                    document.getElementById('adminPickIds').value = currentConfig.AdminPickIds.join('\n');
-                    document.getElementById('enableAdminPicks').checked = currentConfig.EnableAdminPicks;
+                    // Load current config into JSON editor
+                    loadJsonEditor();
+                }).catch(function(error) {
+                    showMessage('Failed to load configuration: ' + error.message, true);
+                    // Load defaults into editor on error
+                    currentConfig = {
+                        "CategoryOrder": [
+                            "latestRelease",
+                            "recentlyAddedFilms",
+                            "recentlyAddedSeries",
+                            "bestRatedFilms",
+                            "bestRatedSeries"
+                        ],
+                        "RefreshIntervalHours": 24,
+                        "AdminPickIds": [],
+                        "EnableAdminPicks": false
+                    };
                     loadJsonEditor();
                 });
             }
@@ -216,19 +167,23 @@ ghi789jkl012-345"></textarea>
                 jsonEditor.value = JSON.stringify(currentConfig, null, 2);
             }
 
-            function showJsonMessage(message, isError = false) {
-                const messageEl = document.getElementById('jsonMessage');
+            function showMessage(message, isError = false) {
+                const messageEl = document.getElementById('configMessage');
                 messageEl.textContent = message;
                 messageEl.style.color = isError ? '#ff6b6b' : '#52b54b';
                 messageEl.style.display = 'block';
+                messageEl.style.padding = '10px';
+                messageEl.style.backgroundColor = isError ? 'rgba(255, 107, 107, 0.1)' : 'rgba(82, 181, 75, 0.1)';
+                messageEl.style.border = isError ? '1px solid rgba(255, 107, 107, 0.3)' : '1px solid rgba(82, 181, 75, 0.3)';
+                messageEl.style.borderRadius = '4px';
                 setTimeout(() => {
                     messageEl.style.display = 'none';
-                }, 3000);
+                }, 4000);
             }
 
-            function loadJsonFromEditor() {
-                loadJsonEditor();
-                showJsonMessage('Current configuration loaded into editor.');
+            function reloadFromServer() {
+                loadConfiguration();
+                showMessage('Configuration reloaded from server. The editor now shows the current settings.');
             }
 
             function saveJsonFromEditor() {
@@ -236,7 +191,7 @@ ghi789jkl012-345"></textarea>
                     const jsonEditor = document.getElementById('jsonEditor');
                     const newConfig = JSON.parse(jsonEditor.value);
                     
-                    // Validate required fields
+                    // Basic validation
                     if (!newConfig.CategoryOrder || !Array.isArray(newConfig.CategoryOrder)) {
                         throw new Error('CategoryOrder must be an array of strings');
                     }
@@ -251,90 +206,32 @@ ghi789jkl012-345"></textarea>
                     
                     // Save to server
                     ApiClient.updatePluginConfiguration('7ebedd0b-a88c-4b1c-aa2c-4e8bbb82df84', currentConfig).then(function() {
-                        showJsonMessage('JSON configuration saved successfully and applied to carousel.');
-                        renderCategoryList();
-                        document.getElementById('refreshInterval').value = currentConfig.RefreshIntervalHours;
-                        document.getElementById('adminPickIds').value = (currentConfig.AdminPickIds || []).join('\n');
-                        document.getElementById('enableAdminPicks').checked = currentConfig.EnableAdminPicks || false;
+                        showMessage('Configuration saved successfully! Changes have been applied to your carousel.');
                     }).catch(function(error) {
-                        showJsonMessage('Failed to save configuration: ' + error.message, true);
+                        showMessage('Failed to save configuration: ' + error.message, true);
                     });
                     
                 } catch (error) {
-                    showJsonMessage('Invalid JSON: ' + error.message, true);
+                    showMessage('Invalid JSON: ' + error.message, true);
                 }
             }
 
-            function renderCategoryList() {
-                const container = document.getElementById('categoryOrderList');
-                
-                container.innerHTML = '';
-                
-                // Display categories in their current order
-                currentConfig.CategoryOrder.forEach((categoryName, index) => {
-                    const categoryDiv = document.createElement('div');
-                    categoryDiv.className = 'categoryItem';
-                    
-                    const positionDiv = document.createElement('div');
-                    positionDiv.className = 'positionNumber';
-                    positionDiv.textContent = index + 1;
-                    
-                    const infoDiv = document.createElement('div');
-                    infoDiv.className = 'categoryInfo';
-                    infoDiv.innerHTML = `
-                        <div class="categoryName">${categoryName}</div>
-                        <div class="categoryDescription">Category ${index + 1} in your carousel</div>
-                    `;
-                    
-                    categoryDiv.appendChild(positionDiv);
-                    categoryDiv.appendChild(infoDiv);
-                    
-                    container.appendChild(categoryDiv);
-                });
-            }
-
-            function saveConfiguration() {
-                currentConfig.RefreshIntervalHours = parseInt(document.getElementById('refreshInterval').value);
-                
-                // Get admin picks
-                const adminPickText = document.getElementById('adminPickIds').value.trim();
-                currentConfig.AdminPickIds = adminPickText ? adminPickText.split('\n').map(id => id.trim()).filter(id => id) : [];
-                currentConfig.EnableAdminPicks = document.getElementById('enableAdminPicks').checked;
-                
-                currentConfig.LastManualRefresh = new Date().toISOString();
-                
-                ApiClient.updatePluginConfiguration('7ebedd0b-a88c-4b1c-aa2c-4e8bbb82df84', currentConfig).then(function() {
-                    const messageEl = document.getElementById('configMessage');
-                    messageEl.style.display = 'block';
-                    setTimeout(() => {
-                        messageEl.style.display = 'none';
-                    }, 3000);
-                    loadJsonEditor(); // Update JSON editor with new values
-                });
-            }
-
             function manualRefresh() {
+                if (!currentConfig) return;
+                
                 currentConfig.LastManualRefresh = new Date().toISOString();
                 
                 ApiClient.updatePluginConfiguration('7ebedd0b-a88c-4b1c-aa2c-4e8bbb82df84', currentConfig).then(function() {
-                    const messageEl = document.getElementById('configMessage');
-                    messageEl.textContent = 'Carousel refreshed successfully.';
-                    messageEl.style.display = 'block';
-                    setTimeout(() => {
-                        messageEl.style.display = 'none';
-                        messageEl.textContent = 'Settings saved successfully and applied to carousel.';
-                    }, 3000);
+                    showMessage('Featured section refreshed successfully! New recommendations are now active.');
+                }).catch(function(error) {
+                    showMessage('Failed to refresh featured section: ' + error.message, true);
                 });
             }
 
-            document.getElementById('btnSaveSettings').addEventListener('click', saveConfiguration);
-            document.getElementById('btnManualRefresh').addEventListener('click', manualRefresh);
-            document.getElementById('btnLoadJson').addEventListener('click', loadJsonFromEditor);
+            // Event listeners
             document.getElementById('btnSaveJson').addEventListener('click', saveJsonFromEditor);
-            
-            document.getElementById('btnCancelSettings').addEventListener('click', function() {
-                window.history.back();
-            });
+            document.getElementById('btnReloadJson').addEventListener('click', reloadFromServer);
+            document.getElementById('btnManualRefresh').addEventListener('click', manualRefresh);
 
             // Load configuration on page load
             loadConfiguration();

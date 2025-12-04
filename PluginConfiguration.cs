@@ -10,16 +10,15 @@ public class PluginConfiguration : BasePluginConfiguration
 {
     /// <summary>
     /// Gets or sets the order in which categories are displayed.
-    /// Default order: Latest Release, Recently Added Films, Recently Added Series, Best Rated Films, Best Rated Series
+    /// Uses variable names for extensibility: featuredPick, latestRelease, recentlyAddedFilms, recentlyAddedSeries, bestRatedFilms, bestRatedSeries
     /// </summary>
     public List<string> CategoryOrder { get; set; } = new List<string>
     {
-        "Admin's Pick",
-        "Latest Release",
-        "Recently Added in Films", 
-        "Recently Added in Series",
-        "Best Rated in Films",
-        "Best Rated in Series"
+        "latestRelease",
+        "recentlyAddedFilms",
+        "recentlyAddedSeries",
+        "bestRatedFilms",
+        "bestRatedSeries"
     };
     
     /// <summary>

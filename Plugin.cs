@@ -110,6 +110,17 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         var recommendations = new List<RecommendationItem>();
         var categoryItems = new Dictionary<string, RecommendationItem>();
         
+        // Category variable mapping
+        var categoryMapping = new Dictionary<string, string>
+        {
+            { "featuredPick", "Admin's Pick" },
+            { "latestRelease", "Latest Release" },
+            { "recentlyAddedFilms", "Recently Added in Films" },
+            { "recentlyAddedSeries", "Recently Added in Series" },
+            { "bestRatedFilms", "Best Rated in Films" },
+            { "bestRatedSeries", "Best Rated in Series" }
+        };
+        
         try
         {
             var allItems = _libraryManager.GetItemList(new InternalItemsQuery
@@ -135,7 +146,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 
             if (latestMovie != null)
             {
-                categoryItems["Latest Release"] = new RecommendationItem
+                categoryItems["latestRelease"] = new RecommendationItem
                 {
                     Title = latestMovie.Name,
                     Type = "Latest Release",
@@ -151,7 +162,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 
             if (recentAddedMovie != null)
             {
-                categoryItems["Recently Added in Films"] = new RecommendationItem
+                categoryItems["recentlyAddedFilms"] = new RecommendationItem
                 {
                     Title = recentAddedMovie.Name,
                     Type = "Recently Added in Films",
@@ -167,7 +178,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 
             if (recentAddedShow != null)
             {
-                categoryItems["Recently Added in Series"] = new RecommendationItem
+                categoryItems["recentlyAddedSeries"] = new RecommendationItem
                 {
                     Title = recentAddedShow.Name,
                     Type = "Recently Added in Series",
@@ -184,7 +195,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 
             if (bestMovie != null)
             {
-                categoryItems["Best Rated in Films"] = new RecommendationItem
+                categoryItems["bestRatedFilms"] = new RecommendationItem
                 {
                     Title = bestMovie.Name,
                     Type = "Best Rated in Films",
@@ -201,7 +212,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 
             if (bestShow != null)
             {
-                categoryItems["Best Rated in Series"] = new RecommendationItem
+                categoryItems["bestRatedSeries"] = new RecommendationItem
                 {
                     Title = bestShow.Name,
                     Type = "Best Rated in Series",
@@ -210,7 +221,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 };
             }
             
-            // Handle Admin's Picks
+            // Handle Admin's Picks (featuredPick)
             if (Configuration.EnableAdminPicks && Configuration.AdminPickIds?.Count > 0)
             {
                 var adminPickItems = new List<RecommendationItem>();
@@ -240,20 +251,29 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                     }
                 }
                 
-                // If we have admin pick items, add them as a single category
+                // If we have admin pick items, add them as a category
                 if (adminPickItems.Count > 0)
                 {
-                    // For now, just use the first admin pick item for the category
-                    // You could enhance this to rotate through multiple picks
-                    categoryItems["Admin's Pick"] = adminPickItems.First();
+                    categoryItems["featuredPick"] = adminPickItems.First();
+                    
+                    // Ensure "featuredPick" is in CategoryOrder if it's not already there
+                    if (!Configuration.CategoryOrder.Contains("featuredPick"))
+                    {
+                        Configuration.CategoryOrder.Insert(0, "featuredPick");
+                    }
                 }
             }
-            
-            foreach (var categoryName in Configuration.CategoryOrder)
+            else
             {
-                if (categoryItems.ContainsKey(categoryName))
+                // Remove "featuredPick" from CategoryOrder if admin picks are disabled
+                Configuration.CategoryOrder.RemoveAll(c => c == "featuredPick");
+            }
+            
+            foreach (var categoryVariable in Configuration.CategoryOrder)
+            {
+                if (categoryItems.ContainsKey(categoryVariable))
                 {
-                    recommendations.Add(categoryItems[categoryName]);
+                    recommendations.Add(categoryItems[categoryVariable]);
                 }
             }
         }
