@@ -2,6 +2,8 @@
 
 Adds a featured section to the home screen of your Jellyfin server.
 
+![Jellyfeatured on desktop](jellyfeatured-desktop.png)
+
 ## Installation
 This plugin is made for Jellyfin `v10.11.4`
 
@@ -10,3 +12,5 @@ This plugin is made for Jellyfin `v10.11.4`
 * Restart your Jellyfin server.
 * Go to the plugin settings page to configure your featured items.
 * Sometimes you have to force refresh your web interface to see the changes: `Ctrl + Shift + R`
+
+![Jellyfeatured on mobile](jellyfeatured-mobile.png)
