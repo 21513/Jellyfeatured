@@ -4,73 +4,84 @@
     <meta charset="utf-8">
     <title>Jellyfeatured Configuration</title>
     <style>
-        .search-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: var(--theme-body-bg, #101010);
-            border: 1px solid var(--theme-primary-color, #00a4dc);
-            border-radius: 4px;
-            max-height: 300px;
-            overflow-y: auto;
-            z-index: 1000;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        .category-ordering {
+            background: var(--theme-secondary-bg, #181818);
+            border: 1px solid var(--theme-secondary-color, #333);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
         }
         
-        .search-result-item {
+        .sortable-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .category-item {
+            background: var(--theme-body-bg, #101010);
+            border: 1px solid var(--theme-secondary-color, #333);
+            border-radius: 6px;
             padding: 12px 16px;
-            cursor: pointer;
-            border-bottom: 1px solid var(--theme-secondary-color, #333);
+            margin-bottom: 8px;
+            cursor: grab;
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between;
+            transition: all 0.2s ease;
         }
         
-        .search-result-item:hover {
-            background-color: var(--theme-primary-color, #00a4dc);
-            color: white;
+        .category-item:hover {
+            background-color: var(--theme-primary-color-dark, #0080a8);
+            border-color: var(--theme-primary-color, #00a4dc);
         }
         
-        .search-result-item:last-child {
-            border-bottom: none;
+        .category-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
         }
         
-        .search-result-title {
+        .category-item.drag-over {
+            border-color: var(--theme-primary-color, #00a4dc);
+            background-color: var(--theme-primary-color-dark, #0080a8);
+        }
+        
+        .category-name {
             font-weight: 500;
-            margin-bottom: 4px;
+            color: var(--theme-text-color, #fff);
         }
         
-        .search-result-details {
+        .drag-handle {
+            color: var(--theme-text-color-secondary, #999);
+            font-size: 18px;
+            cursor: grab;
+            padding: 4px;
+        }
+        
+        .drag-handle:hover {
+            color: var(--theme-primary-color, #00a4dc);
+        }
+        
+        .category-description {
             font-size: 0.9em;
             color: var(--theme-text-color-secondary, #999);
+            margin-top: 4px;
         }
         
-        .search-result-item:hover .search-result-details {
-            color: rgba(255,255,255,0.8);
+        .reset-button {
+            margin-top: 12px;
         }
         
-        .search-result-type {
-            padding: 2px 6px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            background: var(--theme-secondary-color, #333);
-            color: white;
-            min-width: 50px;
-            text-align: center;
+        .info-box {
+            background: var(--theme-primary-color-dark, rgba(0, 164, 220, 0.1));
+            border: 1px solid var(--theme-primary-color, #00a4dc);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 16px;
         }
         
-        .search-loading {
-            padding: 16px;
-            text-align: center;
-            color: var(--theme-text-color-secondary, #999);
-        }
-        
-        .no-results {
-            padding: 16px;
-            text-align: center;
-            color: var(--theme-text-color-secondary, #999);
-            font-style: italic;
+        .info-box-icon {
+            margin-right: 8px;
         }
     </style>
 </head>
@@ -85,20 +96,22 @@
                     
                     <div class="verticalSection">
                         <div class="sectionTitleContainer flex align-items-center">
-                            <h3 class="sectionTitle">Admin's Pick (Optional)</h3>
+                            <h3 class="sectionTitle">Category Order</h3>
                         </div>
                         
-                        <div class="inputContainer">
-                            <label class="inputLabel" for="txtAdminPickTitle">Admin's Pick Title</label>
-                            <div style="position: relative;">
-                                <input is="emby-input" type="text" id="txtAdminPickTitle" placeholder="Search for a movie or series..." autocomplete="off" />
-                                <div id="searchResults" class="search-dropdown" style="display: none;">
-                                    <!-- Search results will be populated here -->
-                                </div>
-                            </div>
-                            <div class="fieldDescription">
-                                Start typing to search your library and select a movie or series to feature as a 6th recommendation category. Leave blank to show only the default 5 categories.
-                            </div>
+                        <div class="info-box">
+                            <span class="info-box-icon">ℹ️</span>
+                            Drag and drop the categories below to change the order they appear in the carousel. The first category will be shown first, and so on.
+                        </div>
+                        
+                        <div class="category-ordering">
+                            <ul id="categoryList" class="sortable-list">
+                                <!-- Categories will be populated here -->
+                            </ul>
+                            
+                            <button is="emby-button" type="button" id="btnResetOrder" class="raised button-alt reset-button">
+                                <span>🔄 Reset to Default Order</span>
+                            </button>
                         </div>
                     </div>
                     
@@ -142,8 +155,25 @@
     <script type="text/javascript">
         (function () {
             var pluginId = "639b5171-918b-4b24-82e4-d35c10be63a4";
-            var searchTimeout;
-            var isSearching = false;
+            
+            // Available categories with descriptions
+            var availableCategories = {
+                "Latest Release": "Most recently released movie by premiere date",
+                "Recently Added in Films": "Most recently added movie to your library", 
+                "Recently Added in Series": "Most recently added series to your library",
+                "Best Rated in Films": "Highest rated movie in your library",
+                "Best Rated in Series": "Highest rated series in your library"
+            };
+            
+            var defaultCategoryOrder = [
+                "Latest Release",
+                "Recently Added in Films", 
+                "Recently Added in Series",
+                "Best Rated in Films",
+                "Best Rated in Series"
+            ];
+            
+            var currentCategoryOrder = [];
 
             function loadConfiguration() {
                 console.log('Starting to load configuration for plugin:', pluginId);
@@ -153,15 +183,7 @@
                     console.log('Configuration loaded successfully:', config);
                     
                     // Set form values
-                    var titleInput = document.querySelector('#txtAdminPickTitle');
                     var intervalInput = document.querySelector('#txtRefreshIntervalHours');
-                    
-                    if (titleInput) {
-                        titleInput.value = config.AdminPickTitle || '';
-                        console.log('Set admin pick title to:', titleInput.value);
-                    } else {
-                        console.error('Could not find admin pick title input');
-                    }
                     
                     if (intervalInput) {
                         intervalInput.value = config.RefreshIntervalHours || 24;
@@ -169,6 +191,10 @@
                     } else {
                         console.error('Could not find refresh interval input');
                     }
+                    
+                    // Set category order
+                    currentCategoryOrder = config.CategoryOrder || defaultCategoryOrder;
+                    populateCategoryList();
                     
                     Dashboard.hideLoadingMsg();
                     console.log('Configuration loading complete');
@@ -187,84 +213,110 @@
                     } else {
                         alert(errorMsg);
                     }
+                    
+                    // Set defaults if loading failed
+                    currentCategoryOrder = defaultCategoryOrder;
+                    populateCategoryList();
                 });
             }
-
-            function searchLibrary(query) {
-                if (!query || query.length < 2) {
-                    hideSearchResults();
-                    return;
-                }
-
-                isSearching = true;
-                showSearchLoading();
-
-                var searchUrl = ApiClient.getUrl('Items', {
-                    searchTerm: query,
-                    Recursive: true,
-                    IncludeItemTypes: 'Movie,Series',
-                    Fields: 'BasicSyncInfo,PremiereDate',
-                    Limit: 20
-                });
-
-                ApiClient.getJSON(searchUrl).then(function(result) {
-                    displaySearchResults(result.Items || []);
-                    isSearching = false;
-                }).catch(function(error) {
-                    console.error('Search error:', error);
-                    hideSearchResults();
-                    isSearching = false;
-                });
-            }
-
-            function showSearchLoading() {
-                var dropdown = document.getElementById('searchResults');
-                dropdown.innerHTML = '<div class="search-loading">🔍 Searching...</div>';
-                dropdown.style.display = 'block';
-            }
-
-            function displaySearchResults(items) {
-                var dropdown = document.getElementById('searchResults');
+            
+            function populateCategoryList() {
+                var categoryList = document.getElementById('categoryList');
+                categoryList.innerHTML = '';
                 
-                if (items.length === 0) {
-                    dropdown.innerHTML = '<div class="no-results">No results found</div>';
-                } else {
-                    var html = '';
+                currentCategoryOrder.forEach(function(categoryName, index) {
+                    if (availableCategories[categoryName]) {
+                        var listItem = createCategoryItem(categoryName, index);
+                        categoryList.appendChild(listItem);
+                    }
+                });
+                
+                setupSortable();
+            }
+            
+            function createCategoryItem(categoryName, index) {
+                var li = document.createElement('li');
+                li.className = 'category-item';
+                li.draggable = true;
+                li.dataset.category = categoryName;
+                li.dataset.index = index;
+                
+                li.innerHTML = `
+                    <div>
+                        <div class="category-name">${escapeHtml(categoryName)}</div>
+                        <div class="category-description">${escapeHtml(availableCategories[categoryName])}</div>
+                    </div>
+                    <div class="drag-handle">⋮⋮</div>
+                `;
+                
+                return li;
+            }
+            
+            function setupSortable() {
+                var categoryList = document.getElementById('categoryList');
+                var draggedItem = null;
+                
+                categoryList.addEventListener('dragstart', function(e) {
+                    draggedItem = e.target.closest('.category-item');
+                    if (draggedItem) {
+                        draggedItem.classList.add('dragging');
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/html', draggedItem.outerHTML);
+                    }
+                });
+                
+                categoryList.addEventListener('dragend', function(e) {
+                    var item = e.target.closest('.category-item');
+                    if (item) {
+                        item.classList.remove('dragging');
+                    }
+                    
+                    // Remove drag-over class from all items
+                    var items = categoryList.querySelectorAll('.category-item');
                     items.forEach(function(item) {
-                        var year = '';
-                        if (item.PremiereDate) {
-                            year = new Date(item.PremiereDate).getFullYear();
-                        }
-                        
-                        var type = item.Type === 'Series' ? 'TV' : 'Movie';
-                        var details = year ? `(${year})` : '';
-                        
-                        html += `
-                            <div class="search-result-item" onclick="selectItem('${escapeHtml(item.Name)}')">
-                                <div style="flex: 1;">
-                                    <div class="search-result-title">${escapeHtml(item.Name)}</div>
-                                    <div class="search-result-details">${details}</div>
-                                </div>
-                                <div class="search-result-type">${type}</div>
-                            </div>
-                        `;
+                        item.classList.remove('drag-over');
                     });
-                    dropdown.innerHTML = html;
-                }
+                });
                 
-                dropdown.style.display = 'block';
+                categoryList.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    
+                    var targetItem = e.target.closest('.category-item');
+                    if (targetItem && targetItem !== draggedItem) {
+                        // Remove drag-over from all items
+                        var items = categoryList.querySelectorAll('.category-item');
+                        items.forEach(function(item) {
+                            item.classList.remove('drag-over');
+                        });
+                        
+                        targetItem.classList.add('drag-over');
+                    }
+                });
+                
+                categoryList.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    
+                    var targetItem = e.target.closest('.category-item');
+                    if (targetItem && draggedItem && targetItem !== draggedItem) {
+                        var draggedIndex = Array.from(categoryList.children).indexOf(draggedItem);
+                        var targetIndex = Array.from(categoryList.children).indexOf(targetItem);
+                        
+                        // Update the order array
+                        var draggedCategory = currentCategoryOrder[draggedIndex];
+                        currentCategoryOrder.splice(draggedIndex, 1);
+                        currentCategoryOrder.splice(targetIndex, 0, draggedCategory);
+                        
+                        // Re-populate the list with new order
+                        populateCategoryList();
+                    }
+                });
             }
-
-            function selectItem(title) {
-                document.querySelector('#txtAdminPickTitle').value = title;
-                hideSearchResults();
+            
+            function resetCategoryOrder() {
+                currentCategoryOrder = [...defaultCategoryOrder];
+                populateCategoryList();
             }
-
-            function hideSearchResults() {
-                var dropdown = document.getElementById('searchResults');
-                dropdown.style.display = 'none';
-            }
-
+            
             function escapeHtml(text) {
                 var div = document.createElement('div');
                 div.textContent = text;
@@ -276,13 +328,12 @@
                 console.log('Save button clicked, preventing default and starting save...');
                 Dashboard.showLoadingMsg();
 
-                var adminPickTitle = document.querySelector('#txtAdminPickTitle').value.trim();
                 var refreshInterval = parseInt(document.querySelector('#txtRefreshIntervalHours').value) || 24;
                 if (refreshInterval < 1) refreshInterval = 1;
                 if (refreshInterval > 168) refreshInterval = 168;
 
                 var config = {
-                    AdminPickTitle: adminPickTitle,
+                    CategoryOrder: currentCategoryOrder,
                     RefreshIntervalHours: refreshInterval,
                     LastManualRefresh: 0
                 };
@@ -334,7 +385,7 @@
                     console.log('Current config before manual refresh:', config);
                     
                     // Preserve current values and add timestamp to force refresh
-                    config.AdminPickTitle = document.querySelector('#txtAdminPickTitle').value.trim() || '';
+                    config.CategoryOrder = currentCategoryOrder;
                     config.RefreshIntervalHours = parseInt(document.querySelector('#txtRefreshIntervalHours').value) || 24;
                     config.LastManualRefresh = Date.now();
                     
@@ -371,9 +422,9 @@
                 ApiClient.getPluginConfiguration(pluginId).then(function(config) {
                     console.log('Test load successful:', config);
                     
-                    // Test saving with a timestamp
+                    // Test saving with current values
                     var testConfig = {
-                        AdminPickTitle: config.AdminPickTitle || '',
+                        CategoryOrder: currentCategoryOrder,
                         RefreshIntervalHours: config.RefreshIntervalHours || 24,
                         LastManualRefresh: Date.now()
                     };
@@ -397,49 +448,7 @@
                 document.querySelector('#jellyfeaturedConfigForm').addEventListener('submit', saveConfiguration);
                 document.querySelector('#btnManualRefresh').addEventListener('click', manualRefresh);
                 document.querySelector('#btnTestConfig').addEventListener('click', testConfiguration);
-                
-                // Setup search functionality
-                var searchInput = document.querySelector('#txtAdminPickTitle');
-                
-                searchInput.addEventListener('input', function(e) {
-                    clearTimeout(searchTimeout);
-                    var query = e.target.value.trim();
-                    
-                    if (query.length >= 2) {
-                        searchTimeout = setTimeout(function() {
-                            searchLibrary(query);
-                        }, 300); // Debounce search for 300ms
-                    } else {
-                        hideSearchResults();
-                    }
-                });
-                
-                // Hide results when clicking outside
-                document.addEventListener('click', function(e) {
-                    if (!e.target.closest('#txtAdminPickTitle') && !e.target.closest('#searchResults')) {
-                        hideSearchResults();
-                    }
-                });
-                
-                // Show results again when focusing on input (if there's text)
-                searchInput.addEventListener('focus', function(e) {
-                    if (e.target.value.trim().length >= 2 && !isSearching) {
-                        searchLibrary(e.target.value.trim());
-                    }
-                });
-                
-                // Handle keyboard navigation
-                searchInput.addEventListener('keydown', function(e) {
-                    var dropdown = document.getElementById('searchResults');
-                    var items = dropdown.querySelectorAll('.search-result-item');
-                    
-                    if (e.key === 'Escape') {
-                        hideSearchResults();
-                        e.preventDefault();
-                    }
-                    
-                    // You could add arrow key navigation here if desired
-                });
+                document.querySelector('#btnResetOrder').addEventListener('click', resetCategoryOrder);
             });
         })();
     </script>

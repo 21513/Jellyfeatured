@@ -1,4 +1,5 @@
 using MediaBrowser.Model.Plugins;
+using System.Collections.Generic;
 
 namespace Jellyfeatured;
 
@@ -8,10 +9,17 @@ namespace Jellyfeatured;
 public class PluginConfiguration : BasePluginConfiguration
 {
     /// <summary>
-    /// Gets or sets the title for the admin's pick (6th category).
-    /// When set, this content will be featured as an additional recommendation.
+    /// Gets or sets the order in which categories are displayed.
+    /// Default order: Latest Release, Recently Added Films, Recently Added Series, Best Rated Films, Best Rated Series
     /// </summary>
-    public string AdminPickTitle { get; set; } = "";
+    public List<string> CategoryOrder { get; set; } = new List<string>
+    {
+        "Latest Release",
+        "Recently Added in Films", 
+        "Recently Added in Series",
+        "Best Rated in Films",
+        "Best Rated in Series"
+    };
     
     /// <summary>
     /// Gets or sets how often recommendations are refreshed (in hours).

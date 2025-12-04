@@ -103,6 +103,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     private async Task<List<RecommendationItem>> GenerateRecommendationsAsync()
     {
         var recommendations = new List<RecommendationItem>();
+        var categoryItems = new Dictionary<string, RecommendationItem>();
         
         try
         {
@@ -117,6 +118,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             // Wait a small amount to make this truly async
             await Task.Delay(1);
             
+            // Generate all available categories
+            
             // 1. Most recently released movie by release date
             var latestMovie = allItems
                 .OfType<Movie>()
@@ -126,13 +129,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 
             if (latestMovie != null)
             {
-                recommendations.Add(new RecommendationItem
+                categoryItems["Latest Release"] = new RecommendationItem
                 {
                     Title = latestMovie.Name,
                     Type = "Latest Release",
                     Year = latestMovie.PremiereDate?.Year.ToString() ?? "",
                     Rating = latestMovie.CommunityRating?.ToString("F1") ?? "N/A"
-                });
+                };
             }
             
             // 2. Most recently added movie
@@ -143,13 +146,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 
             if (recentAddedMovie != null)
             {
-                recommendations.Add(new RecommendationItem
+                categoryItems["Recently Added in Films"] = new RecommendationItem
                 {
                     Title = recentAddedMovie.Name,
                     Type = "Recently Added in Films",
                     Year = recentAddedMovie.PremiereDate?.Year.ToString() ?? "",
                     Rating = recentAddedMovie.CommunityRating?.ToString("F1") ?? "N/A"
-                });
+                };
             }
             
             // 3. Most recently added show
@@ -160,13 +163,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 
             if (recentAddedShow != null)
             {
-                recommendations.Add(new RecommendationItem
+                categoryItems["Recently Added in Series"] = new RecommendationItem
                 {
                     Title = recentAddedShow.Name,
                     Type = "Recently Added in Series",
                     Year = recentAddedShow.PremiereDate?.Year.ToString() ?? "",
                     Rating = recentAddedShow.CommunityRating?.ToString("F1") ?? "N/A"
-                });
+                };
             }
             
             // 4. Best rated movie
@@ -178,13 +181,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 
             if (bestMovie != null)
             {
-                recommendations.Add(new RecommendationItem
+                categoryItems["Best Rated in Films"] = new RecommendationItem
                 {
                     Title = bestMovie.Name,
                     Type = "Best Rated in Films",
                     Year = bestMovie.PremiereDate?.Year.ToString() ?? "",
                     Rating = bestMovie.CommunityRating?.ToString("F1") ?? "N/A"
-                });
+                };
             }
             
             // 5. Best rated show
@@ -196,36 +199,25 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 
             if (bestShow != null)
             {
-                recommendations.Add(new RecommendationItem
+                categoryItems["Best Rated in Series"] = new RecommendationItem
                 {
                     Title = bestShow.Name,
                     Type = "Best Rated in Series",
                     Year = bestShow.PremiereDate?.Year.ToString() ?? "",
                     Rating = bestShow.CommunityRating?.ToString("F1") ?? "N/A"
-                });
+                };
             }
             
-            // 6. Admin's Pick (if configured)
-            if (!string.IsNullOrWhiteSpace(Configuration.AdminPickTitle))
+            // Add recommendations in the configured order
+            foreach (var categoryName in Configuration.CategoryOrder)
             {
-                // Search for the admin's pick by title
-                var adminPick = allItems
-                    .Where(item => item.Name.Contains(Configuration.AdminPickTitle, StringComparison.OrdinalIgnoreCase))
-                    .FirstOrDefault();
-                    
-                if (adminPick != null)
+                if (categoryItems.ContainsKey(categoryName))
                 {
-                    recommendations.Add(new RecommendationItem
-                    {
-                        Title = adminPick.Name,
-                        Type = "Admin's Pick",
-                        Year = adminPick.PremiereDate?.Year.ToString() ?? "",
-                        Rating = adminPick.CommunityRating?.ToString("F1") ?? "N/A"
-                    });
+                    recommendations.Add(categoryItems[categoryName]);
                 }
             }
             
-            _logger.LogInformation($"✅ Generated {recommendations.Count} recommendations");
+            _logger.LogInformation($"✅ Generated {recommendations.Count} recommendations in configured order");
         }
         catch (Exception ex)
         {
