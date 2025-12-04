@@ -262,10 +262,10 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         
         const targetContainer = document.querySelector('.homePage');
         if (!targetContainer) return;
-            
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = htmlTemplate;
-            const featuredDiv = tempDiv.firstElementChild;
+        
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlTemplate;
+        const featuredDiv = tempDiv.firstElementChild;
             
             if (featuredDiv) {
                 const carouselContainer = featuredDiv.querySelector('#recommendations-carousel');
@@ -338,7 +338,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 
                 targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
             }
-        }
     }
 
     // Conservative injection attempts to prevent crashes

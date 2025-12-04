@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Jellyfeatured Configuration</title>
+    <title>Jellyfeatured</title>
 </head>
 <body>
     <div id="jellyfeaturedConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input,emby-checkbox,emby-select">
@@ -10,55 +10,44 @@
             <div class="content-primary">
                 <form id="jellyfeaturedConfigForm">
                     <div class="sectionTitleContainer flex align-items-center">
-                        <h2 class="sectionTitle">Jellyfeatured Configuration</h2>
+                        <h2 class="sectionTitle">Jellyfeatured Settings</h2>
                     </div>
                     
+                    <p class="settingsDescription">Configure how content recommendations appear on your home page.</p>
+                    
                     <div class="verticalSection">
-                        <div class="sectionTitleContainer flex align-items-center">
-                            <h3 class="sectionTitle">Category Order</h3>
-                        </div>
-                        
+                        <h3>Category Order</h3>
                         <div class="fieldDescription">
-                            Use the up/down arrow buttons to change the order categories appear in the carousel. The first category will be shown first, and so on.
+                            Change the order that content categories appear in the featured carousel.
                         </div>
                         
                         <div id="categoryList"></div>
                         
-                        <div style="margin-top: 1em;">
-                            <button is="emby-button" type="button" id="btnResetOrder" class="raised button-alt">
-                                <span>Reset to Default Order</span>
-                            </button>
-                        </div>
+                        <button is="emby-button" type="button" id="btnResetOrder" class="raised button-alt" style="margin-top: 1em;">
+                            Reset to Default Order
+                        </button>
                     </div>
                     
                     <div class="verticalSection">
-                        <div class="sectionTitleContainer flex align-items-center">
-                            <h3 class="sectionTitle">Refresh Settings</h3>
-                        </div>
+                        <h3>Refresh Settings</h3>
                         
                         <div class="inputContainer">
-                            <label class="inputLabel" for="txtRefreshIntervalHours">Refresh Interval (hours)</label>
+                            <label for="txtRefreshIntervalHours">Refresh Interval (hours)</label>
                             <input is="emby-input" type="number" id="txtRefreshIntervalHours" min="1" max="168" step="1" />
                             <div class="fieldDescription">
-                                How often to refresh recommendations (1-168 hours). Default is 24 hours (daily).
+                                How often to refresh recommendations (1-168 hours). Default is 24 hours.
                             </div>
                         </div>
                         
-                        <div style="margin-top: 1em;">
-                            <button is="emby-button" type="button" id="btnManualRefresh" class="raised button-alt">
-                                <span>Refresh Now</span>
-                            </button>
-                            <div class="fieldDescription" style="margin-top: 0.5em;">
-                                Manually refresh recommendations immediately
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <button is="emby-button" type="submit" class="raised button-submit block">
-                            <span>Save Settings</span>
+                        <button is="emby-button" type="button" id="btnManualRefresh" class="raised button-alt" style="margin-top: 1em;">
+                            Refresh Now
                         </button>
                     </div>
+                    
+                    <br>
+                    <button is="emby-button" type="submit" class="raised button-submit">
+                        Save Settings
+                    </button>
                 </form>
             </div>
         </div>

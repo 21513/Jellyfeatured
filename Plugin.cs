@@ -362,7 +362,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         {
             new PluginPageInfo
             {
-                Name = this.Name,
+                Name = "Jellyfeatured",
                 EmbeddedResourcePath = string.Format("{0}.Configuration.configPage.html", GetType().Namespace)
             }
         };
