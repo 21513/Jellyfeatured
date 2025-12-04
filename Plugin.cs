@@ -210,6 +210,45 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 };
             }
             
+            // Handle Admin's Picks
+            if (Configuration.EnableAdminPicks && Configuration.AdminPickIds?.Count > 0)
+            {
+                var adminPickItems = new List<RecommendationItem>();
+                
+                foreach (var itemId in Configuration.AdminPickIds)
+                {
+                    try
+                    {
+                        if (Guid.TryParse(itemId, out var guid))
+                        {
+                            var item = _libraryManager.GetItemById(guid);
+                            if (item != null)
+                            {
+                                adminPickItems.Add(new RecommendationItem
+                                {
+                                    Title = item.Name,
+                                    Type = "Admin's Pick",
+                                    Year = item.PremiereDate?.Year.ToString() ?? "",
+                                    Rating = item.CommunityRating?.ToString("F1") ?? "N/A"
+                                });
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to load admin pick item with ID: {ItemId}", itemId);
+                    }
+                }
+                
+                // If we have admin pick items, add them as a single category
+                if (adminPickItems.Count > 0)
+                {
+                    // For now, just use the first admin pick item for the category
+                    // You could enhance this to rotate through multiple picks
+                    categoryItems["Admin's Pick"] = adminPickItems.First();
+                }
+            }
+            
             foreach (var categoryName in Configuration.CategoryOrder)
             {
                 if (categoryItems.ContainsKey(categoryName))

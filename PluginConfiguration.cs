@@ -14,6 +14,7 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public List<string> CategoryOrder { get; set; } = new List<string>
     {
+        "Admin's Pick",
         "Latest Release",
         "Recently Added in Films", 
         "Recently Added in Series",
@@ -26,6 +27,18 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Default is 24 hours (daily refresh).
     /// </summary>
     public int RefreshIntervalHours { get; set; } = 24;
+    
+    /// <summary>
+    /// Gets or sets the list of media item IDs for admin picks.
+    /// These are Jellyfin media item UUIDs that will be featured in an "Admin's Pick" section.
+    /// </summary>
+    public List<string> AdminPickIds { get; set; } = new List<string>();
+    
+    /// <summary>
+    /// Gets or sets whether the Admin's Pick section is enabled.
+    /// When true, the Admin's Pick section will appear in the carousel with the specified media items.
+    /// </summary>
+    public bool EnableAdminPicks { get; set; } = false;
     
     /// <summary>
     /// Gets or sets the timestamp of the last manual refresh request.

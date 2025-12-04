@@ -18,16 +18,70 @@
                     <div class="verticalSection">
                         <h3>Featured categories order</h3>
                         <div class="fieldDescription">
-                            Rearrange the order in which the featured items appear.
+                            Current order of content types in your featured carousel.
                         </div>
                         
                         <div id="categoryOrderList" style="margin-top: 20px;">
                             <!-- Categories will be populated here -->
                         </div>
+                    </div>
+
+                    <div class="verticalSection">
+                        <h3>Admin's Picks</h3>
+                        <div class="fieldDescription">
+                            Enter media item IDs to create a curated "Admin's Pick" section. Find item IDs in your Jellyfin server logs or by inspecting media URLs.
+                        </div>
                         
-                        <button is="emby-button" type="button" id="btnResetOrder" class="raised button-alt" style="margin-top: 1em;">
-                            Reset to Default Order
+                        <div class="inputContainer" style="margin-top: 15px;">
+                            <label class="inputLabel" for="adminPickIds">
+                                Media Item IDs (one per line)
+                            </label>
+                            <textarea is="emby-textarea" id="adminPickIds" rows="6" style="width: 100%; font-family: monospace;" placeholder="Enter Jellyfin media item IDs, one per line:
+abc123def456-789
+def456ghi789-012
+ghi789jkl012-345"></textarea>
+                            <div class="fieldDescription">
+                                Enter Jellyfin media item IDs (UUIDs) one per line. These will appear as "Admin's Pick" in your carousel.
+                            </div>
+                        </div>
+                        
+                        <div class="inputContainer" style="margin-top: 10px;">
+                            <label>
+                                <input is="emby-checkbox" type="checkbox" id="enableAdminPicks" />
+                                <span>Enable Admin's Picks section</span>
+                            </label>
+                            <div class="fieldDescription">
+                                When enabled, Admin's Pick will appear in your carousel with the specified media items.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="verticalSection">
+                        <h3>Advanced Configuration</h3>
+                        <div class="fieldDescription">
+                            Edit the raw JSON configuration directly. This allows full control over category order and settings.
+                        </div>
+                        
+                        <div class="inputContainer" style="margin-top: 15px;">
+                            <label class="inputLabel" for="jsonEditor">
+                                Plugin Configuration (JSON)
+                            </label>
+                            <textarea is="emby-textarea" id="jsonEditor" rows="10" style="width: 100%; font-family: monospace; font-size: 12px;"></textarea>
+                            <div class="fieldDescription">
+                                Edit the JSON directly. CategoryOrder is an array of strings that determines display order.
+                            </div>
+                        </div>
+                        
+                        <button is="emby-button" type="button" id="btnLoadJson" class="raised button-alt" style="margin-top: 0.5em; margin-right: 0.5em;">
+                            Load Current Config
                         </button>
+                        
+                        <button is="emby-button" type="button" id="btnSaveJson" class="raised submit" style="margin-top: 0.5em;">
+                            Save JSON Config
+                        </button>
+                        
+                        <div id="jsonMessage" style="margin-top: 1em; display: none;">
+                        </div>
                     </div>
 
                     <div class="verticalSection">
@@ -104,36 +158,6 @@
             opacity: 0.7;
         }
         
-        .categoryControls {
-            display: flex;
-            gap: 5px;
-        }
-        
-        .moveButton {
-            width: 32px;
-            height: 32px;
-            min-width: 32px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            background: rgba(255,255,255,0.2);
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 4px;
-            color: white;
-            cursor: pointer;
-        }
-        
-        .moveButton:hover:not(:disabled) {
-            background: rgba(255,255,255,0.3);
-        }
-        
-        .moveButton:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-        
         .positionNumber {
             background: rgba(0,0,0,0.3);
             border-radius: 50%;
@@ -151,13 +175,6 @@
     <script type="text/javascript">
         (function() {
             let currentConfig = null;
-            const categories = [
-                { id: 'latestRelease', name: 'Latest Movie Release', description: 'Most recently released movie by premiere date' },
-                { id: 'recentFilms', name: 'New Movies in Library', description: 'Most recently added movies to your library' },
-                { id: 'recentSeries', name: 'New TV Shows in Library', description: 'Most recently added TV series to your library' },
-                { id: 'bestFilms', name: 'Top Rated Movies', description: 'Highest rated movies in your library' },
-                { id: 'bestSeries', name: 'Top Rated TV Shows', description: 'Highest rated TV shows in your library' }
-            ];
 
             function loadConfiguration() {
                 ApiClient.getPluginConfiguration('7ebedd0b-a88c-4b1c-aa2c-4e8bbb82df84').then(function(config) {
@@ -165,11 +182,12 @@
                     
                     if (!currentConfig.CategoryOrder || currentConfig.CategoryOrder.length === 0) {
                         currentConfig.CategoryOrder = [
-                            { CategoryId: 'latestRelease', Priority: 1 },
-                            { CategoryId: 'recentFilms', Priority: 2 },
-                            { CategoryId: 'recentSeries', Priority: 3 },
-                            { CategoryId: 'bestFilms', Priority: 4 },
-                            { CategoryId: 'bestSeries', Priority: 5 }
+                            "Admin's Pick",
+                            "Latest Release",
+                            "Recently Added in Films",
+                            "Recently Added in Series",
+                            "Best Rated in Films",
+                            "Best Rated in Series"
                         ];
                     }
                     
@@ -177,27 +195,85 @@
                         currentConfig.RefreshIntervalHours = 24; // Default to daily
                     }
                     
+                    if (!currentConfig.AdminPickIds) {
+                        currentConfig.AdminPickIds = [];
+                    }
+                    
+                    if (currentConfig.EnableAdminPicks === undefined) {
+                        currentConfig.EnableAdminPicks = false;
+                    }
+                    
                     renderCategoryList();
                     document.getElementById('refreshInterval').value = currentConfig.RefreshIntervalHours;
+                    document.getElementById('adminPickIds').value = currentConfig.AdminPickIds.join('\n');
+                    document.getElementById('enableAdminPicks').checked = currentConfig.EnableAdminPicks;
+                    loadJsonEditor();
                 });
+            }
+
+            function loadJsonEditor() {
+                const jsonEditor = document.getElementById('jsonEditor');
+                jsonEditor.value = JSON.stringify(currentConfig, null, 2);
+            }
+
+            function showJsonMessage(message, isError = false) {
+                const messageEl = document.getElementById('jsonMessage');
+                messageEl.textContent = message;
+                messageEl.style.color = isError ? '#ff6b6b' : '#52b54b';
+                messageEl.style.display = 'block';
+                setTimeout(() => {
+                    messageEl.style.display = 'none';
+                }, 3000);
+            }
+
+            function loadJsonFromEditor() {
+                loadJsonEditor();
+                showJsonMessage('Current configuration loaded into editor.');
+            }
+
+            function saveJsonFromEditor() {
+                try {
+                    const jsonEditor = document.getElementById('jsonEditor');
+                    const newConfig = JSON.parse(jsonEditor.value);
+                    
+                    // Validate required fields
+                    if (!newConfig.CategoryOrder || !Array.isArray(newConfig.CategoryOrder)) {
+                        throw new Error('CategoryOrder must be an array of strings');
+                    }
+                    
+                    if (!newConfig.RefreshIntervalHours || typeof newConfig.RefreshIntervalHours !== 'number') {
+                        throw new Error('RefreshIntervalHours must be a number');
+                    }
+                    
+                    // Update current config
+                    currentConfig = newConfig;
+                    currentConfig.LastManualRefresh = new Date().toISOString();
+                    
+                    // Save to server
+                    ApiClient.updatePluginConfiguration('7ebedd0b-a88c-4b1c-aa2c-4e8bbb82df84', currentConfig).then(function() {
+                        showJsonMessage('JSON configuration saved successfully and applied to carousel.');
+                        renderCategoryList();
+                        document.getElementById('refreshInterval').value = currentConfig.RefreshIntervalHours;
+                        document.getElementById('adminPickIds').value = (currentConfig.AdminPickIds || []).join('\n');
+                        document.getElementById('enableAdminPicks').checked = currentConfig.EnableAdminPicks || false;
+                    }).catch(function(error) {
+                        showJsonMessage('Failed to save configuration: ' + error.message, true);
+                    });
+                    
+                } catch (error) {
+                    showJsonMessage('Invalid JSON: ' + error.message, true);
+                }
             }
 
             function renderCategoryList() {
                 const container = document.getElementById('categoryOrderList');
                 
-                // Sort categories by their current priority
-                const sortedCategories = [...categories].sort((a, b) => {
-                    const aPriority = getCurrentPriority(a.id);
-                    const bPriority = getCurrentPriority(b.id);
-                    return aPriority - bPriority;
-                });
-                
                 container.innerHTML = '';
                 
-                sortedCategories.forEach((category, index) => {
+                // Display categories in their current order
+                currentConfig.CategoryOrder.forEach((categoryName, index) => {
                     const categoryDiv = document.createElement('div');
                     categoryDiv.className = 'categoryItem';
-                    categoryDiv.dataset.categoryId = category.id;
                     
                     const positionDiv = document.createElement('div');
                     positionDiv.className = 'positionNumber';
@@ -206,78 +282,25 @@
                     const infoDiv = document.createElement('div');
                     infoDiv.className = 'categoryInfo';
                     infoDiv.innerHTML = `
-                        <div class="categoryName">${category.name}</div>
-                        <div class="categoryDescription">${category.description}</div>
+                        <div class="categoryName">${categoryName}</div>
+                        <div class="categoryDescription">Category ${index + 1} in your carousel</div>
                     `;
-                    
-                    const controlsDiv = document.createElement('div');
-                    controlsDiv.className = 'categoryControls';
-                    
-                    // Create up button
-                    const upButton = document.createElement('button');
-                    upButton.className = 'raised moveButton';
-                    upButton.textContent = '↑';
-                    upButton.disabled = index === 0;
-                    upButton.addEventListener('click', () => moveCategory(category.id, -1));
-                    
-                    // Create down button
-                    const downButton = document.createElement('button');
-                    downButton.className = 'raised moveButton';
-                    downButton.textContent = '↓';
-                    downButton.disabled = index === sortedCategories.length - 1;
-                    downButton.addEventListener('click', () => moveCategory(category.id, 1));
-                    
-                    controlsDiv.appendChild(upButton);
-                    controlsDiv.appendChild(downButton);
                     
                     categoryDiv.appendChild(positionDiv);
                     categoryDiv.appendChild(infoDiv);
-                    categoryDiv.appendChild(controlsDiv);
                     
                     container.appendChild(categoryDiv);
                 });
             }
 
-            function getCurrentPriority(categoryId) {
-                const categoryOrder = currentConfig.CategoryOrder.find(c => c.CategoryId === categoryId);
-                return categoryOrder ? categoryOrder.Priority : 999;
-            }
-
-            function moveCategory(categoryId, direction) {
-                const categoryIndex = currentConfig.CategoryOrder.findIndex(c => c.CategoryId === categoryId);
-                if (categoryIndex === -1) return;
-                
-                const currentPriority = currentConfig.CategoryOrder[categoryIndex].Priority;
-                const newPriority = currentPriority + direction;
-                
-                // Check bounds
-                if (newPriority < 1 || newPriority > categories.length) return;
-                
-                // Find the category that currently has the target priority
-                const targetIndex = currentConfig.CategoryOrder.findIndex(c => c.Priority === newPriority);
-                
-                if (targetIndex !== -1) {
-                    // Swap priorities
-                    currentConfig.CategoryOrder[targetIndex].Priority = currentPriority;
-                    currentConfig.CategoryOrder[categoryIndex].Priority = newPriority;
-                    
-                    renderCategoryList();
-                }
-            }
-
-            function resetOrder() {
-                currentConfig.CategoryOrder = [
-                    { CategoryId: 'latestRelease', Priority: 1 },
-                    { CategoryId: 'recentFilms', Priority: 2 },
-                    { CategoryId: 'recentSeries', Priority: 3 },
-                    { CategoryId: 'bestFilms', Priority: 4 },
-                    { CategoryId: 'bestSeries', Priority: 5 }
-                ];
-                renderCategoryList();
-            }
-
             function saveConfiguration() {
                 currentConfig.RefreshIntervalHours = parseInt(document.getElementById('refreshInterval').value);
+                
+                // Get admin picks
+                const adminPickText = document.getElementById('adminPickIds').value.trim();
+                currentConfig.AdminPickIds = adminPickText ? adminPickText.split('\n').map(id => id.trim()).filter(id => id) : [];
+                currentConfig.EnableAdminPicks = document.getElementById('enableAdminPicks').checked;
+                
                 currentConfig.LastManualRefresh = new Date().toISOString();
                 
                 ApiClient.updatePluginConfiguration('7ebedd0b-a88c-4b1c-aa2c-4e8bbb82df84', currentConfig).then(function() {
@@ -286,6 +309,7 @@
                     setTimeout(() => {
                         messageEl.style.display = 'none';
                     }, 3000);
+                    loadJsonEditor(); // Update JSON editor with new values
                 });
             }
 
@@ -303,9 +327,10 @@
                 });
             }
 
-            document.getElementById('btnResetOrder').addEventListener('click', resetOrder);
             document.getElementById('btnSaveSettings').addEventListener('click', saveConfiguration);
             document.getElementById('btnManualRefresh').addEventListener('click', manualRefresh);
+            document.getElementById('btnLoadJson').addEventListener('click', loadJsonFromEditor);
+            document.getElementById('btnSaveJson').addEventListener('click', saveJsonFromEditor);
             
             document.getElementById('btnCancelSettings').addEventListener('click', function() {
                 window.history.back();
