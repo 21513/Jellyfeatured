@@ -363,10 +363,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             new PluginPageInfo
             {
                 Name = "Jellyfeatured",
-                EmbeddedResourcePath = string.Format("{0}.Configuration.configPage.html", GetType().Namespace),
-                MenuSection = "server",
-                DisplayName = "Jellyfeatured",
-                MenuIcon = "featured_play_list"
+                EmbeddedResourcePath = string.Format("{0}.Configuration.dashboardPage.html", GetType().Namespace),
+                EnableInMainMenu = true
             }
         };
     }

@@ -5,7 +5,7 @@
     <title>Jellyfeatured</title>
 </head>
 <body>
-    <div id="jellyfeaturedPage" data-role="page" class="page type-interior" data-require="emby-button,emby-input,emby-checkbox,emby-select">
+    <div id="jellyfeaturedPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input,emby-checkbox,emby-select">
         <div data-role="content">
             <div class="content-primary">
                 <div class="sectionTitleContainer flex align-items-center">
@@ -108,6 +108,11 @@
                     Dashboard.hideLoadingMsg();
                 }).catch(function() {
                     Dashboard.hideLoadingMsg();
+                    // Initialize with defaults if config loading fails
+                    var intervalInput = document.querySelector('#txtRefreshIntervalHours');
+                    if (intervalInput) {
+                        intervalInput.value = 24;
+                    }
                     currentCategoryOrder = defaultCategoryOrder;
                     populateCategoryList();
                 });
@@ -195,14 +200,25 @@
                     if (Dashboard.alert) {
                         Dashboard.alert('Settings saved successfully!');
                     }
-                }).catch(function() {
+                    // Reload configuration to confirm save
+                    setTimeout(function() {
+                        loadConfiguration();
+                    }, 500);
+                }).catch(function(error) {
                     Dashboard.hideLoadingMsg();
+                    var errorMsg = 'Failed to save settings.';
+                    if (error && error.message) {
+                        errorMsg += ' Error: ' + error.message;
+                    }
                     if (Dashboard.alert) {
-                        Dashboard.alert('Failed to save settings.');
+                        Dashboard.alert(errorMsg);
                     }
                 });
             } catch (e) {
                 Dashboard.hideLoadingMsg();
+                if (Dashboard.alert) {
+                    Dashboard.alert('An error occurred while saving settings.');
+                }
             }
         }
 
