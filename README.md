@@ -1,5 +1,10 @@
 # Jellyfeatured
 
+[![Version](https://img.shields.io/github/v/release/21513/Jellyfeatured?style=flat-square&logo=github)](https://github.com/21513/Jellyfeatured/releases)
+[![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11.4+-blue?style=flat-square&logo=jellyfin)](https://jellyfin.org/)
+[![License](https://img.shields.io/github/license/21513/Jellyfeatured?style=flat-square)](LICENSE)
+[![Downloads](https://img.shields.io/github/downloads/21513/Jellyfeatured/total?style=flat-square&logo=github)](https://github.com/21513/Jellyfeatured/releases)
+
 Adds a featured section to your Jellyfin home screen with automatic recommendations. Modify or reorder categories to fit your preferences.
 
 ![Jellyfeatured on desktop](jellyfeatured-desktop.png)
