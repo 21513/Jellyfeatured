@@ -1,22 +1,14 @@
 export default function() {
-    console.log('🎬 Jellyfeatured web plugin loaded!');
-    
-    // Function to create and inject the featured div
     function createFeaturedDiv() {
-        // Don't inject if already exists
         if (document.getElementById('jellyfeatured-div')) {
             return;
         }
-        
-        // Only inject on home pages
+
         const pathname = window.location.pathname;
         if (!pathname.includes('home') && pathname !== '/' && pathname !== '/web/' && pathname !== '/web/index.html') {
             return;
         }
-        
-        console.log('🎬 Jellyfeatured: Attempting to inject featured div');
-        
-        // Find a suitable container
+
         const containers = [
             '.homePage',
             '.homePageContent',
@@ -33,13 +25,11 @@ export default function() {
         for (const selector of containers) {
             targetContainer = document.querySelector(selector);
             if (targetContainer) {
-                console.log('🎬 Jellyfeatured: Found container:', selector);
                 break;
             }
         }
         
         if (targetContainer) {
-            // Create the featured content div
             const featuredDiv = document.createElement('div');
             featuredDiv.id = 'jellyfeatured-div';
             featuredDiv.style.cssText = `
@@ -59,34 +49,24 @@ export default function() {
                 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
                 border: 1px solid rgba(255, 255, 255, 0.1);
             `;
-            featuredDiv.innerHTML = '🎬 Jellyfeatured - Featured Content Coming Soon! 🎬';
-            
-            // Insert at the beginning of the container
+            featuredDiv.innerHTML = 'Jellyfeatured';
+
             if (targetContainer.firstChild) {
                 targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
             } else {
                 targetContainer.appendChild(featuredDiv);
             }
-            
-            console.log('✅ Jellyfeatured: Successfully injected featured div!');
         } else {
-            console.log('❌ Jellyfeatured: No suitable container found');
+            console.log('Jellyfeatured: No suitable container found');
         }
     }
-    
-    // Try injection multiple times with different strategies
+
     function attemptInjection() {
         createFeaturedDiv();
-        setTimeout(createFeaturedDiv, 100);
-        setTimeout(createFeaturedDiv, 500);
-        setTimeout(createFeaturedDiv, 1000);
-        setTimeout(createFeaturedDiv, 2000);
     }
     
-    // Initial injection
     attemptInjection();
-    
-    // Listen for DOM changes (SPA navigation)
+
     const observer = new MutationObserver(() => {
         setTimeout(createFeaturedDiv, 200);
     });
@@ -97,18 +77,14 @@ export default function() {
             subtree: true
         });
     }
-    
-    // Listen for navigation events
+
     let lastUrl = location.href;
     function checkUrlChange() {
         if (location.href !== lastUrl) {
             lastUrl = location.href;
-            console.log('🎬 Jellyfeatured: URL changed to', lastUrl);
             setTimeout(attemptInjection, 100);
         }
     }
     
     setInterval(checkUrlChange, 1000);
-    
-    console.log('🎬 Jellyfeatured: Web plugin initialization complete');
 }

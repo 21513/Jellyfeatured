@@ -22,9 +22,7 @@
                             Use the up/down arrow buttons to change the order categories appear in the carousel. The first category will be shown first, and so on.
                         </div>
                         
-                        <div id="categoryList">
-                            <!-- Categories will be populated here -->
-                        </div>
+                        <div id="categoryList"></div>
                         
                         <div style="margin-top: 1em;">
                             <button is="emby-button" type="button" id="btnResetOrder" class="raised button-alt">
@@ -70,7 +68,6 @@
         (function () {
             var pluginId = "639b5171-918b-4b24-82e4-d35c10be63a4";
             
-            // Available categories with descriptions
             var availableCategories = {
                 "Latest Release": "Most recently released movie by premiere date",
                 "Recently Added in Films": "Most recently added movie to your library", 
@@ -95,8 +92,7 @@
                 
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                     console.log('Configuration loaded successfully:', config);
-                    
-                    // Set form values
+
                     var intervalInput = document.querySelector('#txtRefreshIntervalHours');
                     
                     if (intervalInput) {
@@ -105,8 +101,7 @@
                     } else {
                         console.error('Could not find refresh interval input');
                     }
-                    
-                    // Set category order
+
                     currentCategoryOrder = config.CategoryOrder || defaultCategoryOrder;
                     window.jellyfeaturedConfig.currentCategoryOrder = currentCategoryOrder;
                     populateCategoryList();
@@ -128,8 +123,7 @@
                     } else {
                         alert(errorMsg);
                     }
-                    
-                    // Set defaults if loading failed
+
                     currentCategoryOrder = defaultCategoryOrder;
                     window.jellyfeaturedConfig.currentCategoryOrder = currentCategoryOrder;
                     populateCategoryList();
@@ -181,8 +175,7 @@
                         </div>
                     </div>
                 `;
-                
-                // Add event listeners after creating the element
+
                 setTimeout(function() {
                     var upButton = div.querySelector('.upButton');
                     var downButton = div.querySelector('.downButton');
@@ -220,8 +213,7 @@
                     populateCategoryList();
                 }
             }
-            
-            // Expose functions for debugging if needed
+
             window.jellyfeaturedConfig = {
                 currentCategoryOrder: currentCategoryOrder,
                 moveCategoryUp: moveCategoryUp,
@@ -261,15 +253,13 @@
                 ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
                     console.log('Save successful! Result:', result);
                     Dashboard.hideLoadingMsg();
-                    
-                    // Show success message
+
                     if (Dashboard.alert) {
                         Dashboard.alert('Settings saved successfully!');
                     } else {
                         alert('Settings saved successfully!');
                     }
-                    
-                    // Reload configuration to verify it was saved
+
                     setTimeout(loadConfiguration, 500);
                     
                 }).catch(function(error) {
@@ -297,18 +287,15 @@
                 button.querySelector('span').innerText = 'Refreshing...';
                 Dashboard.showLoadingMsg();
 
-                // Get current configuration
                 ApiClient.getPluginConfiguration(pluginId).then(function(config) {
                     console.log('Current config before manual refresh:', config);
-                    
-                    // Preserve current values and add timestamp to force refresh
+
                     config.CategoryOrder = currentCategoryOrder;
                     config.RefreshIntervalHours = parseInt(document.querySelector('#txtRefreshIntervalHours').value) || 24;
                     config.LastManualRefresh = Date.now();
                     
                     console.log('Updated config for manual refresh:', config);
-                    
-                    // Update configuration to trigger refresh
+
                     return ApiClient.updatePluginConfiguration(pluginId, config);
                 }).then(function() {
                     Dashboard.alert('Recommendations refresh triggered successfully!');
