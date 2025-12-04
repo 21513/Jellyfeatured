@@ -31,7 +31,6 @@
     right: 0;
     transform: translateX(-50%);
     display: flex;
-    gap: 8px;
     z-index: 10;
 }
 
@@ -143,8 +142,9 @@
 }
 
 .carousel-dot {
-    width: 10px;
-    height: 10px;
+    width: 16px;
+    height: 16px;
+    padding: 4px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.6);
