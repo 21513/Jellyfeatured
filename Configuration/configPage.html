@@ -84,7 +84,7 @@
                 "Best Rated in Series"
             ];
             
-            var currentCategoryOrder = [];
+            var currentCategoryOrder = [...defaultCategoryOrder];
 
             function loadConfiguration() {
                 Dashboard.showLoadingMsg();
@@ -280,7 +280,6 @@
                 }).then(function() {
                     Dashboard.alert('Recommendations refresh triggered successfully!');
                 }).catch(function(error) {
-                    console.error('Refresh error:', error);
                     Dashboard.alert('Failed to trigger recommendations refresh. Please try again.');
                 }).finally(function() {
                     button.disabled = false;
@@ -290,6 +289,9 @@
             }
 
             document.addEventListener('DOMContentLoaded', function () {
+                // Initialize category list immediately with defaults
+                populateCategoryList();
+                
                 loadConfiguration();
                 document.querySelector('#jellyfeaturedConfigForm').addEventListener('submit', saveConfiguration);
                 document.querySelector('#btnManualRefresh').addEventListener('click', manualRefresh);

@@ -146,7 +146,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 }
             }
         } catch (e) {
-            // Failed to load images, use fallback gradient
             const colors = [
                 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
@@ -254,6 +253,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     async function createFeaturedCarousel() {
         if (document.getElementById('jellyfeatured-div')) return;
+        if (document.querySelector('#recommendations-carousel')) return;
+        if (document.querySelector('.homePage #jellyfeatured-div')) return;
         
         const pathname = window.location.pathname;
         if (!pathname.includes('home') && pathname !== '/' && pathname !== '/web/' && pathname !== '/web/index.html') {
@@ -262,6 +263,10 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         
         const targetContainer = document.querySelector('.homePage');
         if (targetContainer) {
+            if (targetContainer.querySelector('#jellyfeatured-div') || targetContainer.querySelector('#recommendations-carousel')) {
+                return;
+            }
+            
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlTemplate;
             const featuredDiv = tempDiv.firstElementChild;
