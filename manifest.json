@@ -13,8 +13,8 @@
                 "changelog": "Updated configurations page and added checks before adding featured div",
                 "targetAbi": "10.11.4.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.35/Jellyfeatured-v0.0.0.35.zip",
-                "checksum": "da90452813f0e573f1365971ac323f56",
-                "timestamp": "2025-12-04T15:12:09Z"
+                "checksum": "7c27fbaae53a7118fd235816914400e6",
+                "timestamp": "2025-12-04T15:42:20Z"
             },
             {
                 "version": "0.0.0.34",
