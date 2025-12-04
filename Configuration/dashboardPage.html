@@ -19,7 +19,8 @@
                         <h3>Plugin Configuration</h3>
                         <div class="fieldDescription">
                             Edit the complete JSON configuration below. Changes take effect immediately after saving.<br>
-                            <em>📄 A detailed example configuration file is automatically created at: <code>[jellyfin-data]/jellyfeatured-example-config.json</code></em>
+                            <em>📄 A detailed example configuration file is automatically created at: <code>[jellyfin-data]/jellyfeatured-example-config.json</code></em><br>
+                            <strong>How it works:</strong> Your XML configuration is automatically converted to JSON for easy editing, then converted back to XML when saved.
                         </div>
                         
                         <div class="inputContainer" style="margin-top: 15px;">
@@ -116,48 +117,52 @@
             let currentConfig = null;
 
             function loadConfiguration() {
+                showMessage('Loading configuration from XML file...', false);
                 ApiClient.getPluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4').then(function(config) {
+                    console.log('Raw XML configuration loaded:', config); // Debug logging
                     currentConfig = config || {};
                     
-                    // Set defaults if not present
-                    if (!currentConfig.CategoryOrder || currentConfig.CategoryOrder.length === 0) {
+                    // Ensure all required properties exist with defaults
+                    if (!currentConfig.CategoryOrder || !Array.isArray(currentConfig.CategoryOrder) || currentConfig.CategoryOrder.length === 0) {
                         currentConfig.CategoryOrder = [
                             "latestRelease",
-                            "recentlyAddedFilms",
+                            "recentlyAddedFilms", 
                             "recentlyAddedSeries",
                             "bestRatedFilms",
                             "bestRatedSeries"
                         ];
                     }
                     
-                    if (!currentConfig.RefreshIntervalHours) {
+                    if (!currentConfig.RefreshIntervalHours || typeof currentConfig.RefreshIntervalHours !== 'number') {
                         currentConfig.RefreshIntervalHours = 24;
                     }
                     
-                    if (!currentConfig.AdminPickIds) {
+                    if (!currentConfig.AdminPickIds || !Array.isArray(currentConfig.AdminPickIds)) {
                         currentConfig.AdminPickIds = [];
                     }
                     
-                    if (currentConfig.EnableAdminPicks === undefined) {
+                    if (currentConfig.EnableAdminPicks !== true && currentConfig.EnableAdminPicks !== false) {
                         currentConfig.EnableAdminPicks = false;
                     }
                     
-                    // Load current config into JSON editor
+                    // Convert XML object to JSON for editing
                     loadJsonEditor();
+                    showMessage('Configuration converted from XML to JSON for editing.');
                 }).catch(function(error) {
-                    showMessage('Failed to load configuration: ' + error.message, true);
+                    console.error('Failed to load XML configuration:', error); // Debug logging
+                    showMessage('Failed to load XML configuration: ' + error.message, true);
                     // Load defaults into editor on error
                     currentConfig = {
-                        "CategoryOrder": [
+                        CategoryOrder: [
                             "latestRelease",
                             "recentlyAddedFilms",
-                            "recentlyAddedSeries",
+                            "recentlyAddedSeries", 
                             "bestRatedFilms",
                             "bestRatedSeries"
                         ],
-                        "RefreshIntervalHours": 24,
-                        "AdminPickIds": [],
-                        "EnableAdminPicks": false
+                        RefreshIntervalHours: 24,
+                        AdminPickIds: [],
+                        EnableAdminPicks: false
                     };
                     loadJsonEditor();
                 });
@@ -165,7 +170,15 @@
 
             function loadJsonEditor() {
                 const jsonEditor = document.getElementById('jsonEditor');
-                jsonEditor.value = JSON.stringify(currentConfig, null, 2);
+                // Convert the XML configuration object to clean JSON for editing
+                const configForEditing = {
+                    CategoryOrder: currentConfig.CategoryOrder || [],
+                    RefreshIntervalHours: currentConfig.RefreshIntervalHours || 24,
+                    EnableAdminPicks: currentConfig.EnableAdminPicks || false,
+                    AdminPickIds: currentConfig.AdminPickIds || []
+                };
+                jsonEditor.value = JSON.stringify(configForEditing, null, 2);
+                console.log('XML converted to JSON for editing:', configForEditing);
             }
 
             function showMessage(message, isError = false) {
@@ -183,44 +196,56 @@
             }
 
             function reloadFromServer() {
+                showMessage('Reloading XML configuration from server...', false);
                 loadConfiguration();
-                showMessage('Configuration reloaded from server. The editor now shows the current settings.');
             }
 
             function saveJsonFromEditor() {
                 try {
+                    showMessage('Converting JSON to XML and saving...', false);
                     const jsonEditor = document.getElementById('jsonEditor');
-                    const newConfig = JSON.parse(jsonEditor.value);
+                    const editedConfig = JSON.parse(jsonEditor.value);
+                    console.log('Parsed JSON for conversion to XML:', editedConfig);
                     
                     // Basic validation
-                    if (!newConfig.CategoryOrder || !Array.isArray(newConfig.CategoryOrder)) {
+                    if (!editedConfig.CategoryOrder || !Array.isArray(editedConfig.CategoryOrder)) {
                         throw new Error('CategoryOrder must be an array of strings');
                     }
                     
-                    if (!newConfig.RefreshIntervalHours || typeof newConfig.RefreshIntervalHours !== 'number') {
+                    if (!editedConfig.RefreshIntervalHours || typeof editedConfig.RefreshIntervalHours !== 'number') {
                         throw new Error('RefreshIntervalHours must be a number');
                     }
                     
-                    // Update current config
-                    currentConfig = newConfig;
-                    currentConfig.LastManualRefresh = new Date().toISOString();
+                    // Update the current config object with the edited values
+                    // This object will be converted to XML by Jellyfin
+                    currentConfig.CategoryOrder = editedConfig.CategoryOrder;
+                    currentConfig.RefreshIntervalHours = editedConfig.RefreshIntervalHours;
+                    currentConfig.EnableAdminPicks = !!editedConfig.EnableAdminPicks;
+                    currentConfig.AdminPickIds = editedConfig.AdminPickIds || [];
+                    currentConfig.LastManualRefresh = Date.now();
                     
-                    // Save to server
+                    console.log('Configuration object ready for XML conversion:', currentConfig);
+                    
+                    // Save the configuration object - Jellyfin automatically converts to XML
                     ApiClient.updatePluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4', currentConfig).then(function() {
-                        showMessage('Configuration saved successfully! Changes have been applied to your carousel.');
+                        showMessage('✅ JSON successfully converted to XML and saved! Changes are now active.');
+                        // Reload to show the saved configuration
+                        setTimeout(() => loadConfiguration(), 1000);
                     }).catch(function(error) {
-                        showMessage('Failed to save configuration: ' + error.message, true);
+                        showMessage('❌ Failed to save XML configuration: ' + error.message, true);
+                        console.error('XML save error:', error);
                     });
                     
                 } catch (error) {
-                    showMessage('Invalid JSON: ' + error.message, true);
+                    showMessage('❌ Invalid JSON format: ' + error.message, true);
+                    console.error('JSON parsing error:', error);
                 }
             }
 
             function manualRefresh() {
                 if (!currentConfig) return;
                 
-                currentConfig.LastManualRefresh = new Date().toISOString();
+                currentConfig.LastManualRefresh = Date.now();
                 
                 ApiClient.updatePluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4', currentConfig).then(function() {
                     showMessage('Featured section refreshed successfully! New recommendations are now active.');
