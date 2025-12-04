@@ -118,13 +118,15 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         
         // Create slide content structure with logo placeholder
         slide.innerHTML = `
-            <div class="slide-logo-container">
-                <img class="slide-logo" style="display: none;" alt="${recommendation.title} logo" />
-            </div>
             <div class="slide-content">
-                <div class="slide-title">${recommendation.title} ${recommendation.year ? '(' + recommendation.year + ')' : ''}</div>
-                <div class="slide-subtitle">${recommendation.type}</div>
-                <div class="slide-rating">⭐ ${recommendation.rating}</div>
+                <div class="slide-logo-container">
+                    <img class="slide-logo" style="display: none;" alt="${recommendation.title} logo" />
+                </div>
+                <div class="slide-text-content">
+                    <div class="slide-title">${recommendation.title} ${recommendation.year ? '(' + recommendation.year + ')' : ''}</div>
+                    <div class="slide-subtitle">${recommendation.type}</div>
+                    <div class="slide-rating">⭐ ${recommendation.rating}</div>
+                </div>
             </div>
         `;
         
