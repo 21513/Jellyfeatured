@@ -65,26 +65,46 @@
     </div>
 
     <script type="text/javascript">
+        var pluginId = "639b5171-918b-4b24-82e4-d35c10be63a4";
+        
+        var availableCategories = {
+            "Latest Release": "Most recently released movie by premiere date",
+            "Recently Added in Films": "Most recently added movie to your library", 
+            "Recently Added in Series": "Most recently added series to your library",
+            "Best Rated in Films": "Highest rated movie in your library",
+            "Best Rated in Series": "Highest rated series in your library"
+        };
+        
+        var defaultCategoryOrder = [
+            "Latest Release",
+            "Recently Added in Films", 
+            "Recently Added in Series",
+            "Best Rated in Films",
+            "Best Rated in Series"
+        ];
+        
+        var currentCategoryOrder = defaultCategoryOrder.slice(); // Copy the default array
+        
+        // Global functions for inline onclick handlers
+        function moveCategoryUp(index) {
+            if (index > 0) {
+                var temp = currentCategoryOrder[index];
+                currentCategoryOrder[index] = currentCategoryOrder[index - 1];
+                currentCategoryOrder[index - 1] = temp;
+                populateCategoryList();
+            }
+        }
+        
+        function moveCategoryDown(index) {
+            if (index < currentCategoryOrder.length - 1) {
+                var temp = currentCategoryOrder[index];
+                currentCategoryOrder[index] = currentCategoryOrder[index + 1];
+                currentCategoryOrder[index + 1] = temp;
+                populateCategoryList();
+            }
+        }
+
         (function () {
-            var pluginId = "639b5171-918b-4b24-82e4-d35c10be63a4";
-            
-            var availableCategories = {
-                "Latest Release": "Most recently released movie by premiere date",
-                "Recently Added in Films": "Most recently added movie to your library", 
-                "Recently Added in Series": "Most recently added series to your library",
-                "Best Rated in Films": "Highest rated movie in your library",
-                "Best Rated in Series": "Highest rated series in your library"
-            };
-            
-            var defaultCategoryOrder = [
-                "Latest Release",
-                "Recently Added in Films", 
-                "Recently Added in Series",
-                "Best Rated in Films",
-                "Best Rated in Series"
-            ];
-            
-            var currentCategoryOrder = [...defaultCategoryOrder];
 
             function loadConfiguration() {
                 Dashboard.showLoadingMsg();
@@ -143,68 +163,27 @@
                 var isFirst = index === 0;
                 var isLast = index === currentCategoryOrder.length - 1;
                 
-                var buttonUpDisabled = isFirst ? 'disabled' : '';
-                var buttonDownDisabled = isLast ? 'disabled' : '';
+                var upButtonHtml = isFirst ? 
+                    '<button type="button" disabled style="padding: 4px 8px; margin-right: 4px; background: #ccc; color: #666;">↑</button>' :
+                    '<button type="button" onclick="moveCategoryUp(' + index + ')" style="padding: 4px 8px; margin-right: 4px; cursor: pointer; background: #007acc; color: white; border: none; border-radius: 3px;">↑</button>';
                 
-                div.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; border: 1px solid #444; border-radius: 4px;">
-                        <div style="flex: 1;">
-                            <div style="font-weight: bold;">${escapeHtml(categoryName)}</div>
-                            <div style="font-size: 0.9em; color: #999; margin-top: 4px;">${escapeHtml(availableCategories[categoryName])}</div>
-                        </div>
-                        <div style="display: flex; gap: 4px; margin-left: 12px;">
-                            <button is="emby-button" type="button" class="paper-icon-button-light upButton" 
-                                    data-index="${index}" 
-                                    ${buttonUpDisabled}
-                                    title="Move up">
-                                <span>↑</span>
-                            </button>
-                            <button is="emby-button" type="button" class="paper-icon-button-light downButton" 
-                                    data-index="${index}" 
-                                    ${buttonDownDisabled}
-                                    title="Move down">
-                                <span>↓</span>
-                            </button>
-                        </div>
-                    </div>
-                `;
-
-                setTimeout(function() {
-                    var upButton = div.querySelector('.upButton');
-                    var downButton = div.querySelector('.downButton');
-                    
-                    if (upButton) {
-                        upButton.addEventListener('click', function() {
-                            moveCategoryUp(index);
-                        });
-                    }
-                    
-                    if (downButton) {
-                        downButton.addEventListener('click', function() {
-                            moveCategoryDown(index);
-                        });
-                    }
-                }, 0);
+                var downButtonHtml = isLast ?
+                    '<button type="button" disabled style="padding: 4px 8px; background: #ccc; color: #666;">↓</button>' :
+                    '<button type="button" onclick="moveCategoryDown(' + index + ')" style="padding: 4px 8px; cursor: pointer; background: #007acc; color: white; border: none; border-radius: 3px;">↓</button>';
+                
+                div.innerHTML = 
+                    '<div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; border: 1px solid #444; border-radius: 4px; background: #f5f5f5;">' +
+                        '<div style="flex: 1;">' +
+                            '<div style="font-weight: bold; color: #333;">' + escapeHtml(categoryName) + '</div>' +
+                            '<div style="font-size: 0.9em; color: #666; margin-top: 4px;">' + escapeHtml(availableCategories[categoryName]) + '</div>' +
+                        '</div>' +
+                        '<div style="display: flex; gap: 4px; margin-left: 12px;">' +
+                            upButtonHtml +
+                            downButtonHtml +
+                        '</div>' +
+                    '</div>';
                 
                 return div;
-            }
-            
-            function moveCategoryUp(index) {
-                if (index > 0) {
-                    var temp = currentCategoryOrder[index];
-                    currentCategoryOrder[index] = currentCategoryOrder[index - 1];
-                    currentCategoryOrder[index - 1] = temp;
-                    populateCategoryList();
-                }
-            }
-            
-            function moveCategoryDown(index) {
-                if (index < currentCategoryOrder.length - 1) {
-                    var temp = currentCategoryOrder[index];
-                    currentCategoryOrder[index] = currentCategoryOrder[index + 1];
-                    currentCategoryOrder[index + 1] = temp;
-                    populateCategoryList();
-                }
             }
             
             function resetCategoryOrder() {

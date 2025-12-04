@@ -5,6 +5,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     let currentSlide = 0;
     let autoSlideInterval;
     let isUserInteracting = false;
+    let injectionAttempted = false;
+    let injectionSuccessful = false;
     
     function getJellyfinApiKey() {
         try {
@@ -252,18 +254,32 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     async function createFeaturedCarousel() {
-        if (document.getElementById('jellyfeatured-div')) return;
-        if (document.querySelector('#recommendations-carousel')) return;
-        if (document.querySelector('.homePage #jellyfeatured-div')) return;
+        if (injectionAttempted && injectionSuccessful) return;
+        if (document.getElementById('jellyfeatured-div')) {
+            injectionSuccessful = true;
+            return;
+        }
+        if (document.querySelector('#recommendations-carousel')) {
+            injectionSuccessful = true;
+            return;
+        }
+        if (document.querySelector('.homePage #jellyfeatured-div')) {
+            injectionSuccessful = true;
+            return;
+        }
+
+        injectionAttempted = true;
         
         const pathname = window.location.pathname;
         if (!pathname.includes('home') && pathname !== '/' && pathname !== '/web/' && pathname !== '/web/index.html') {
+            injectionAttempted = false;
             return;
         }
         
         const targetContainer = document.querySelector('.homePage');
         if (targetContainer) {
             if (targetContainer.querySelector('#jellyfeatured-div') || targetContainer.querySelector('#recommendations-carousel')) {
+                injectionSuccessful = true;
                 return;
             }
             
@@ -341,7 +357,10 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 }
                 
                 targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
+                injectionSuccessful = true;
             }
+        } else {
+            injectionAttempted = false;
         }
     }
 
@@ -357,6 +376,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     setInterval(() => {
         if (location.href !== lastUrl) {
             lastUrl = location.href;
+
+            injectionAttempted = false;
+            injectionSuccessful = false;
             setTimeout(() => createFeaturedCarousel(), 200);
         }
     }, 1000);

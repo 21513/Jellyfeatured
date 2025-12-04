@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/github/v/release/21513/Jellyfeatured?style=flat-square&logo=github)](https://github.com/21513/Jellyfeatured/releases)
 [![Jellyfin](https://img.shields.io/badge/Jellyfin-10.11.4+-blue?style=flat-square&logo=jellyfin)](https://jellyfin.org/)
-[![License](https://img.shields.io/github/license/21513/Jellyfeatured?style=flat-square)](LICENSE)
+[![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/21513/Jellyfeatured/total?style=flat-square&logo=github)](https://github.com/21513/Jellyfeatured/releases)
 
 #### This plugin is currently in development. Not everything is working as intended.
