@@ -6,15 +6,15 @@
         "overview": "Get recommendations on your Jellyfin home page based on your viewing history and what's popular.",
         "owner": "baeac",
         "category": "General",
-        "imageUrl": "",
+        "imageUrl": "https://raw.githubusercontent.com/21513/Jellyfeatured/refs/heads/main/thumbnail.jpg",
         "versions": [
             {
                 "version": "0.0.0.54",
                 "changelog": "Updated dashboard page",
                 "targetAbi": "10.11.4.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.54/Jellyfeatured-v0.0.0.54.zip",
-                "checksum": "ac4191c028abc2cca2a9d41eaafe98ab",
-                "timestamp": "2025-12-04T20:13:39Z"
+                "checksum": "44b71343b9b4829b54d73b68f78239c7",
+                "timestamp": "2025-12-04T20:40:20Z"
             },
             {
                 "version": "0.0.0.53",
