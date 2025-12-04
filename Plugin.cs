@@ -46,11 +46,17 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         _applicationPaths = applicationPaths;
         _recommendationsPath = Path.Combine(applicationPaths.DataPath, "jellyfeatured-recommendations.json");
         
-        _ = Task.Run(async () => await InitializePluginAsync(applicationPaths));
-        
-        StartRefreshTimer(applicationPaths);
-        
-        ConfigurationChanged += OnConfigurationChanged;
+        // Safer initialization with error handling
+        try
+        {
+            _ = Task.Run(async () => await InitializePluginAsync(applicationPaths));
+            StartRefreshTimer(applicationPaths);
+            ConfigurationChanged += OnConfigurationChanged;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize Jellyfeatured plugin safely");
+        }
     }
     
     private void OnConfigurationChanged(object? sender, BasePluginConfiguration e)
@@ -93,6 +99,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Series },
                 IsVirtualItem = false
             }).ToList();
+            
+            // Ensure we have items before proceeding
+            if (allItems == null || allItems.Count == 0)
+            {
+                _logger.LogWarning("No media items found in library");
+                return recommendations;
+            }
             
             await Task.Delay(1);
 

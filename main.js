@@ -5,8 +5,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     let currentSlide = 0;
     let autoSlideInterval;
     let isUserInteracting = false;
-    let injectionAttempted = false;
-    let injectionSuccessful = false;
     
     function getJellyfinApiKey() {
         try {
@@ -254,34 +252,16 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     async function createFeaturedCarousel() {
-        if (injectionAttempted && injectionSuccessful) return;
-        if (document.getElementById('jellyfeatured-div')) {
-            injectionSuccessful = true;
-            return;
-        }
-        if (document.querySelector('#recommendations-carousel')) {
-            injectionSuccessful = true;
-            return;
-        }
-        if (document.querySelector('.homePage #jellyfeatured-div')) {
-            injectionSuccessful = true;
-            return;
-        }
-
-        injectionAttempted = true;
+        // Simple duplicate check - if div already exists, skip
+        if (document.getElementById('jellyfeatured-div')) return;
         
         const pathname = window.location.pathname;
         if (!pathname.includes('home') && pathname !== '/' && pathname !== '/web/' && pathname !== '/web/index.html') {
-            injectionAttempted = false;
             return;
         }
         
         const targetContainer = document.querySelector('.homePage');
-        if (targetContainer) {
-            if (targetContainer.querySelector('#jellyfeatured-div') || targetContainer.querySelector('#recommendations-carousel')) {
-                injectionSuccessful = true;
-                return;
-            }
+        if (!targetContainer) return;
             
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlTemplate;
@@ -357,28 +337,22 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 }
                 
                 targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
-                injectionSuccessful = true;
             }
-        } else {
-            injectionAttempted = false;
         }
     }
 
+    // Conservative injection attempts to prevent crashes
     createFeaturedCarousel();
-    setTimeout(() => createFeaturedCarousel(), 500);
     setTimeout(() => createFeaturedCarousel(), 1000);
-    setTimeout(() => createFeaturedCarousel(), 2000);
 
-    const observer = new MutationObserver(() => setTimeout(() => createFeaturedCarousel(), 300));
+    // Reduced monitoring to prevent excessive calls
+    const observer = new MutationObserver(() => setTimeout(() => createFeaturedCarousel(), 500));
     if (document.body) observer.observe(document.body, { childList: true, subtree: true });
 
     let lastUrl = location.href;
     setInterval(() => {
         if (location.href !== lastUrl) {
             lastUrl = location.href;
-
-            injectionAttempted = false;
-            injectionSuccessful = false;
             setTimeout(() => createFeaturedCarousel(), 200);
         }
     }, 1000);
