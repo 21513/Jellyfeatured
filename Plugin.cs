@@ -47,32 +47,24 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         _applicationPaths = applicationPaths;
         _recommendationsPath = Path.Combine(applicationPaths.DataPath, "jellyfeatured-recommendations.json");
         
-        _logger.LogInformation("🎬 Jellyfeatured Plugin: Starting initialization...");
+        _logger.LogInformation("Jellyfeatured starting...");
         
-        // Generate recommendations and create web resources
         _ = Task.Run(async () => await InitializePluginAsync(applicationPaths));
         
-        // Start periodic refresh timer
         StartRefreshTimer(applicationPaths);
         
-        // Subscribe to configuration changes
         ConfigurationChanged += OnConfigurationChanged;
     }
     
     private void OnConfigurationChanged(object? sender, BasePluginConfiguration e)
     {
         var config = (PluginConfiguration)e;
-        
-        // Check if this is a manual refresh request
+
         if (config.LastManualRefresh > 0)
         {
-            _logger.LogInformation("🔄 Manual refresh requested, triggering immediate refresh...");
             _ = Task.Run(async () => await RefreshRecommendations(_applicationPaths));
         }
         
-        _logger.LogInformation("🔧 Configuration changed, restarting refresh timer...");
-        
-        // Restart timer with new interval
         _refreshTimer?.Dispose();
         StartRefreshTimer(_applicationPaths);
     }
@@ -81,23 +73,15 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     {
         try
         {
-            // Generate fresh recommendations
             var recommendations = await GenerateRecommendationsAsync();
-            
-            // Save recommendations to file
+
             await SaveRecommendationsAsync(recommendations);
-            
-            // Create the enhanced injection script
             await CreateWebScriptAsync(applicationPaths, recommendations);
-            
-            // Try to inject into index.html
             await InjectIntoIndexHtmlAsync(applicationPaths);
-            
-            _logger.LogInformation("✅ Jellyfeatured Plugin: Initialization complete!");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Jellyfeatured Plugin: Initialization failed");
+            _logger.LogError(ex, "Jellyfeatured not started");
         }
     }
     private async Task<List<RecommendationItem>> GenerateRecommendationsAsync()
@@ -107,20 +91,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         
         try
         {
-            _logger.LogInformation("🎬 Generating Jellyfin recommendations...");
-            
             var allItems = _libraryManager.GetItemList(new InternalItemsQuery
             {
                 IncludeItemTypes = new[] { BaseItemKind.Movie, BaseItemKind.Series },
                 IsVirtualItem = false
             }).ToList();
             
-            // Wait a small amount to make this truly async
             await Task.Delay(1);
-            
-            // Generate all available categories
-            
-            // 1. Most recently released movie by release date
+
             var latestMovie = allItems
                 .OfType<Movie>()
                 .Where(m => m.PremiereDate.HasValue)
@@ -137,8 +115,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                     Rating = latestMovie.CommunityRating?.ToString("F1") ?? "N/A"
                 };
             }
-            
-            // 2. Most recently added movie
+
             var recentAddedMovie = allItems
                 .OfType<Movie>()
                 .OrderByDescending(m => m.DateCreated)
@@ -155,7 +132,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 };
             }
             
-            // 3. Most recently added show
             var recentAddedShow = allItems
                 .OfType<Series>()
                 .OrderByDescending(s => s.DateCreated)
@@ -172,7 +148,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 };
             }
             
-            // 4. Best rated movie
             var bestMovie = allItems
                 .OfType<Movie>()
                 .Where(m => m.CommunityRating.HasValue && m.CommunityRating > 0 && m.CommunityRating < 10.0)
@@ -190,7 +165,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 };
             }
             
-            // 5. Best rated show
             var bestShow = allItems
                 .OfType<Series>()
                 .Where(s => s.CommunityRating.HasValue && s.CommunityRating > 0 && s.CommunityRating < 10.0)
@@ -208,7 +182,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 };
             }
             
-            // Add recommendations in the configured order
             foreach (var categoryName in Configuration.CategoryOrder)
             {
                 if (categoryItems.ContainsKey(categoryName))
@@ -216,12 +189,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                     recommendations.Add(categoryItems[categoryName]);
                 }
             }
-            
-            _logger.LogInformation($"✅ Generated {recommendations.Count} recommendations in configured order");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to generate recommendations");
+            _logger.LogError(ex, "Failed to generate recommendations");
         }
         
         return recommendations;
@@ -233,11 +204,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         {
             var json = JsonSerializer.Serialize(recommendations, new JsonSerializerOptions { WriteIndented = true });
             await File.WriteAllTextAsync(_recommendationsPath, json);
-            _logger.LogInformation($"💾 Saved recommendations to: {_recommendationsPath}");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to save recommendations");
+            _logger.LogError(ex, "Failed to save recommendations");
         }
     }
     
@@ -247,28 +217,24 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         {
             var webPath = Path.Combine(applicationPaths.WebPath, "jellyfeatured-inject.js");
             var assembly = Assembly.GetExecutingAssembly();
-            
-            // Load templates from embedded resources
+
             var htmlInject = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.html");
             var jsInject = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.js");
             var cssInject = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.css");
-            
-            // Create JavaScript array from recommendations
+
             var recommendationsJs = string.Join(",\n        ", recommendations.Select(r => 
                 $"{{ title: '{EscapeJs(r.Title)}', type: '{EscapeJs(r.Type)}', year: '{EscapeJs(r.Year)}', rating: '{EscapeJs(r.Rating)}' }}"));
-            
-            // Replace placeholders in templates
+
             var processedHtml = htmlInject.Replace("{{CSS_STYLES}}", cssInject);
             var scriptContent = jsInject
                 .Replace("{{RECOMMENDATIONS_DATA}}", recommendationsJs)
                 .Replace("{{HTML_TEMPLATE}}", EscapeJs(processedHtml));
             
             await File.WriteAllTextAsync(webPath, scriptContent);
-            _logger.LogInformation("📄 Created enhanced web script with recommendations from templates");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to create web script");
+            _logger.LogError(ex, "Failed to create web script");
         }
     }
     
@@ -285,7 +251,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             }
             else
             {
-                _logger.LogWarning($"Could not find embedded resource: {resourceName}");
                 return "";
             }
         }
@@ -307,14 +272,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                     {
                         indexContent = indexContent.Replace("</head>", scriptTag + "\n</head>");
                         await File.WriteAllTextAsync(indexPath, indexContent);
-                        _logger.LogInformation("📝 Injected script into index.html");
+                        _logger.LogInformation("Injected script into index.html");
                     }
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to inject into index.html");
+            _logger.LogError(ex, "Failed to inject web script");
         }
     }
     
@@ -329,14 +294,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         try
         {
             var refreshInterval = TimeSpan.FromHours(Configuration.RefreshIntervalHours);
-            _logger.LogInformation($"🕒 Setting up refresh timer for every {Configuration.RefreshIntervalHours} hours");
             
             _refreshTimer = new Timer(async _ => await RefreshRecommendations(applicationPaths), 
                 null, refreshInterval, refreshInterval);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to start refresh timer");
+            _logger.LogError(ex, "Failed to start refresh timer");
         }
     }
     
@@ -344,22 +308,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     {
         try
         {
-            _logger.LogInformation("🔄 Starting periodic refresh of recommendations...");
-            
-            // Generate fresh recommendations
             var recommendations = await GenerateRecommendationsAsync();
             
-            // Save recommendations to file
             await SaveRecommendationsAsync(recommendations);
-            
-            // Create the enhanced injection script
             await CreateWebScriptAsync(applicationPaths, recommendations);
-            
-            _logger.LogInformation("✅ Periodic refresh completed successfully!");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Periodic refresh failed");
+            _logger.LogError(ex, "Periodic refresh failed");
         }
     }
     

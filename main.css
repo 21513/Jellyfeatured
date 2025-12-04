@@ -181,7 +181,6 @@
     font-size: 1.1rem;
 }
 
-/* Mobile Responsive */
 @media (max-width: 50em) {
     #jellyfeatured-div {
         height: 250px;
@@ -206,13 +205,11 @@
         height: 8px;
     }
     
-    /* Smaller logo on mobile */
     .slide-logo-container {
         display: none;
     }
 }
 
-/* Focus states for accessibility */
 .carousel-slide:focus {
     outline: 2px solid var(--highlightOutlineColor);
     outline-offset: 2px;
@@ -223,7 +220,6 @@
     outline-offset: 2px;
 }
 
-/* Animation for slide entrance */
 @keyframes slideIn {
     from {
         opacity: 0;

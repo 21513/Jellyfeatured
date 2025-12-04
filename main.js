@@ -7,14 +7,11 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     let isUserInteracting = false;
     
     function getJellyfinApiKey() {
-        // Try to get API key from multiple locations
         try {
-            // Check for API client instance
             if (window.ApiClient && window.ApiClient.accessToken) {
                 return window.ApiClient.accessToken();
             }
             
-            // Check for credentials in localStorage
             const authData = localStorage.getItem('jellyfin_credentials');
             if (authData) {
                 const parsed = JSON.parse(authData);
@@ -79,14 +76,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     function getBackdropImageUrl(title, year) {
-        // Return a promise that resolves to the backdrop URL
         return searchForItem(title, year).then(item => {
             if (item && item.BackdropImageTags && item.BackdropImageTags.length > 0) {
                 const apiKey = getJellyfinApiKey();
                 const baseUrl = getJellyfinBaseUrl();
                 return `url("${baseUrl}/Items/${item.Id}/Images/Backdrop?api_key=${apiKey}")`;
             } else {
-                // Fallback gradient with better colors
                 const colors = [
                     'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
@@ -98,7 +93,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 return colors[Math.abs(hash) % colors.length];
             }
         }).catch(() => {
-            // Fallback gradient
             return `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
         });
     }
@@ -112,11 +106,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         slide.setAttribute('tabindex', '0');
         slide.setAttribute('role', 'button');
         slide.setAttribute('aria-label', `View ${recommendation.title}`);
-        
-        // Set initial gradient while loading
+
         slide.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
-        
-        // Create slide content structure with logo placeholder
+
         slide.innerHTML = `
             <div class="slide-content">
                 <div class="slide-logo-container">
@@ -129,13 +121,11 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 </div>
             </div>
         `;
-        
-        // Load media item data and images asynchronously
+
         try {
             const item = await searchForItem(recommendation.title, recommendation.year);
             
             if (item) {
-                // Set backdrop image
                 if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
                     const apiKey = getJellyfinApiKey();
                     const baseUrl = getJellyfinBaseUrl();
@@ -146,7 +136,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     slide.style.backgroundRepeat = 'no-repeat';
                 }
                 
-                // Set logo image if available
                 if (item.ImageTags && item.ImageTags.Logo) {
                     const apiKey = getJellyfinApiKey();
                     const baseUrl = getJellyfinBaseUrl();
@@ -154,14 +143,10 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     const logoImg = slide.querySelector('.slide-logo');
                     logoImg.src = logoUrl;
                     logoImg.style.display = 'block';
-                    
-                    // Keep the text title visible alongside the logo
-                    // Logo and title will both be shown
                 }
             }
         } catch (e) {
             console.log('Failed to load images for', recommendation.title, e);
-            // Fallback to colorful gradient
             const colors = [
                 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
@@ -206,15 +191,13 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         
         if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
         
-        // Remove active and entering classes from all slides and dots
         slides.forEach((slide, i) => {
             if (i !== index) {
                 slide.classList.remove('active', 'entering');
             }
         });
         dots.forEach(dot => dot.classList.remove('active'));
-        
-        // Add active class to current slide and dot with smoother transition
+
         if (slides[index]) {
             slides[index].classList.add('active');
         }
@@ -233,12 +216,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     function startAutoSlide() {
         if (recommendations.length > 1) {
-            clearInterval(autoSlideInterval); // Clear any existing interval
+            clearInterval(autoSlideInterval);
             autoSlideInterval = setInterval(() => {
                 if (!isUserInteracting) {
                     nextSlide();
                 }
-            }, 6000); // Change slide every 6 seconds for better viewing
+            }, 6000);
         }
     }
     
@@ -246,7 +229,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         isUserInteracting = true;
         clearInterval(autoSlideInterval);
         
-        // Resume auto-slide after 10 seconds of no interaction
         setTimeout(() => {
             isUserInteracting = false;
             startAutoSlide();
@@ -254,13 +236,11 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     async function navigateToMedia(title, year) {
-        console.log(`🎬 Navigating to: ${title} ${year ? '(' + year + ')' : ''}`);
+        console.log(`Navigating to: ${title} ${year ? '(' + year + ')' : ''}`);
         
         try {
-            // Search for the item to get its ID
             const item = await searchForItem(title, year);
             if (item && item.Id) {
-                // Navigate directly to the item's detail page
                 const detailUrl = `${window.location.origin}/web/index.html#!/details?id=${item.Id}`;
                 window.location.href = detailUrl;
                 return;
@@ -269,7 +249,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             console.log('Failed to find item for navigation:', e);
         }
         
-        // Fallback to search if we can't find the specific item
         const searchQuery = encodeURIComponent(title);
         const searchUrl = `${window.location.origin}/web/index.html#!/search.html?query=${searchQuery}`;
         window.location.href = searchUrl;
@@ -283,7 +262,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             return;
         }
         
-        console.log('🎬 Jellyfeatured: Attempting carousel injection...');
+        console.log('Jellyfeatured: Attempting carousel injection...');
         
         const targetContainer = document.querySelector('.homePage');
         if (targetContainer) {
@@ -296,41 +275,33 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 const dotsContainer = featuredDiv.querySelector('#carousel-dots');
                 
                 if (carouselContainer && recommendations.length > 0) {
-                    // Remove loading slide
                     const loadingSlide = carouselContainer.querySelector('.loading-slide');
                     if (loadingSlide) {
                         loadingSlide.remove();
                     }
                     
-                    // Create slides asynchronously and wait for all to be ready
                     const slidePromises = [];
                     for (let i = 0; i < recommendations.length; i++) {
                         const rec = recommendations[i];
                         slidePromises.push(createCarouselSlide(rec, i));
                     }
-                    
-                    // Wait for all slides to be created
+
                     const slides = await Promise.all(slidePromises);
-                    
-                    // Add all slides and dots to DOM and show first slide immediately
+
                     slides.forEach((slide, index) => {
                         carouselContainer.appendChild(slide);
                         const dot = createNavigationDot(index);
                         dotsContainer.appendChild(dot);
-                        
-                        // Make first slide visible immediately
+
                         if (index === 0) {
                             slide.classList.add('active');
                             dot.classList.add('active');
                         }
                     });
-                    
-                    // Set current slide to 0
+
                     currentSlide = 0;
-                    
-                    // Add centralized click handler for the carousel container
+
                     carouselContainer.addEventListener('click', async (e) => {
-                        // Only handle clicks on active slides
                         const activeSlide = carouselContainer.querySelector('.carousel-slide.active');
                         if (activeSlide && (e.target === activeSlide || activeSlide.contains(e.target))) {
                             const title = activeSlide.getAttribute('data-title');
@@ -338,8 +309,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                             await navigateToMedia(title, year);
                         }
                     });
-                    
-                    // Add keyboard support for carousel
+
                     carouselContainer.addEventListener('keydown', async (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             const activeSlide = carouselContainer.querySelector('.carousel-slide.active');
@@ -351,11 +321,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                             }
                         }
                     });
-                    
-                    // Start auto-slide after a short delay
-                    setTimeout(startAutoSlide, 2000); // Start after 2 seconds
-                    
-                    // Pause auto-slide on hover
+
+                    setTimeout(startAutoSlide, 2000);
+
                     featuredDiv.addEventListener('mouseenter', pauseAutoSlide);
                     featuredDiv.addEventListener('mouseleave', () => {
                         if (!isUserInteracting) {
@@ -364,7 +332,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     });
                     
                 } else if (carouselContainer) {
-                    // Show loading state
                     carouselContainer.innerHTML = `
                         <div class="loading-slide">
                             <p class="loading-text">Loading recommendations...</p>
@@ -373,22 +340,19 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 }
                 
                 targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
-                console.log('✅ Jellyfeatured: Successfully injected carousel!');
+                console.log('Jellyfeatured: Successfully injected carousel!');
             }
         }
     }
-    
-    // Multiple injection attempts
+
     createFeaturedCarousel();
     setTimeout(() => createFeaturedCarousel(), 500);
     setTimeout(() => createFeaturedCarousel(), 1000);
     setTimeout(() => createFeaturedCarousel(), 2000);
-    
-    // Watch for navigation changes
+
     const observer = new MutationObserver(() => setTimeout(() => createFeaturedCarousel(), 300));
     if (document.body) observer.observe(document.body, { childList: true, subtree: true });
-    
-    // URL change detection
+
     let lastUrl = location.href;
     setInterval(() => {
         if (location.href !== lastUrl) {
