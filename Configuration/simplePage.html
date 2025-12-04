@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Jellyfeatured Settings</title>
+</head>
+<body>
+    <div id="jellyfeaturedPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input,emby-checkbox,emby-select">
+        <div data-role="content">
+            <div class="content-primary">
+                <div class="sectionTitleContainer flex align-items-center">
+                    <h2 class="sectionTitle">Jellyfeatured Settings</h2>
+                </div>
+                
+                <p class="settingsDescription">Configure how content recommendations appear on your home page.</p>
+                
+                <form id="jellyfeaturedConfigForm">
+                    <div class="verticalSection">
+                        <h3>Category Priority Order</h3>
+                        <div class="fieldDescription">
+                            Set the priority for each category. Lower numbers appear first in the carousel.
+                        </div>
+                        
+                        <div class="inputContainer">
+                            <label for="latestReleasePriority">Latest Release Priority</label>
+                            <select is="emby-select" id="latestReleasePriority">
+                                <option value="1">1 (First)</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5 (Last)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="inputContainer">
+                            <label for="recentFilmsPriority">Recently Added Films Priority</label>
+                            <select is="emby-select" id="recentFilmsPriority">
+                                <option value="1">1 (First)</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5 (Last)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="inputContainer">
+                            <label for="recentSeriesPriority">Recently Added Series Priority</label>
+                            <select is="emby-select" id="recentSeriesPriority">
+                                <option value="1">1 (First)</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5 (Last)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="inputContainer">
+                            <label for="bestFilmsPriority">Best Rated Films Priority</label>
+                            <select is="emby-select" id="bestFilmsPriority">
+                                <option value="1">1 (First)</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5 (Last)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="inputContainer">
+                            <label for="bestSeriesPriority">Best Rated Series Priority</label>
+                            <select is="emby-select" id="bestSeriesPriority">
+                                <option value="1">1 (First)</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5 (Last)</option>
+                            </select>
+                        </div>
+                        
+                        <button is="emby-button" type="button" id="btnResetOrder" class="raised button-alt" style="margin-top: 1em;">
+                            Reset to Default Order
+                        </button>
+                    </div>
+                    
+                    <div class="verticalSection">
+                        <h3>Refresh Settings</h3>
+                        
+                        <div class="inputContainer">
+                            <label for="txtRefreshIntervalHours">Refresh Interval (hours)</label>
+                            <input is="emby-input" type="number" id="txtRefreshIntervalHours" min="1" max="168" step="1" value="24" />
+                            <div class="fieldDescription">
+                                How often to refresh recommendations (1-168 hours). Default is 24 hours.
+                            </div>
+                        </div>
+                        
+                        <button is="emby-button" type="button" id="btnManualRefresh" class="raised button-alt" style="margin-top: 1em;">
+                            Refresh Now
+                        </button>
+                    </div>
+                    
+                    <br>
+                    <button is="emby-button" type="submit" class="raised button-submit">
+                        Save Settings
+                    </button>
+                </form>
+                
+                <script type="text/javascript">
+                    (function() {
+                        var pluginId = "639b5171-918b-4b24-82e4-d35c10be63a4";
+                        
+                        var categoryMapping = {
+                            "latestReleasePriority": "Latest Release",
+                            "recentFilmsPriority": "Recently Added in Films", 
+                            "recentSeriesPriority": "Recently Added in Series",
+                            "bestFilmsPriority": "Best Rated in Films",
+                            "bestSeriesPriority": "Best Rated in Series"
+                        };
+                        
+                        function loadConfiguration() {
+                            ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                                // Set refresh interval
+                                document.getElementById('txtRefreshIntervalHours').value = config.RefreshIntervalHours || 24;
+                                
+                                // Convert category order array to priorities
+                                var categoryOrder = config.CategoryOrder || [
+                                    "Latest Release",
+                                    "Recently Added in Films", 
+                                    "Recently Added in Series",
+                                    "Best Rated in Films",
+                                    "Best Rated in Series"
+                                ];
+                                
+                                // Set default priorities first
+                                Object.keys(categoryMapping).forEach(function(selectId) {
+                                    document.getElementById(selectId).value = "1";
+                                });
+                                
+                                // Set actual priorities based on order
+                                categoryOrder.forEach(function(categoryName, index) {
+                                    Object.keys(categoryMapping).forEach(function(selectId) {
+                                        if (categoryMapping[selectId] === categoryName) {
+                                            document.getElementById(selectId).value = (index + 1).toString();
+                                        }
+                                    });
+                                });
+                            }).catch(function() {
+                                // Set defaults on error
+                                document.getElementById('txtRefreshIntervalHours').value = 24;
+                                document.getElementById('latestReleasePriority').value = "1";
+                                document.getElementById('recentFilmsPriority').value = "2";
+                                document.getElementById('recentSeriesPriority').value = "3";
+                                document.getElementById('bestFilmsPriority').value = "4";
+                                document.getElementById('bestSeriesPriority').value = "5";
+                            });
+                        }
+                        
+                        function saveConfiguration(e) {
+                            e.preventDefault();
+                            Dashboard.showLoadingMsg();
+                            
+                            var refreshInterval = parseInt(document.getElementById('txtRefreshIntervalHours').value) || 24;
+                            
+                            // Convert priorities back to category order
+                            var priorities = [];
+                            Object.keys(categoryMapping).forEach(function(selectId) {
+                                var priority = parseInt(document.getElementById(selectId).value);
+                                var categoryName = categoryMapping[selectId];
+                                priorities.push({ priority: priority, category: categoryName });
+                            });
+                            
+                            // Sort by priority and create ordered array
+                            priorities.sort(function(a, b) { return a.priority - b.priority; });
+                            var categoryOrder = priorities.map(function(item) { return item.category; });
+                            
+                            var config = {
+                                CategoryOrder: categoryOrder,
+                                RefreshIntervalHours: refreshInterval,
+                                LastManualRefresh: 0
+                            };
+                            
+                            ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
+                                Dashboard.hideLoadingMsg();
+                                Dashboard.alert('Settings saved successfully!');
+                                setTimeout(loadConfiguration, 500);
+                            }).catch(function() {
+                                Dashboard.hideLoadingMsg();
+                                Dashboard.alert('Failed to save settings.');
+                            });
+                        }
+                        
+                        function resetToDefaults() {
+                            document.getElementById('latestReleasePriority').value = "1";
+                            document.getElementById('recentFilmsPriority').value = "2";
+                            document.getElementById('recentSeriesPriority').value = "3";
+                            document.getElementById('bestFilmsPriority').value = "4";
+                            document.getElementById('bestSeriesPriority').value = "5";
+                            document.getElementById('txtRefreshIntervalHours').value = 24;
+                        }
+                        
+                        function manualRefresh() {
+                            var button = document.getElementById('btnManualRefresh');
+                            button.disabled = true;
+                            button.textContent = 'Refreshing...';
+                            
+                            var refreshInterval = parseInt(document.getElementById('txtRefreshIntervalHours').value) || 24;
+                            
+                            var config = {
+                                RefreshIntervalHours: refreshInterval,
+                                LastManualRefresh: Date.now()
+                            };
+                            
+                            ApiClient.updatePluginConfiguration(pluginId, config).then(function() {
+                                button.textContent = 'Refresh Now';
+                                button.disabled = false;
+                                Dashboard.alert('Recommendations refreshed!');
+                            }).catch(function() {
+                                button.textContent = 'Refresh Now';
+                                button.disabled = false;
+                                Dashboard.alert('Failed to refresh.');
+                            });
+                        }
+                        
+                        // Initialize when page loads
+                        if (document.readyState === 'loading') {
+                            document.addEventListener('DOMContentLoaded', function() {
+                                loadConfiguration();
+                                document.getElementById('jellyfeaturedConfigForm').addEventListener('submit', saveConfiguration);
+                                document.getElementById('btnResetOrder').addEventListener('click', resetToDefaults);
+                                document.getElementById('btnManualRefresh').addEventListener('click', manualRefresh);
+                            });
+                        } else {
+                            loadConfiguration();
+                            document.getElementById('jellyfeaturedConfigForm').addEventListener('submit', saveConfiguration);
+                            document.getElementById('btnResetOrder').addEventListener('click', resetToDefaults);
+                            document.getElementById('btnManualRefresh').addEventListener('click', manualRefresh);
+                        }
+                    })();
+                </script>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
