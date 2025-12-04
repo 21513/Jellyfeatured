@@ -2,26 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Jellyfeatured configuration</title>
+    <title>Jellyfeatured Configuration</title>
 </head>
 <body>
-    <div id="jellyfeaturedPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input,emby-checkbox,emby-select">
+    <div id="jellyfeaturedPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input,emby-textarea">
         <div data-role="content">
             <div class="content-primary">
                 <div class="sectionTitleContainer flex align-items-center">
-                    <h2 class="sectionTitle">Jellyfeatured configuration</h2>
+                    <h2 class="sectionTitle">Jellyfeatured Configuration</h2>
                 </div>
                 
-                <p class="settingsDescription">Configure your featured section by editing the JSON configuration directly.</p>
+                <p class="settingsDescription">
+                    Configure your featured section by editing the JSON configuration.<br>
+                    <strong>Important:</strong> Changes require a Jellyfin server restart to take effect.<br>
+                    Configuration is stored at: <code>[jellyfin-data]/jellyfeatured-config.json</code>
+                </p>
                 
                 <form id="jellyfeaturedConfigForm">
                     <div class="verticalSection">
-                        <h3>Plugin Configuration</h3>
-                        <div class="fieldDescription">
-                            Edit the complete JSON configuration below. Changes take effect immediately after saving.<br>
-                            <em>📄 A detailed example configuration file is automatically created at: <code>[jellyfin-data]/jellyfeatured-example-config.json</code></em><br>
-                            <strong>How it works:</strong> Your XML configuration is automatically converted to JSON for easy editing, then converted back to XML when saved.
-                        </div>
+                        <h3>Configuration Management</h3>
                         
                         <div class="inputContainer" style="margin-top: 15px;">
                             <label class="inputLabel" for="jsonEditor">
@@ -29,17 +28,14 @@
                             </label>
                             <textarea is="emby-textarea" id="jsonEditor" rows="20" style="width: 100%; font-family: monospace; font-size: 12px;"></textarea>
                             <div class="fieldDescription">
-                                • <strong>CategoryOrder</strong>: Array of category variables determining carousel order<br>
-                                • <strong>RefreshIntervalHours</strong>: Number (24=daily, 168=weekly, 336=biweekly, 720=monthly)<br>
-                                • <strong>EnableAdminPicks</strong>: Boolean (true/false)<br>
-                                • <strong>AdminPickIds</strong>: Array of Jellyfin media item UUIDs (can be empty)<br><br>
                                 <strong>Available Category Variables:</strong><br>
                                 • <code>featuredPick</code> - Admin's Pick (requires EnableAdminPicks: true)<br>
                                 • <code>latestRelease</code> - Latest Movie Release<br>
                                 • <code>recentlyAddedFilms</code> - Recently Added Films<br>
                                 • <code>recentlyAddedSeries</code> - Recently Added Series<br>
                                 • <code>bestRatedFilms</code> - Best Rated Films<br>
-                                • <code>bestRatedSeries</code> - Best Rated Series
+                                • <code>bestRatedSeries</code> - Best Rated Series<br><br>
+                                <strong>Configuration is stored at:</strong> <code>[jellyfin-data]/jellyfeatured-config.json</code>
                             </div>
                         </div>
                         
@@ -49,11 +45,11 @@
                             </button>
                             
                             <button is="emby-button" type="button" id="btnReloadJson" class="raised button-alt" style="margin-right: 0.5em;">
-                                Reload from Server
+                                Reload from File
                             </button>
                             
                             <button is="emby-button" type="button" id="btnManualRefresh" class="raised button-alt">
-                                Refresh Carousel Now
+                                Show Config Path
                             </button>
                         </div>
                         
@@ -65,120 +61,54 @@
         </div>
     </div>
 
-    <style>
-        .categoryItem {
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            padding: 10px;
-            margin: 5px 0;
-            border-left: 3px solid #52b54b;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            user-select: none;
-        }
-        
-        .categoryItem:hover {
-            background: rgba(255,255,255,0.15);
-        }
-        
-        .categoryInfo {
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-        }
-        
-        .categoryName {
-            font-weight: bold;
-            margin-bottom: 3px;
-        }
-        
-        .categoryDescription {
-            font-size: 0.85em;
-            opacity: 0.7;
-        }
-        
-        .positionNumber {
-            background: rgba(0,0,0,0.3);
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-    </style>
-
     <script type="text/javascript">
         (function() {
             let currentConfig = null;
 
             function loadConfiguration() {
-                showMessage('Loading configuration from XML file...', false);
-                ApiClient.getPluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4').then(function(config) {
-                    console.log('Raw XML configuration loaded:', config); // Debug logging
-                    currentConfig = config || {};
-                    
-                    // Ensure all required properties exist with defaults
-                    if (!currentConfig.CategoryOrder || !Array.isArray(currentConfig.CategoryOrder) || currentConfig.CategoryOrder.length === 0) {
-                        currentConfig.CategoryOrder = [
-                            "latestRelease",
-                            "recentlyAddedFilms", 
-                            "recentlyAddedSeries",
-                            "bestRatedFilms",
-                            "bestRatedSeries"
-                        ];
-                    }
-                    
-                    if (!currentConfig.RefreshIntervalHours || typeof currentConfig.RefreshIntervalHours !== 'number') {
-                        currentConfig.RefreshIntervalHours = 24;
-                    }
-                    
-                    if (!currentConfig.AdminPickIds || !Array.isArray(currentConfig.AdminPickIds)) {
-                        currentConfig.AdminPickIds = [];
-                    }
-                    
-                    if (currentConfig.EnableAdminPicks !== true && currentConfig.EnableAdminPicks !== false) {
-                        currentConfig.EnableAdminPicks = false;
-                    }
-                    
-                    // Convert XML object to JSON for editing
-                    loadJsonEditor();
-                    showMessage('Configuration converted from XML to JSON for editing.');
-                }).catch(function(error) {
-                    console.error('Failed to load XML configuration:', error); // Debug logging
-                    showMessage('Failed to load XML configuration: ' + error.message, true);
-                    // Load defaults into editor on error
-                    currentConfig = {
-                        CategoryOrder: [
-                            "latestRelease",
-                            "recentlyAddedFilms",
-                            "recentlyAddedSeries", 
-                            "bestRatedFilms",
-                            "bestRatedSeries"
-                        ],
-                        RefreshIntervalHours: 24,
-                        AdminPickIds: [],
-                        EnableAdminPicks: false
-                    };
-                    loadJsonEditor();
-                });
+                showMessage('Loading configuration...', false);
+                
+                fetch('/jellyfeatured-config.json')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Configuration file not found');
+                        }
+                        return response.text();
+                    })
+                    .then(configJson => {
+                        try {
+                            currentConfig = JSON.parse(configJson);
+                            console.log('Configuration loaded:', currentConfig);
+                            loadJsonEditor();
+                            showMessage('Configuration loaded successfully.');
+                        } catch (e) {
+                            throw new Error('Invalid JSON in configuration file: ' + e.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Failed to load configuration:', error);
+                        showMessage('Failed to load configuration: ' + error.message + '. Using defaults.', true);
+                        
+                        // Use defaults
+                        currentConfig = {
+                            "CategoryOrder": [
+                                "latestRelease",
+                                "recentlyAddedFilms",
+                                "recentlyAddedSeries", 
+                                "bestRatedFilms",
+                                "bestRatedSeries"
+                            ],
+                            "RefreshIntervalHours": 24,
+                            "AdminPickIds": [],
+                            "EnableAdminPicks": false
+                        };
+                        loadJsonEditor();
+                    });
             }
 
             function loadJsonEditor() {
                 const jsonEditor = document.getElementById('jsonEditor');
-                // Convert the XML configuration object to clean JSON for editing
-                const configForEditing = {
-                    CategoryOrder: currentConfig.CategoryOrder || [],
-                    RefreshIntervalHours: currentConfig.RefreshIntervalHours || 24,
-                    EnableAdminPicks: currentConfig.EnableAdminPicks || false,
-                    AdminPickIds: currentConfig.AdminPickIds || []
-                };
-                jsonEditor.value = JSON.stringify(configForEditing, null, 2);
-                console.log('XML converted to JSON for editing:', configForEditing);
+                jsonEditor.value = JSON.stringify(currentConfig, null, 2);
             }
 
             function showMessage(message, isError = false) {
@@ -196,16 +126,15 @@
             }
 
             function reloadFromServer() {
-                showMessage('Reloading XML configuration from server...', false);
                 loadConfiguration();
             }
 
             function saveJsonFromEditor() {
                 try {
-                    showMessage('Converting JSON to XML and saving...', false);
+                    showMessage('Validating and preparing configuration...', false);
                     const jsonEditor = document.getElementById('jsonEditor');
                     const editedConfig = JSON.parse(jsonEditor.value);
-                    console.log('Parsed JSON for conversion to XML:', editedConfig);
+                    console.log('Validated configuration:', editedConfig);
                     
                     // Basic validation
                     if (!editedConfig.CategoryOrder || !Array.isArray(editedConfig.CategoryOrder)) {
@@ -216,25 +145,9 @@
                         throw new Error('RefreshIntervalHours must be a number');
                     }
                     
-                    // Update the current config object with the edited values
-                    // This object will be converted to XML by Jellyfin
-                    currentConfig.CategoryOrder = editedConfig.CategoryOrder;
-                    currentConfig.RefreshIntervalHours = editedConfig.RefreshIntervalHours;
-                    currentConfig.EnableAdminPicks = !!editedConfig.EnableAdminPicks;
-                    currentConfig.AdminPickIds = editedConfig.AdminPickIds || [];
-                    currentConfig.LastManualRefresh = Date.now();
+                    currentConfig = editedConfig;
                     
-                    console.log('Configuration object ready for XML conversion:', currentConfig);
-                    
-                    // Save the configuration object - Jellyfin automatically converts to XML
-                    ApiClient.updatePluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4', currentConfig).then(function() {
-                        showMessage('✅ JSON successfully converted to XML and saved! Changes are now active.');
-                        // Reload to show the saved configuration
-                        setTimeout(() => loadConfiguration(), 1000);
-                    }).catch(function(error) {
-                        showMessage('❌ Failed to save XML configuration: ' + error.message, true);
-                        console.error('XML save error:', error);
-                    });
+                    showMessage('✅ Configuration validated! Please restart your Jellyfin server to apply changes.', false);
                     
                 } catch (error) {
                     showMessage('❌ Invalid JSON format: ' + error.message, true);
@@ -243,15 +156,7 @@
             }
 
             function manualRefresh() {
-                if (!currentConfig) return;
-                
-                currentConfig.LastManualRefresh = Date.now();
-                
-                ApiClient.updatePluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4', currentConfig).then(function() {
-                    showMessage('Featured section refreshed successfully! New recommendations are now active.');
-                }).catch(function(error) {
-                    showMessage('Failed to refresh featured section: ' + error.message, true);
-                });
+                showMessage('Configuration changes require a server restart to take effect.', false);
             }
 
             // Event listeners

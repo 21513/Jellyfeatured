@@ -27,9 +27,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     private readonly ILibraryManager _libraryManager;
     private readonly ILogger<Plugin> _logger;
     private readonly string _recommendationsPath;
+    private readonly string _configPath;
     private readonly IApplicationPaths _applicationPaths;
     private Timer? _refreshTimer;
     private bool _disposed = false;
+    private PluginConfiguration? _cachedConfig;
+
+    public static Plugin? Instance { get; private set; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Plugin"/> class.
@@ -41,10 +45,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILibraryManager libraryManager, ILogger<Plugin> logger)
         : base(applicationPaths, xmlSerializer)
     {
+        Instance = this;
         _libraryManager = libraryManager;
         _logger = logger;
         _applicationPaths = applicationPaths;
         _recommendationsPath = Path.Combine(applicationPaths.DataPath, "jellyfeatured-recommendations.json");
+        _configPath = Path.Combine(applicationPaths.DataPath, "jellyfeatured-config.json");
         
         // Safer initialization with error handling
         try
@@ -59,18 +65,171 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         }
     }
     
+    // Direct JSON Configuration Management
+    public async Task<PluginConfiguration> GetDirectConfigurationAsync()
+    {
+        try
+        {
+            if (!File.Exists(_configPath))
+            {
+                _logger.LogInformation("Direct configuration file not found, creating default at: {Path}", _configPath);
+                var defaultConfig = new PluginConfiguration();
+                await SaveDirectConfigurationAsync(defaultConfig);
+                return defaultConfig;
+            }
+
+            var jsonContent = await File.ReadAllTextAsync(_configPath);
+            var config = JsonSerializer.Deserialize<PluginConfiguration>(jsonContent);
+            
+            if (config == null)
+            {
+                _logger.LogWarning("Failed to deserialize direct configuration, using defaults");
+                return new PluginConfiguration();
+            }
+
+            _cachedConfig = config;
+            _logger.LogInformation("Direct configuration loaded successfully from: {Path}", _configPath);
+            return config;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load direct configuration, using defaults");
+            return new PluginConfiguration();
+        }
+    }
+
+    public async Task SaveDirectConfigurationAsync(PluginConfiguration configuration)
+    {
+        try
+        {
+            var jsonString = JsonSerializer.Serialize(configuration, new JsonSerializerOptions 
+            { 
+                WriteIndented = true 
+            });
+            
+            await File.WriteAllTextAsync(_configPath, jsonString);
+            
+            // Also update the web-accessible copy
+            var webConfigPath = Path.Combine(_applicationPaths.WebPath, "jellyfeatured-config.json");
+            await File.WriteAllTextAsync(webConfigPath, jsonString);
+            
+            _cachedConfig = configuration;
+            _logger.LogInformation("Direct configuration saved successfully to: {Path} and {WebPath}", _configPath, webConfigPath);
+            
+            // Trigger refresh when configuration changes
+            _ = Task.Run(async () => await RefreshRecommendationsAsync(_applicationPaths));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save direct configuration");
+            throw;
+        }
+    }
+
+    public async Task<string> GetConfigurationJsonAsync()
+    {
+        try
+        {
+            if (!File.Exists(_configPath))
+            {
+                var defaultConfig = new PluginConfiguration();
+                await SaveDirectConfigurationAsync(defaultConfig);
+            }
+
+            return await File.ReadAllTextAsync(_configPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to read configuration JSON");
+            var defaultConfig = new PluginConfiguration();
+            var defaultJson = JsonSerializer.Serialize(defaultConfig, new JsonSerializerOptions { WriteIndented = true });
+            return defaultJson;
+        }
+    }
+
+    public async Task SaveConfigurationJsonAsync(string jsonContent)
+    {
+        try
+        {
+            // Validate JSON first
+            var config = JsonSerializer.Deserialize<PluginConfiguration>(jsonContent);
+            if (config == null)
+            {
+                throw new ArgumentException("Invalid JSON configuration");
+            }
+
+            await File.WriteAllTextAsync(_configPath, jsonContent);
+            _cachedConfig = config;
+            _logger.LogInformation("Configuration JSON saved successfully");
+            
+            // Trigger refresh when configuration changes
+            _ = Task.Run(async () => await RefreshRecommendationsAsync(_applicationPaths));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save configuration JSON");
+            throw;
+        }
+    }
+
+    public async Task TriggerRefreshAsync()
+    {
+        await RefreshRecommendationsAsync(_applicationPaths);
+    }
+
+    public PluginConfiguration GetCurrentConfiguration()
+    {
+        return _cachedConfig ?? new PluginConfiguration();
+    }
+    
     private void OnConfigurationChanged(object? sender, BasePluginConfiguration e)
     {
         var config = (PluginConfiguration)e;
-        _logger.LogInformation("Configuration changed, refreshing recommendations");
+        _logger.LogInformation("Configuration changed detected - Category order: [{Categories}], Refresh interval: {Hours}h, Admin picks enabled: {Enabled}", 
+            string.Join(", ", config.CategoryOrder), config.RefreshIntervalHours, config.EnableAdminPicks);
 
-        // Always refresh recommendations when configuration changes
-        // This handles both category order changes and manual refresh requests
-        _ = Task.Run(async () => await RefreshRecommendationsAsync(_applicationPaths));
+        // Validate configuration before processing
+        if (ValidateConfiguration(config))
+        {
+            // Always refresh recommendations when configuration changes
+            // This handles both category order changes and manual refresh requests
+            _ = Task.Run(async () => await RefreshRecommendationsAsync(_applicationPaths));
+            
+            // Restart the timer with the new interval
+            _refreshTimer?.Dispose();
+            StartRefreshTimer(_applicationPaths);
+        }
+        else
+        {
+            _logger.LogError("Invalid configuration detected, keeping previous settings");
+        }
+    }
+    
+    private bool ValidateConfiguration(PluginConfiguration config)
+    {
+        if (config == null)
+        {
+            _logger.LogError("Configuration is null");
+            return false;
+        }
         
-        // Restart the timer with the new interval
-        _refreshTimer?.Dispose();
-        StartRefreshTimer(_applicationPaths);
+        if (config.CategoryOrder == null || config.CategoryOrder.Count == 0)
+        {
+            _logger.LogError("CategoryOrder is null or empty");
+            return false;
+        }
+        
+        if (config.RefreshIntervalHours <= 0 || config.RefreshIntervalHours > 8760) // Max 1 year
+        {
+            _logger.LogError("RefreshIntervalHours is invalid: {Hours}", config.RefreshIntervalHours);
+            return false;
+        }
+        
+        // Log current configuration for debugging
+        _logger.LogInformation("Configuration validation passed - using settings: {Settings}", 
+            System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+        
+        return true;
     }
     
     private async Task RefreshRecommendationsAsync(IApplicationPaths applicationPaths)
@@ -97,6 +256,9 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             // Generate example configuration file for user reference
             await CreateExampleConfigurationAsync(applicationPaths);
             
+            // Copy configuration file to web directory for direct access
+            await CreateWebConfigurationFileAsync(applicationPaths);
+            
             var recommendations = await GenerateRecommendationsAsync();
 
             await SaveRecommendationsAsync(recommendations);
@@ -112,6 +274,9 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     {
         var recommendations = new List<RecommendationItem>();
         var categoryItems = new Dictionary<string, RecommendationItem>();
+        
+        // Get direct configuration instead of XML configuration
+        var config = await GetDirectConfigurationAsync();
         
         // Category variable mapping
         var categoryMapping = new Dictionary<string, string>
@@ -224,12 +389,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 };
             }
             
-            // Handle Admin's Picks (featuredPick)
-            if (Configuration.EnableAdminPicks && Configuration.AdminPickIds?.Count > 0)
+            // Handle Admin's Picks (featuredPick) using direct configuration
+            if (config.EnableAdminPicks && config.AdminPickIds?.Count > 0)
             {
                 var adminPickItems = new List<RecommendationItem>();
                 
-                foreach (var itemId in Configuration.AdminPickIds)
+                foreach (var itemId in config.AdminPickIds)
                 {
                     try
                     {
@@ -260,19 +425,25 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                     categoryItems["featuredPick"] = adminPickItems.First();
                     
                     // Ensure "featuredPick" is in CategoryOrder if it's not already there
-                    if (!Configuration.CategoryOrder.Contains("featuredPick"))
+                    if (!config.CategoryOrder.Contains("featuredPick"))
                     {
-                        Configuration.CategoryOrder.Insert(0, "featuredPick");
+                        config.CategoryOrder.Insert(0, "featuredPick");
+                        // Save the updated configuration
+                        await SaveDirectConfigurationAsync(config);
                     }
                 }
             }
             else
             {
                 // Remove "featuredPick" from CategoryOrder if admin picks are disabled
-                Configuration.CategoryOrder.RemoveAll(c => c == "featuredPick");
+                if (config.CategoryOrder.RemoveAll(c => c == "featuredPick") > 0)
+                {
+                    // Save the updated configuration
+                    await SaveDirectConfigurationAsync(config);
+                }
             }
             
-            foreach (var categoryVariable in Configuration.CategoryOrder)
+            foreach (var categoryVariable in config.CategoryOrder)
             {
                 if (categoryItems.ContainsKey(categoryVariable))
                 {
@@ -425,17 +596,39 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         }
     }
     
+    private async Task CreateWebConfigurationFileAsync(IApplicationPaths applicationPaths)
+    {
+        try
+        {
+            var webConfigPath = Path.Combine(applicationPaths.WebPath, "jellyfeatured-config.json");
+            var config = await GetDirectConfigurationAsync();
+            
+            var jsonString = JsonSerializer.Serialize(config, new JsonSerializerOptions 
+            { 
+                WriteIndented = true 
+            });
+            
+            await File.WriteAllTextAsync(webConfigPath, jsonString);
+            _logger.LogInformation("Created web-accessible configuration file at: {Path}", webConfigPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create web configuration file");
+        }
+    }
+    
     private string EscapeJs(string input)
     {
         if (string.IsNullOrEmpty(input)) return "";
         return input.Replace("'", "\\'").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r");
     }
     
-    private void StartRefreshTimer(IApplicationPaths applicationPaths)
+    private async void StartRefreshTimer(IApplicationPaths applicationPaths)
     {
         try
         {
-            var refreshInterval = TimeSpan.FromHours(Configuration.RefreshIntervalHours);
+            var config = await GetDirectConfigurationAsync();
+            var refreshInterval = TimeSpan.FromHours(config.RefreshIntervalHours);
             
             _refreshTimer = new Timer(async _ => await RefreshRecommendations(applicationPaths), 
                 null, refreshInterval, refreshInterval);
@@ -496,7 +689,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             new PluginPageInfo
             {
                 Name = "Jellyfeatured",
-                EmbeddedResourcePath = string.Format("{0}.Configuration.dashboardPage.html", GetType().Namespace),
+                EmbeddedResourcePath = string.Format("{0}.Configuration.simpleDashboard.html", GetType().Namespace),
                 EnableInMainMenu = true
             }
         };
