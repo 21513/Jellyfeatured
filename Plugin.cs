@@ -68,8 +68,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     private void OnConfigurationChanged(object? sender, BasePluginConfiguration e)
     {
         var config = (PluginConfiguration)e;
-        _logger.LogInformation("🔧 Configuration change detected! Category order: [{Categories}], Refresh interval: {Hours}h, Admin picks enabled: {Enabled}, Manual refresh timestamp: {ManualRefresh}", 
-            string.Join(", ", config.CategoryOrder), config.RefreshIntervalHours, config.EnableAdminPicks, config.LastManualRefresh);
+        _logger.LogInformation("🔧 Configuration change detected! Refresh interval: {Hours}h, Admin picks enabled: {Enabled}, Manual refresh timestamp: {ManualRefresh}", 
+            config.RefreshIntervalHours, config.EnableAdminPicks, config.LastManualRefresh);
 
         // Validate configuration before processing
         if (ValidateConfiguration(config))
@@ -77,7 +77,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             _logger.LogInformation("✅ Configuration validation passed - triggering immediate refresh");
             
             // Always refresh recommendations when configuration changes
-            // This handles both category order changes and manual refresh requests
             _ = Task.Run(async () => await RefreshRecommendationsAsync(_applicationPaths));
             
             // Restart the timer with the new interval
@@ -97,12 +96,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         if (config == null)
         {
             _logger.LogError("Configuration is null");
-            return false;
-        }
-        
-        if (config.CategoryOrder == null || config.CategoryOrder.Count == 0)
-        {
-            _logger.LogError("CategoryOrder is null or empty");
             return false;
         }
         
@@ -127,21 +120,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             bool configChanged = false;
             
             _logger.LogInformation("🔍 Checking configuration defaults...");
-            
-            // Ensure CategoryOrder exists and has defaults
-            if (config.CategoryOrder == null || config.CategoryOrder.Count == 0)
-            {
-                config.CategoryOrder = new List<string>
-                {
-                    "latestRelease",
-                    "recentlyAddedFilms",
-                    "recentlyAddedSeries",
-                    "bestRatedFilms",
-                    "bestRatedSeries"
-                };
-                configChanged = true;
-                _logger.LogInformation("✅ Set default CategoryOrder");
-            }
             
             // Ensure RefreshIntervalHours has a valid default
             if (config.RefreshIntervalHours <= 0)
@@ -208,8 +186,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             
             // Log current configuration being used for initialization
             var config = Configuration;
-            _logger.LogInformation("📋 Initial configuration: Categories=[{Categories}], RefreshInterval={Hours}h, AdminPicks={AdminPicks}", 
-                string.Join(", ", config.CategoryOrder), config.RefreshIntervalHours, config.EnableAdminPicks);
+            _logger.LogInformation("📋 Initial configuration: RefreshInterval={Hours}h, AdminPicks={AdminPicks}", 
+                config.RefreshIntervalHours, config.EnableAdminPicks);
             
             var recommendations = await GenerateRecommendationsAsync();
 
@@ -232,8 +210,19 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         // Use standard Jellyfin configuration
         var config = Configuration;
         
-        _logger.LogInformation("📋 Current configuration being used: Categories=[{Categories}], RefreshInterval={Hours}h, AdminPicksEnabled={AdminPicks}, AdminPickIds=[{AdminIds}]", 
-            string.Join(", ", config.CategoryOrder), config.RefreshIntervalHours, config.EnableAdminPicks, string.Join(", ", config.AdminPickIds));
+        _logger.LogInformation("📋 Current configuration being used: RefreshInterval={Hours}h, AdminPicksEnabled={AdminPicks}, AdminPickIds=[{AdminIds}]", 
+            config.RefreshIntervalHours, config.EnableAdminPicks, string.Join(", ", config.AdminPickIds));
+        
+        // Fixed category order (no longer configurable)
+        var fixedCategoryOrder = new List<string>
+        {
+            "featuredPick",      // Admin's Pick (if enabled)
+            "latestRelease", 
+            "recentlyAddedFilms",
+            "recentlyAddedSeries",
+            "bestRatedFilms",
+            "bestRatedSeries"
+        };
         
         // Category variable mapping
         var categoryMapping = new Dictionary<string, string>
@@ -394,39 +383,22 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 {
                     categoryItems["featuredPick"] = adminPickItems.First();
                     _logger.LogInformation("Added {Count} admin pick items to featuredPick category", adminPickItems.Count);
-                    
-                    // Ensure "featuredPick" is in CategoryOrder if it's not already there
-                    if (!config.CategoryOrder.Contains("featuredPick"))
-                    {
-                        config.CategoryOrder.Insert(0, "featuredPick");
-                        _logger.LogInformation("Added featuredPick to CategoryOrder");
-                        // Save the updated configuration using Jellyfin's system
-                        SaveConfiguration();
-                    }
                 }
                 else
                 {
                     _logger.LogWarning("No valid admin pick items found despite having AdminPickIds configured");
                 }
             }
-            else
+            
+            // Use fixed category order and only include categories that exist
+            foreach (var categoryVariable in fixedCategoryOrder)
             {
-                if (config.CategoryOrder.Contains("featuredPick"))
+                // Skip featuredPick if admin picks are disabled or no items available
+                if (categoryVariable == "featuredPick" && (!config.EnableAdminPicks || !categoryItems.ContainsKey("featuredPick")))
                 {
-                    _logger.LogInformation("Admin picks disabled but featuredPick in CategoryOrder - this may result in missing category");
+                    continue;
                 }
                 
-                // Remove "featuredPick" from CategoryOrder if admin picks are disabled
-                if (config.CategoryOrder.RemoveAll(c => c == "featuredPick") > 0)
-                {
-                    _logger.LogInformation("Removed featuredPick from CategoryOrder due to disabled admin picks");
-                    // Save the updated configuration using Jellyfin's system
-                    SaveConfiguration();
-                }
-            }
-            
-            foreach (var categoryVariable in config.CategoryOrder)
-            {
                 if (categoryItems.ContainsKey(categoryVariable))
                 {
                     recommendations.Add(categoryItems[categoryVariable]);
@@ -435,7 +407,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 }
                 else
                 {
-                    _logger.LogWarning("Category '{Category}' in CategoryOrder but no recommendation item found for it", categoryVariable);
+                    _logger.LogWarning("Category '{Category}' not found in available categories", categoryVariable);
                 }
             }
             

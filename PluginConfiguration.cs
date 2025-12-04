@@ -8,18 +8,6 @@ namespace Jellyfeatured;
 /// </summary>
 public class PluginConfiguration : BasePluginConfiguration
 {
-    /// <summary>
-    /// Gets or sets the order in which categories are displayed.
-    /// Uses variable names for extensibility: featuredPick, latestRelease, recentlyAddedFilms, recentlyAddedSeries, bestRatedFilms, bestRatedSeries
-    /// </summary>
-    public List<string> CategoryOrder { get; set; } = new List<string>
-    {
-        "latestRelease",
-        "recentlyAddedFilms",
-        "recentlyAddedSeries",
-        "bestRatedFilms",
-        "bestRatedSeries"
-    };
     
     /// <summary>
     /// Gets or sets how often recommendations are refreshed (in hours).

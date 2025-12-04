@@ -340,11 +340,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             }
     }
 
-    // Conservative injection attempts to prevent crashes
     createFeaturedCarousel();
     setTimeout(() => createFeaturedCarousel(), 1000);
 
-    // Reduced monitoring to prevent excessive calls
     const observer = new MutationObserver(() => setTimeout(() => createFeaturedCarousel(), 500));
     if (document.body) observer.observe(document.body, { childList: true, subtree: true });
 

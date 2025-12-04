@@ -2,224 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Jellyfeatured Configuration</title>
+    <title>Jellyfeatured</title>
 </head>
 <body>
-    <div id="jellyfeaturedPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input,emby-textarea">
+    <div id="jellyfeaturedPage" data-role="page" class="page type-interior pluginConfigurationPage">
         <div data-role="content">
             <div class="content-primary">
                 <div class="sectionTitleContainer flex align-items-center">
-                    <h2 class="sectionTitle">Jellyfeatured Configuration</h2>
+                    <h2 class="sectionTitle">Jellyfeatured</h2>
                 </div>
                 
                 <p class="settingsDescription">
-                    Configure your featured section by editing the JSON configuration.<br>
-                    <strong>Changes take effect immediately</strong> - no server restart required!<br>
-                    Configuration is automatically saved to Jellyfin's standard plugin configuration system.
+                    This plugin automatically generates recommendations for your home page with a fixed category order:<br>
+                    <strong>Latest Release → Recently Added Films → Recently Added Series → Best Rated Films → Best Rated Series</strong>
                 </p>
                 
-                <form id="jellyfeaturedConfigForm">
-                    <div class="verticalSection">
-                        <h3>Configuration Management</h3>
-                        
-                        <div class="inputContainer" style="margin-top: 15px;">
-                            <label class="inputLabel" for="jsonEditor">
-                                Configuration (JSON)
-                            </label>
-                            <textarea is="emby-textarea" id="jsonEditor" rows="20" style="width: 100%; font-family: monospace; font-size: 12px;"></textarea>
-                            <div class="fieldDescription">
-                                <strong>Available Category Variables:</strong><br>
-                                • <code>featuredPick</code> - Admin's Pick (requires EnableAdminPicks: true)<br>
-                                • <code>latestRelease</code> - Latest Movie Release<br>
-                                • <code>recentlyAddedFilms</code> - Recently Added Films<br>
-                                • <code>recentlyAddedSeries</code> - Recently Added Series<br>
-                                • <code>bestRatedFilms</code> - Best Rated Films<br>
-                                • <code>bestRatedSeries</code> - Best Rated Series<br><br>
-                                <strong>⚡ Real-time updates:</strong> Changes apply immediately without server restart!
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top: 1.5em;">
-                            <button is="emby-button" type="button" id="btnSaveJson" class="raised submit" style="margin-right: 0.5em;">
-                                Save Configuration
-                            </button>
-                            
-                            <button is="emby-button" type="button" id="btnReloadJson" class="raised button-alt" style="margin-right: 0.5em;">
-                                Reload from File
-                            </button>
-                            
-                            <button is="emby-button" type="button" id="btnManualRefresh" class="raised button-alt">
-                                Show Config Path
-                            </button>
-                        </div>
-                        
-                        <div id="configMessage" style="margin-top: 1em; display: none;">
-                        </div>
-                    </div>
-                </form>
+                <div class="verticalSection">
+                    <h3>About</h3>
+                    <p>
+                        Jellyfeatured enhances your Jellyfin home page by automatically generating and displaying recommendation categories.
+                        The plugin runs in the background and refreshes recommendations periodically.
+                    </p>
+                </div>
             </div>
         </div>
     </div>
-
-    <script type="text/javascript">
-        (function() {
-            let currentConfig = null;
-
-            function loadConfiguration() {
-                console.log('🔄 Loading plugin configuration...');
-                showMessage('Loading configuration...', false);
-                
-                ApiClient.getPluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4').then(function(config) {
-                    console.log('✅ Configuration loaded successfully:', config);
-                    currentConfig = config || {};
-                    
-                    // Ensure all required properties exist with defaults
-                    if (!currentConfig.CategoryOrder || !Array.isArray(currentConfig.CategoryOrder) || currentConfig.CategoryOrder.length === 0) {
-                        currentConfig.CategoryOrder = [
-                            "latestRelease",
-                            "recentlyAddedFilms", 
-                            "recentlyAddedSeries",
-                            "bestRatedFilms",
-                            "bestRatedSeries"
-                        ];
-                    }
-                    
-                    if (!currentConfig.RefreshIntervalHours || typeof currentConfig.RefreshIntervalHours !== 'number') {
-                        currentConfig.RefreshIntervalHours = 24;
-                    }
-                    
-                    if (!currentConfig.AdminPickIds || !Array.isArray(currentConfig.AdminPickIds)) {
-                        currentConfig.AdminPickIds = [];
-                    }
-                    
-                    if (currentConfig.EnableAdminPicks !== true && currentConfig.EnableAdminPicks !== false) {
-                        currentConfig.EnableAdminPicks = false;
-                    }
-                    
-                    loadJsonEditor();
-                    showMessage('Configuration loaded successfully.');
-                })
-                .catch(error => {
-                    console.error('Failed to load configuration:', error);
-                    showMessage('Failed to load configuration: ' + error.message + '. Using defaults.', true);
-                    
-                    // Use defaults
-                    currentConfig = {
-                        "CategoryOrder": [
-                            "latestRelease",
-                            "recentlyAddedFilms",
-                            "recentlyAddedSeries", 
-                            "bestRatedFilms",
-                            "bestRatedSeries"
-                        ],
-                        "RefreshIntervalHours": 24,
-                        "AdminPickIds": [],
-                        "EnableAdminPicks": false
-                    };
-                    loadJsonEditor();
-                });
-            }
-
-            function loadJsonEditor() {
-                const jsonEditor = document.getElementById('jsonEditor');
-                jsonEditor.value = JSON.stringify(currentConfig, null, 2);
-            }
-
-            function showMessage(message, isError = false) {
-                const messageEl = document.getElementById('configMessage');
-                messageEl.textContent = message;
-                messageEl.style.color = isError ? '#ff6b6b' : '#52b54b';
-                messageEl.style.display = 'block';
-                messageEl.style.padding = '10px';
-                messageEl.style.backgroundColor = isError ? 'rgba(255, 107, 107, 0.1)' : 'rgba(82, 181, 75, 0.1)';
-                messageEl.style.border = isError ? '1px solid rgba(255, 107, 107, 0.3)' : '1px solid rgba(82, 181, 75, 0.3)';
-                messageEl.style.borderRadius = '4px';
-                setTimeout(() => {
-                    messageEl.style.display = 'none';
-                }, 4000);
-            }
-
-            function reloadFromServer() {
-                loadConfiguration();
-            }
-
-            function saveJsonFromEditor() {
-                try {
-                    showMessage('Saving configuration...', false);
-                    const jsonEditor = document.getElementById('jsonEditor');
-                    const editedConfig = JSON.parse(jsonEditor.value);
-                    console.log('Saving configuration:', editedConfig);
-                    
-                    // Basic validation
-                    if (!editedConfig.CategoryOrder || !Array.isArray(editedConfig.CategoryOrder)) {
-                        throw new Error('CategoryOrder must be an array of strings');
-                    }
-                    
-                    if (!editedConfig.RefreshIntervalHours || typeof editedConfig.RefreshIntervalHours !== 'number') {
-                        throw new Error('RefreshIntervalHours must be a number');
-                    }
-                    
-                    // Use Jellyfin's plugin configuration system
-                    console.log('Getting current plugin configuration...');
-                    ApiClient.getPluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4').then(function(currentPluginConfig) {
-                        console.log('Current plugin configuration:', currentPluginConfig);
-                        
-                        // Update the plugin configuration with our edited values
-                        currentPluginConfig.CategoryOrder = editedConfig.CategoryOrder;
-                        currentPluginConfig.RefreshIntervalHours = editedConfig.RefreshIntervalHours;
-                        currentPluginConfig.EnableAdminPicks = editedConfig.EnableAdminPicks || false;
-                        currentPluginConfig.AdminPickIds = editedConfig.AdminPickIds || [];
-                        currentPluginConfig.LastManualRefresh = Date.now();
-                        
-                        console.log('Updated plugin configuration for saving:', currentPluginConfig);
-                        
-                        // Save using Jellyfin's standard system
-                        return ApiClient.updatePluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4', currentPluginConfig);
-                    }).then(function() {
-                        currentConfig = editedConfig;
-                        showMessage('✅ Configuration saved successfully! Recommendations are being refreshed.', false);
-                        console.log('Configuration saved successfully');
-                        
-                        // Reload the configuration to show what was actually saved
-                        setTimeout(() => {
-                            loadConfiguration();
-                        }, 2000);
-                    }).catch(function(error) {
-                        showMessage('❌ Failed to save configuration: ' + error.message, true);
-                        console.error('Save error:', error);
-                    });
-                    
-                } catch (error) {
-                    showMessage('❌ Invalid JSON format: ' + error.message, true);
-                    console.error('JSON parsing error:', error);
-                }
-            }
-
-            function manualRefresh() {
-                showMessage('⚡ Forcing immediate refresh of recommendations...', false);
-                
-                // Get current configuration and force a refresh by updating LastManualRefresh
-                ApiClient.getPluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4').then(function(config) {
-                    config.LastManualRefresh = Date.now();
-                    console.log('Forcing refresh with timestamp:', config.LastManualRefresh);
-                    
-                    return ApiClient.updatePluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4', config);
-                }).then(function() {
-                    showMessage('✅ Refresh triggered successfully! Check your home page in a few seconds.', false);
-                }).catch(function(error) {
-                    showMessage('❌ Failed to trigger refresh: ' + error.message, true);
-                    console.error('Manual refresh error:', error);
-                });
-            }
-
-            // Event listeners
-            document.getElementById('btnSaveJson').addEventListener('click', saveJsonFromEditor);
-            document.getElementById('btnReloadJson').addEventListener('click', reloadFromServer);
-            document.getElementById('btnManualRefresh').addEventListener('click', manualRefresh);
-
-            // Load configuration on page load
-            loadConfiguration();
-        })();
-    </script>
 </body>
 </html>
