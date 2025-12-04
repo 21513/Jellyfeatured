@@ -3,87 +3,6 @@
 <head>
     <meta charset="utf-8">
     <title>Jellyfeatured Configuration</title>
-    <style>
-        .category-ordering {
-            background: var(--theme-secondary-bg, #181818);
-            border: 1px solid var(--theme-secondary-color, #333);
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-        
-        .sortable-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .category-item {
-            background: var(--theme-body-bg, #101010);
-            border: 1px solid var(--theme-secondary-color, #333);
-            border-radius: 6px;
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            cursor: grab;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: all 0.2s ease;
-        }
-        
-        .category-item:hover {
-            background-color: var(--theme-primary-color-dark, #0080a8);
-            border-color: var(--theme-primary-color, #00a4dc);
-        }
-        
-        .category-item.dragging {
-            opacity: 0.5;
-            cursor: grabbing;
-        }
-        
-        .category-item.drag-over {
-            border-color: var(--theme-primary-color, #00a4dc);
-            background-color: var(--theme-primary-color-dark, #0080a8);
-        }
-        
-        .category-name {
-            font-weight: 500;
-            color: var(--theme-text-color, #fff);
-        }
-        
-        .drag-handle {
-            color: var(--theme-text-color-secondary, #999);
-            font-size: 18px;
-            cursor: grab;
-            padding: 4px;
-        }
-        
-        .drag-handle:hover {
-            color: var(--theme-primary-color, #00a4dc);
-        }
-        
-        .category-description {
-            font-size: 0.9em;
-            color: var(--theme-text-color-secondary, #999);
-            margin-top: 4px;
-        }
-        
-        .reset-button {
-            margin-top: 12px;
-        }
-        
-        .info-box {
-            background: var(--theme-primary-color-dark, rgba(0, 164, 220, 0.1));
-            border: 1px solid var(--theme-primary-color, #00a4dc);
-            border-radius: 6px;
-            padding: 12px;
-            margin-bottom: 16px;
-        }
-        
-        .info-box-icon {
-            margin-right: 8px;
-        }
-    </style>
 </head>
 <body>
     <div id="jellyfeaturedConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input,emby-checkbox,emby-select">
@@ -91,7 +10,7 @@
             <div class="content-primary">
                 <form id="jellyfeaturedConfigForm">
                     <div class="sectionTitleContainer flex align-items-center">
-                        <h2 class="sectionTitle">🎬 Jellyfeatured Configuration</h2>
+                        <h2 class="sectionTitle">Jellyfeatured Configuration</h2>
                     </div>
                     
                     <div class="verticalSection">
@@ -99,18 +18,17 @@
                             <h3 class="sectionTitle">Category Order</h3>
                         </div>
                         
-                        <div class="info-box">
-                            <span class="info-box-icon">ℹ️</span>
-                            Drag and drop the categories below to change the order they appear in the carousel. The first category will be shown first, and so on.
+                        <div class="fieldDescription">
+                            Use the up/down arrow buttons to change the order categories appear in the carousel. The first category will be shown first, and so on.
                         </div>
                         
-                        <div class="category-ordering">
-                            <ul id="categoryList" class="sortable-list">
-                                <!-- Categories will be populated here -->
-                            </ul>
-                            
-                            <button is="emby-button" type="button" id="btnResetOrder" class="raised button-alt reset-button">
-                                <span>🔄 Reset to Default Order</span>
+                        <div id="categoryList">
+                            <!-- Categories will be populated here -->
+                        </div>
+                        
+                        <div style="margin-top: 1em;">
+                            <button is="emby-button" type="button" id="btnResetOrder" class="raised button-alt">
+                                <span>Reset to Default Order</span>
                             </button>
                         </div>
                     </div>
@@ -130,7 +48,7 @@
                         
                         <div style="margin-top: 1em;">
                             <button is="emby-button" type="button" id="btnManualRefresh" class="raised button-alt">
-                                <span>🔄 Refresh Now</span>
+                                <span>Refresh Now</span>
                             </button>
                             <div class="fieldDescription" style="margin-top: 0.5em;">
                                 Manually refresh recommendations immediately
@@ -140,11 +58,7 @@
                     
                     <div>
                         <button is="emby-button" type="submit" class="raised button-submit block">
-                            <span>💾 Save Settings</span>
-                        </button>
-                        
-                        <button is="emby-button" type="button" id="btnTestConfig" class="raised button-alt block" style="margin-top: 0.5em;">
-                            <span>🔧 Test Configuration API</span>
+                            <span>Save Settings</span>
                         </button>
                     </div>
                 </form>
@@ -194,6 +108,7 @@
                     
                     // Set category order
                     currentCategoryOrder = config.CategoryOrder || defaultCategoryOrder;
+                    window.jellyfeaturedConfig.currentCategoryOrder = currentCategoryOrder;
                     populateCategoryList();
                     
                     Dashboard.hideLoadingMsg();
@@ -216,6 +131,7 @@
                     
                     // Set defaults if loading failed
                     currentCategoryOrder = defaultCategoryOrder;
+                    window.jellyfeaturedConfig.currentCategoryOrder = currentCategoryOrder;
                     populateCategoryList();
                 });
             }
@@ -226,94 +142,95 @@
                 
                 currentCategoryOrder.forEach(function(categoryName, index) {
                     if (availableCategories[categoryName]) {
-                        var listItem = createCategoryItem(categoryName, index);
-                        categoryList.appendChild(listItem);
+                        var categoryDiv = createCategoryItem(categoryName, index);
+                        categoryList.appendChild(categoryDiv);
                     }
                 });
-                
-                setupSortable();
             }
             
             function createCategoryItem(categoryName, index) {
-                var li = document.createElement('li');
-                li.className = 'category-item';
-                li.draggable = true;
-                li.dataset.category = categoryName;
-                li.dataset.index = index;
+                var div = document.createElement('div');
+                div.className = 'inputContainer';
+                div.style.marginBottom = '1em';
                 
-                li.innerHTML = `
-                    <div>
-                        <div class="category-name">${escapeHtml(categoryName)}</div>
-                        <div class="category-description">${escapeHtml(availableCategories[categoryName])}</div>
+                var isFirst = index === 0;
+                var isLast = index === currentCategoryOrder.length - 1;
+                
+                var buttonUpDisabled = isFirst ? 'disabled' : '';
+                var buttonDownDisabled = isLast ? 'disabled' : '';
+                
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; border: 1px solid #444; border-radius: 4px;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold;">${escapeHtml(categoryName)}</div>
+                            <div style="font-size: 0.9em; color: #999; margin-top: 4px;">${escapeHtml(availableCategories[categoryName])}</div>
+                        </div>
+                        <div style="display: flex; gap: 4px; margin-left: 12px;">
+                            <button is="emby-button" type="button" class="paper-icon-button-light upButton" 
+                                    data-index="${index}" 
+                                    ${buttonUpDisabled}
+                                    title="Move up">
+                                <span>↑</span>
+                            </button>
+                            <button is="emby-button" type="button" class="paper-icon-button-light downButton" 
+                                    data-index="${index}" 
+                                    ${buttonDownDisabled}
+                                    title="Move down">
+                                <span>↓</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="drag-handle">⋮⋮</div>
                 `;
                 
-                return li;
+                // Add event listeners after creating the element
+                setTimeout(function() {
+                    var upButton = div.querySelector('.upButton');
+                    var downButton = div.querySelector('.downButton');
+                    
+                    if (upButton) {
+                        upButton.addEventListener('click', function() {
+                            moveCategoryUp(index);
+                        });
+                    }
+                    
+                    if (downButton) {
+                        downButton.addEventListener('click', function() {
+                            moveCategoryDown(index);
+                        });
+                    }
+                }, 0);
+                
+                return div;
             }
             
-            function setupSortable() {
-                var categoryList = document.getElementById('categoryList');
-                var draggedItem = null;
-                
-                categoryList.addEventListener('dragstart', function(e) {
-                    draggedItem = e.target.closest('.category-item');
-                    if (draggedItem) {
-                        draggedItem.classList.add('dragging');
-                        e.dataTransfer.effectAllowed = 'move';
-                        e.dataTransfer.setData('text/html', draggedItem.outerHTML);
-                    }
-                });
-                
-                categoryList.addEventListener('dragend', function(e) {
-                    var item = e.target.closest('.category-item');
-                    if (item) {
-                        item.classList.remove('dragging');
-                    }
-                    
-                    // Remove drag-over class from all items
-                    var items = categoryList.querySelectorAll('.category-item');
-                    items.forEach(function(item) {
-                        item.classList.remove('drag-over');
-                    });
-                });
-                
-                categoryList.addEventListener('dragover', function(e) {
-                    e.preventDefault();
-                    
-                    var targetItem = e.target.closest('.category-item');
-                    if (targetItem && targetItem !== draggedItem) {
-                        // Remove drag-over from all items
-                        var items = categoryList.querySelectorAll('.category-item');
-                        items.forEach(function(item) {
-                            item.classList.remove('drag-over');
-                        });
-                        
-                        targetItem.classList.add('drag-over');
-                    }
-                });
-                
-                categoryList.addEventListener('drop', function(e) {
-                    e.preventDefault();
-                    
-                    var targetItem = e.target.closest('.category-item');
-                    if (targetItem && draggedItem && targetItem !== draggedItem) {
-                        var draggedIndex = Array.from(categoryList.children).indexOf(draggedItem);
-                        var targetIndex = Array.from(categoryList.children).indexOf(targetItem);
-                        
-                        // Update the order array
-                        var draggedCategory = currentCategoryOrder[draggedIndex];
-                        currentCategoryOrder.splice(draggedIndex, 1);
-                        currentCategoryOrder.splice(targetIndex, 0, draggedCategory);
-                        
-                        // Re-populate the list with new order
-                        populateCategoryList();
-                    }
-                });
+            function moveCategoryUp(index) {
+                if (index > 0) {
+                    var temp = currentCategoryOrder[index];
+                    currentCategoryOrder[index] = currentCategoryOrder[index - 1];
+                    currentCategoryOrder[index - 1] = temp;
+                    populateCategoryList();
+                }
             }
+            
+            function moveCategoryDown(index) {
+                if (index < currentCategoryOrder.length - 1) {
+                    var temp = currentCategoryOrder[index];
+                    currentCategoryOrder[index] = currentCategoryOrder[index + 1];
+                    currentCategoryOrder[index + 1] = temp;
+                    populateCategoryList();
+                }
+            }
+            
+            // Expose functions for debugging if needed
+            window.jellyfeaturedConfig = {
+                currentCategoryOrder: currentCategoryOrder,
+                moveCategoryUp: moveCategoryUp,
+                moveCategoryDown: moveCategoryDown
+            };
             
             function resetCategoryOrder() {
                 currentCategoryOrder = [...defaultCategoryOrder];
+                window.jellyfeaturedConfig.currentCategoryOrder = currentCategoryOrder;
                 populateCategoryList();
             }
             
@@ -377,7 +294,7 @@
                 var originalText = button.querySelector('span').innerText;
                 
                 button.disabled = true;
-                button.querySelector('span').innerText = '🔄 Refreshing...';
+                button.querySelector('span').innerText = 'Refreshing...';
                 Dashboard.showLoadingMsg();
 
                 // Get current configuration
@@ -404,50 +321,11 @@
                     Dashboard.hideLoadingMsg();
                 });
             }
-            
-            function testConfiguration() {
-                console.log('Testing configuration API...');
-                Dashboard.showLoadingMsg();
-                
-                console.log('ApiClient available:', !!window.ApiClient);
-                console.log('Plugin ID:', pluginId);
-                
-                if (!window.ApiClient) {
-                    Dashboard.hideLoadingMsg();
-                    alert('ApiClient not available!');
-                    return;
-                }
-                
-                // Test loading first
-                ApiClient.getPluginConfiguration(pluginId).then(function(config) {
-                    console.log('Test load successful:', config);
-                    
-                    // Test saving with current values
-                    var testConfig = {
-                        CategoryOrder: currentCategoryOrder,
-                        RefreshIntervalHours: config.RefreshIntervalHours || 24,
-                        LastManualRefresh: Date.now()
-                    };
-                    
-                    console.log('Testing save with config:', testConfig);
-                    
-                    return ApiClient.updatePluginConfiguration(pluginId, testConfig);
-                }).then(function(result) {
-                    console.log('Test save successful:', result);
-                    Dashboard.hideLoadingMsg();
-                    Dashboard.alert('Configuration API test successful!');
-                }).catch(function(error) {
-                    console.error('Configuration API test failed:', error);
-                    Dashboard.hideLoadingMsg();
-                    Dashboard.alert('Configuration API test failed: ' + (error.message || error));
-                });
-            }
 
             document.addEventListener('DOMContentLoaded', function () {
                 loadConfiguration();
                 document.querySelector('#jellyfeaturedConfigForm').addEventListener('submit', saveConfiguration);
                 document.querySelector('#btnManualRefresh').addEventListener('click', manualRefresh);
-                document.querySelector('#btnTestConfig').addEventListener('click', testConfiguration);
                 document.querySelector('#btnResetOrder').addEventListener('click', resetCategoryOrder);
             });
         })();
