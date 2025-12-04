@@ -13,8 +13,8 @@
                 "changelog": "Updated dashboard page and added logging",
                 "targetAbi": "10.11.4.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.0.41/Jellyfeatured-v0.0.0.41.zip",
-                "checksum": "e2dd4e8743931c3ad2b2f383409358c3",
-                "timestamp": "2025-12-04T16:28:45Z"
+                "checksum": "ee95c22802a44609c74559cd9c7659fa",
+                "timestamp": "2025-12-04T16:34:17Z"
             },
             {
                 "version": "0.0.0.40",
