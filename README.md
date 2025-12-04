@@ -5,6 +5,8 @@
 [![License](https://img.shields.io/github/license/21513/Jellyfeatured?style=flat-square)](LICENSE)
 [![Downloads](https://img.shields.io/github/downloads/21513/Jellyfeatured/total?style=flat-square&logo=github)](https://github.com/21513/Jellyfeatured/releases)
 
+#### This plugin is currently in development. Not everything is working as intended.
+
 Adds a featured section to your Jellyfin home screen with automatic recommendations. Modify or reorder categories to fit your preferences.
 
 ![Jellyfeatured on desktop](jellyfeatured-desktop.png)
