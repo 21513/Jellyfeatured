@@ -94,6 +94,9 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     {
         try
         {
+            // Generate example configuration file for user reference
+            await CreateExampleConfigurationAsync(applicationPaths);
+            
             var recommendations = await GenerateRecommendationsAsync();
 
             await SaveRecommendationsAsync(recommendations);
@@ -366,6 +369,59 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to inject web script");
+        }
+    }
+    
+    private async Task CreateExampleConfigurationAsync(IApplicationPaths applicationPaths)
+    {
+        try
+        {
+            var exampleConfigPath = Path.Combine(applicationPaths.DataPath, "jellyfeatured-example-config.json");
+            
+            var exampleConfig = new
+            {
+                CategoryOrder = new[]
+                {
+                    "featuredPick",
+                    "latestRelease", 
+                    "recentlyAddedFilms",
+                    "recentlyAddedSeries",
+                    "bestRatedFilms",
+                    "bestRatedSeries"
+                },
+                RefreshIntervalHours = 24,
+                EnableAdminPicks = true,
+                AdminPickIds = new string[] { },
+                _Documentation = new
+                {
+                    CategoryOrder = "Array of category variables that determine the order of carousels displayed on the home page",
+                    AvailableCategories = new
+                    {
+                        featuredPick = "Admin's Pick (requires EnableAdminPicks: true and AdminPickIds with valid UUIDs)",
+                        latestRelease = "Latest Movie Release",
+                        recentlyAddedFilms = "Recently Added Films",
+                        recentlyAddedSeries = "Recently Added Series",
+                        bestRatedFilms = "Best Rated Films",
+                        bestRatedSeries = "Best Rated Series"
+                    },
+                    RefreshIntervalHours = "Number of hours between automatic carousel refreshes (24=daily, 168=weekly, 720=monthly)",
+                    EnableAdminPicks = "Boolean to enable/disable admin curated picks feature",
+                    AdminPickIds = "Array of Jellyfin media item UUIDs for admin curated content (can be empty array)",
+                    Usage = "Copy and modify this structure in the Jellyfin Dashboard > Plugins > Jellyfeatured configuration page"
+                }
+            };
+            
+            var jsonString = System.Text.Json.JsonSerializer.Serialize(exampleConfig, new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            
+            await File.WriteAllTextAsync(exampleConfigPath, jsonString);
+            _logger.LogInformation("Created example configuration file at: {Path}", exampleConfigPath);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create example configuration file");
         }
     }
     
