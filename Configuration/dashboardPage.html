@@ -2,23 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Jellyfeatured Settings</title>
+    <title>Jellyfeatured configuration</title>
 </head>
 <body>
     <div id="jellyfeaturedPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input,emby-checkbox,emby-select">
         <div data-role="content">
             <div class="content-primary">
                 <div class="sectionTitleContainer flex align-items-center">
-                    <h2 class="sectionTitle">Jellyfeatured Settings</h2>
+                    <h2 class="sectionTitle">Jellyfeatured configuration</h2>
                 </div>
                 
-                <p class="settingsDescription">Configure your home page carousel recommendations. Changes take effect immediately after saving.</p>
+                <p class="settingsDescription">Configure your featured section here. Changes take effect after saving.</p>
                 
                 <form id="jellyfeaturedConfigForm">
                     <div class="verticalSection">
-                        <h3>Carousel Content Order</h3>
+                        <h3>Featured categories order</h3>
                         <div class="fieldDescription">
-                            Arrange the order that content types appear in your recommendations carousel. Use the arrow buttons to move items up or down.
+                            Rearrange the order in which the featured items appear.
                         </div>
                         
                         <div id="categoryOrderList" style="margin-top: 20px;">
@@ -31,9 +31,9 @@
                     </div>
 
                     <div class="verticalSection">
-                        <h3>Refresh Settings</h3>
+                        <h3>Refresh settings</h3>
                         <div class="fieldDescription">
-                            Control how often the carousel content updates with new recommendations.
+                            Control how often the featured section updates.
                         </div>
                         
                         <div class="inputContainer" style="margin-top: 15px;">
@@ -41,15 +41,15 @@
                                 Automatic Refresh Interval
                             </label>
                             <select is="emby-select" id="refreshInterval">
-                                <option value="24">Daily (24 hours)</option>
-                                <option value="168">Weekly (7 days)</option>
-                                <option value="336">Biweekly (14 days)</option>
-                                <option value="720">Monthly (30 days)</option>
+                                <option value="24">Daily</option>
+                                <option value="168">Weekly</option>
+                                <option value="336">Biweekly</option>
+                                <option value="720">Monthly</option>
                             </select>
                         </div>
                         
                         <button is="emby-button" type="button" id="btnManualRefresh" class="raised button-alt" style="margin-top: 1em;">
-                            Refresh Carousel Now
+                            Manual refresh
                         </button>
                     </div>
                     
@@ -118,10 +118,20 @@
             align-items: center;
             justify-content: center;
             font-size: 14px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .moveButton:hover:not(:disabled) {
+            background: rgba(255,255,255,0.3);
         }
         
         .moveButton:disabled {
             opacity: 0.3;
+            cursor: not-allowed;
         }
         
         .positionNumber {
@@ -189,17 +199,40 @@
                     categoryDiv.className = 'categoryItem';
                     categoryDiv.dataset.categoryId = category.id;
                     
-                    categoryDiv.innerHTML = `
-                        <div class="positionNumber">${index + 1}</div>
-                        <div class="categoryInfo">
-                            <div class="categoryName">${category.name}</div>
-                            <div class="categoryDescription">${category.description}</div>
-                        </div>
-                        <div class="categoryControls">
-                            <button is="emby-button" class="moveButton" onclick="moveCategory('${category.id}', -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
-                            <button is="emby-button" class="moveButton" onclick="moveCategory('${category.id}', 1)" ${index === sortedCategories.length - 1 ? 'disabled' : ''}>↓</button>
-                        </div>
+                    const positionDiv = document.createElement('div');
+                    positionDiv.className = 'positionNumber';
+                    positionDiv.textContent = index + 1;
+                    
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'categoryInfo';
+                    infoDiv.innerHTML = `
+                        <div class="categoryName">${category.name}</div>
+                        <div class="categoryDescription">${category.description}</div>
                     `;
+                    
+                    const controlsDiv = document.createElement('div');
+                    controlsDiv.className = 'categoryControls';
+                    
+                    // Create up button
+                    const upButton = document.createElement('button');
+                    upButton.className = 'raised moveButton';
+                    upButton.textContent = '↑';
+                    upButton.disabled = index === 0;
+                    upButton.addEventListener('click', () => moveCategory(category.id, -1));
+                    
+                    // Create down button
+                    const downButton = document.createElement('button');
+                    downButton.className = 'raised moveButton';
+                    downButton.textContent = '↓';
+                    downButton.disabled = index === sortedCategories.length - 1;
+                    downButton.addEventListener('click', () => moveCategory(category.id, 1));
+                    
+                    controlsDiv.appendChild(upButton);
+                    controlsDiv.appendChild(downButton);
+                    
+                    categoryDiv.appendChild(positionDiv);
+                    categoryDiv.appendChild(infoDiv);
+                    categoryDiv.appendChild(controlsDiv);
                     
                     container.appendChild(categoryDiv);
                 });
@@ -210,7 +243,7 @@
                 return categoryOrder ? categoryOrder.Priority : 999;
             }
 
-            window.moveCategory = function(categoryId, direction) {
+            function moveCategory(categoryId, direction) {
                 const categoryIndex = currentConfig.CategoryOrder.findIndex(c => c.CategoryId === categoryId);
                 if (categoryIndex === -1) return;
                 
@@ -230,7 +263,7 @@
                     
                     renderCategoryList();
                 }
-            };
+            }
 
             function resetOrder() {
                 currentConfig.CategoryOrder = [
