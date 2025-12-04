@@ -1,3 +1,5 @@
 bin
 obj
 example-config.json
+DEBUG-GUIDE.md
+test-config.json

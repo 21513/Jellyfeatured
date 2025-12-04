@@ -14,8 +14,8 @@
                 
                 <p class="settingsDescription">
                     Configure your featured section by editing the JSON configuration.<br>
-                    <strong>Important:</strong> Changes require a Jellyfin server restart to take effect.<br>
-                    Configuration is stored at: <code>[jellyfin-data]/jellyfeatured-config.json</code>
+                    <strong>Changes take effect immediately</strong> - no server restart required!<br>
+                    Configuration is automatically saved to Jellyfin's standard plugin configuration system.
                 </p>
                 
                 <form id="jellyfeaturedConfigForm">
@@ -35,7 +35,7 @@
                                 • <code>recentlyAddedSeries</code> - Recently Added Series<br>
                                 • <code>bestRatedFilms</code> - Best Rated Films<br>
                                 • <code>bestRatedSeries</code> - Best Rated Series<br><br>
-                                <strong>Configuration is stored at:</strong> <code>[jellyfin-data]/jellyfeatured-config.json</code>
+                                <strong>⚡ Real-time updates:</strong> Changes apply immediately without server restart!
                             </div>
                         </div>
                         
@@ -66,10 +66,11 @@
             let currentConfig = null;
 
             function loadConfiguration() {
+                console.log('🔄 Loading plugin configuration...');
                 showMessage('Loading configuration...', false);
                 
                 ApiClient.getPluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4').then(function(config) {
-                    console.log('Configuration loaded:', config);
+                    console.log('✅ Configuration loaded successfully:', config);
                     currentConfig = config || {};
                     
                     // Ensure all required properties exist with defaults
@@ -195,7 +196,20 @@
             }
 
             function manualRefresh() {
-                showMessage('Configuration changes require a server restart to take effect.', false);
+                showMessage('⚡ Forcing immediate refresh of recommendations...', false);
+                
+                // Get current configuration and force a refresh by updating LastManualRefresh
+                ApiClient.getPluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4').then(function(config) {
+                    config.LastManualRefresh = Date.now();
+                    console.log('Forcing refresh with timestamp:', config.LastManualRefresh);
+                    
+                    return ApiClient.updatePluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4', config);
+                }).then(function() {
+                    showMessage('✅ Refresh triggered successfully! Check your home page in a few seconds.', false);
+                }).catch(function(error) {
+                    showMessage('❌ Failed to trigger refresh: ' + error.message, true);
+                    console.error('Manual refresh error:', error);
+                });
             }
 
             // Event listeners
