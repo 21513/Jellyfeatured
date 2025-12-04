@@ -115,7 +115,7 @@
             let currentConfig = null;
 
             function loadConfiguration() {
-                ApiClient.getPluginConfiguration('7ebedd0b-a88c-4b1c-aa2c-4e8bbb82df84').then(function(config) {
+                ApiClient.getPluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4').then(function(config) {
                     currentConfig = config || {};
                     
                     // Set defaults if not present
@@ -205,7 +205,7 @@
                     currentConfig.LastManualRefresh = new Date().toISOString();
                     
                     // Save to server
-                    ApiClient.updatePluginConfiguration('7ebedd0b-a88c-4b1c-aa2c-4e8bbb82df84', currentConfig).then(function() {
+                    ApiClient.updatePluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4', currentConfig).then(function() {
                         showMessage('Configuration saved successfully! Changes have been applied to your carousel.');
                     }).catch(function(error) {
                         showMessage('Failed to save configuration: ' + error.message, true);
@@ -221,7 +221,7 @@
                 
                 currentConfig.LastManualRefresh = new Date().toISOString();
                 
-                ApiClient.updatePluginConfiguration('7ebedd0b-a88c-4b1c-aa2c-4e8bbb82df84', currentConfig).then(function() {
+                ApiClient.updatePluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4', currentConfig).then(function() {
                     showMessage('Featured section refreshed successfully! New recommendations are now active.');
                 }).catch(function(error) {
                     showMessage('Failed to refresh featured section: ' + error.message, true);
