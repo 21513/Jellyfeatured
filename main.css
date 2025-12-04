@@ -90,7 +90,7 @@
     font-family: "Inter", sans-serif;
     display: flex;
     align-items: flex-end;
-    gap: 12px;
+    gap: 32px;
     text-shadow: var(--shadow);
 }
 
