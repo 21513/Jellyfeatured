@@ -21,7 +21,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 return parsed.AccessToken || parsed.accessToken;
             }
         } catch (e) {
-            console.log('Could not retrieve API key:', e);
+            // Could not retrieve API key
         }
         return null;
     }
@@ -69,7 +69,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 return bestMatch;
             }
         } catch (e) {
-            console.log(`Failed to search for ${title}:`, e);
+            // Search failed
         }
         
         return null;
@@ -146,7 +146,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 }
             }
         } catch (e) {
-            console.log('Failed to load images for', recommendation.title, e);
+            // Failed to load images, use fallback gradient
             const colors = [
                 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
@@ -236,8 +236,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     async function navigateToMedia(title, year) {
-        console.log(`Navigating to: ${title} ${year ? '(' + year + ')' : ''}`);
-        
         try {
             const item = await searchForItem(title, year);
             if (item && item.Id) {
@@ -246,7 +244,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 return;
             }
         } catch (e) {
-            console.log('Failed to find item for navigation:', e);
+            // Failed to find item for navigation
         }
         
         const searchQuery = encodeURIComponent(title);
@@ -261,8 +259,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         if (!pathname.includes('home') && pathname !== '/' && pathname !== '/web/' && pathname !== '/web/index.html') {
             return;
         }
-        
-        console.log('Jellyfeatured: Attempting carousel injection...');
         
         const targetContainer = document.querySelector('.homePage');
         if (targetContainer) {
@@ -340,7 +336,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 }
                 
                 targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
-                console.log('Jellyfeatured: Successfully injected carousel!');
             }
         }
     }

@@ -46,8 +46,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         _applicationPaths = applicationPaths;
         _recommendationsPath = Path.Combine(applicationPaths.DataPath, "jellyfeatured-recommendations.json");
         
-        _logger.LogInformation("Jellyfeatured starting...");
-        
         _ = Task.Run(async () => await InitializePluginAsync(applicationPaths));
         
         StartRefreshTimer(applicationPaths);
@@ -267,11 +265,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 
                 if (!indexContent.Contains("jellyfeatured-inject.js"))
                 {
-                    if (indexContent.Contains("</head>"))
+                    if (!indexContent.Contains("jellyfeatured-inject.js"))
                     {
                         indexContent = indexContent.Replace("</head>", scriptTag + "\n</head>");
                         await File.WriteAllTextAsync(indexPath, indexContent);
-                        _logger.LogInformation("Injected script into index.html");
                     }
                 }
             }

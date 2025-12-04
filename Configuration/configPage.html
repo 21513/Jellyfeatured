@@ -87,30 +87,24 @@
             var currentCategoryOrder = [];
 
             function loadConfiguration() {
-                console.log('Starting to load configuration for plugin:', pluginId);
                 Dashboard.showLoadingMsg();
                 
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    console.log('Configuration loaded successfully:', config);
 
                     var intervalInput = document.querySelector('#txtRefreshIntervalHours');
                     
                     if (intervalInput) {
                         intervalInput.value = config.RefreshIntervalHours || 24;
-                        console.log('Set refresh interval to:', intervalInput.value);
                     } else {
-                        console.error('Could not find refresh interval input');
+                        // Could not find refresh interval input
                     }
 
                     currentCategoryOrder = config.CategoryOrder || defaultCategoryOrder;
-                    window.jellyfeaturedConfig.currentCategoryOrder = currentCategoryOrder;
                     populateCategoryList();
                     
                     Dashboard.hideLoadingMsg();
-                    console.log('Configuration loading complete');
                     
                 }).catch(function(error) {
-                    console.error('Failed to load configuration:', error);
                     Dashboard.hideLoadingMsg();
                     
                     var errorMsg = 'Failed to load configuration.';
@@ -125,7 +119,6 @@
                     }
 
                     currentCategoryOrder = defaultCategoryOrder;
-                    window.jellyfeaturedConfig.currentCategoryOrder = currentCategoryOrder;
                     populateCategoryList();
                 });
             }
@@ -213,16 +206,9 @@
                     populateCategoryList();
                 }
             }
-
-            window.jellyfeaturedConfig = {
-                currentCategoryOrder: currentCategoryOrder,
-                moveCategoryUp: moveCategoryUp,
-                moveCategoryDown: moveCategoryDown
-            };
             
             function resetCategoryOrder() {
                 currentCategoryOrder = [...defaultCategoryOrder];
-                window.jellyfeaturedConfig.currentCategoryOrder = currentCategoryOrder;
                 populateCategoryList();
             }
             
@@ -234,7 +220,6 @@
 
             function saveConfiguration(e) {
                 e.preventDefault();
-                console.log('Save button clicked, preventing default and starting save...');
                 Dashboard.showLoadingMsg();
 
                 var refreshInterval = parseInt(document.querySelector('#txtRefreshIntervalHours').value) || 24;
@@ -247,11 +232,7 @@
                     LastManualRefresh: 0
                 };
 
-                console.log('Preparing to save config:', config);
-                console.log('Plugin ID:', pluginId);
-
                 ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
-                    console.log('Save successful! Result:', result);
                     Dashboard.hideLoadingMsg();
 
                     if (Dashboard.alert) {
@@ -263,7 +244,6 @@
                     setTimeout(loadConfiguration, 500);
                     
                 }).catch(function(error) {
-                    console.error('Save failed! Error:', error);
                     Dashboard.hideLoadingMsg();
                     
                     var errorMsg = 'Failed to save settings.';
