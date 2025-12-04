@@ -68,42 +68,55 @@
             function loadConfiguration() {
                 showMessage('Loading configuration...', false);
                 
-                fetch('/jellyfeatured-config.json')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Configuration file not found');
-                        }
-                        return response.text();
-                    })
-                    .then(configJson => {
-                        try {
-                            currentConfig = JSON.parse(configJson);
-                            console.log('Configuration loaded:', currentConfig);
-                            loadJsonEditor();
-                            showMessage('Configuration loaded successfully.');
-                        } catch (e) {
-                            throw new Error('Invalid JSON in configuration file: ' + e.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Failed to load configuration:', error);
-                        showMessage('Failed to load configuration: ' + error.message + '. Using defaults.', true);
-                        
-                        // Use defaults
-                        currentConfig = {
-                            "CategoryOrder": [
-                                "latestRelease",
-                                "recentlyAddedFilms",
-                                "recentlyAddedSeries", 
-                                "bestRatedFilms",
-                                "bestRatedSeries"
-                            ],
-                            "RefreshIntervalHours": 24,
-                            "AdminPickIds": [],
-                            "EnableAdminPicks": false
-                        };
-                        loadJsonEditor();
-                    });
+                ApiClient.getPluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4').then(function(config) {
+                    console.log('Configuration loaded:', config);
+                    currentConfig = config || {};
+                    
+                    // Ensure all required properties exist with defaults
+                    if (!currentConfig.CategoryOrder || !Array.isArray(currentConfig.CategoryOrder) || currentConfig.CategoryOrder.length === 0) {
+                        currentConfig.CategoryOrder = [
+                            "latestRelease",
+                            "recentlyAddedFilms", 
+                            "recentlyAddedSeries",
+                            "bestRatedFilms",
+                            "bestRatedSeries"
+                        ];
+                    }
+                    
+                    if (!currentConfig.RefreshIntervalHours || typeof currentConfig.RefreshIntervalHours !== 'number') {
+                        currentConfig.RefreshIntervalHours = 24;
+                    }
+                    
+                    if (!currentConfig.AdminPickIds || !Array.isArray(currentConfig.AdminPickIds)) {
+                        currentConfig.AdminPickIds = [];
+                    }
+                    
+                    if (currentConfig.EnableAdminPicks !== true && currentConfig.EnableAdminPicks !== false) {
+                        currentConfig.EnableAdminPicks = false;
+                    }
+                    
+                    loadJsonEditor();
+                    showMessage('Configuration loaded successfully.');
+                })
+                .catch(error => {
+                    console.error('Failed to load configuration:', error);
+                    showMessage('Failed to load configuration: ' + error.message + '. Using defaults.', true);
+                    
+                    // Use defaults
+                    currentConfig = {
+                        "CategoryOrder": [
+                            "latestRelease",
+                            "recentlyAddedFilms",
+                            "recentlyAddedSeries", 
+                            "bestRatedFilms",
+                            "bestRatedSeries"
+                        ],
+                        "RefreshIntervalHours": 24,
+                        "AdminPickIds": [],
+                        "EnableAdminPicks": false
+                    };
+                    loadJsonEditor();
+                });
             }
 
             function loadJsonEditor() {
@@ -131,10 +144,10 @@
 
             function saveJsonFromEditor() {
                 try {
-                    showMessage('Validating and preparing configuration...', false);
+                    showMessage('Saving configuration...', false);
                     const jsonEditor = document.getElementById('jsonEditor');
                     const editedConfig = JSON.parse(jsonEditor.value);
-                    console.log('Validated configuration:', editedConfig);
+                    console.log('Saving configuration:', editedConfig);
                     
                     // Basic validation
                     if (!editedConfig.CategoryOrder || !Array.isArray(editedConfig.CategoryOrder)) {
@@ -145,9 +158,35 @@
                         throw new Error('RefreshIntervalHours must be a number');
                     }
                     
-                    currentConfig = editedConfig;
-                    
-                    showMessage('✅ Configuration validated! Please restart your Jellyfin server to apply changes.', false);
+                    // Use Jellyfin's plugin configuration system
+                    console.log('Getting current plugin configuration...');
+                    ApiClient.getPluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4').then(function(currentPluginConfig) {
+                        console.log('Current plugin configuration:', currentPluginConfig);
+                        
+                        // Update the plugin configuration with our edited values
+                        currentPluginConfig.CategoryOrder = editedConfig.CategoryOrder;
+                        currentPluginConfig.RefreshIntervalHours = editedConfig.RefreshIntervalHours;
+                        currentPluginConfig.EnableAdminPicks = editedConfig.EnableAdminPicks || false;
+                        currentPluginConfig.AdminPickIds = editedConfig.AdminPickIds || [];
+                        currentPluginConfig.LastManualRefresh = Date.now();
+                        
+                        console.log('Updated plugin configuration for saving:', currentPluginConfig);
+                        
+                        // Save using Jellyfin's standard system
+                        return ApiClient.updatePluginConfiguration('639b5171-918b-4b24-82e4-d35c10be63a4', currentPluginConfig);
+                    }).then(function() {
+                        currentConfig = editedConfig;
+                        showMessage('✅ Configuration saved successfully! Recommendations are being refreshed.', false);
+                        console.log('Configuration saved successfully');
+                        
+                        // Reload the configuration to show what was actually saved
+                        setTimeout(() => {
+                            loadConfiguration();
+                        }, 2000);
+                    }).catch(function(error) {
+                        showMessage('❌ Failed to save configuration: ' + error.message, true);
+                        console.error('Save error:', error);
+                    });
                     
                 } catch (error) {
                     showMessage('❌ Invalid JSON format: ' + error.message, true);
