@@ -252,7 +252,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     async function createFeaturedCarousel() {
-        // Simple duplicate check - if div already exists, skip
         if (document.getElementById('jellyfeatured-div')) return;
         
         const pathname = window.location.pathname;
@@ -340,8 +339,10 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             }
     }
 
-    createFeaturedCarousel();
-    setTimeout(() => createFeaturedCarousel(), 1000);
+    if (!document.getElementById('jellyfeatured-div')) {
+        createFeaturedCarousel();        
+        setTimeout(() => createFeaturedCarousel(), 1000);
+    }
 
     const observer = new MutationObserver(() => setTimeout(() => createFeaturedCarousel(), 500));
     if (document.body) observer.observe(document.body, { childList: true, subtree: true });

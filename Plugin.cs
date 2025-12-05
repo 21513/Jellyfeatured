@@ -48,11 +48,9 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         _logger = logger;
         _applicationPaths = applicationPaths;
         _recommendationsPath = Path.Combine(applicationPaths.DataPath, "jellyfeatured-recommendations.json");
-        
-        // Safer initialization with error handling
+
         try
         {
-            // Ensure configuration is properly initialized with defaults
             EnsureConfigurationDefaults();
             
             _ = Task.Run(async () => await InitializePluginAsync(applicationPaths));
@@ -71,23 +69,20 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         _logger.LogInformation("🔧 Configuration change detected! Refresh interval: {Hours}h, Admin picks enabled: {Enabled}, Manual refresh timestamp: {ManualRefresh}", 
             config.RefreshIntervalHours, config.EnableAdminPicks, config.LastManualRefresh);
 
-        // Validate configuration before processing
         if (ValidateConfiguration(config))
         {
-            _logger.LogInformation("✅ Configuration validation passed - triggering immediate refresh");
-            
-            // Always refresh recommendations when configuration changes
+            _logger.LogInformation("Configuration validation passed - triggering immediate refresh");
+
             _ = Task.Run(async () => await RefreshRecommendationsAsync(_applicationPaths));
-            
-            // Restart the timer with the new interval
+
             _refreshTimer?.Dispose();
             StartRefreshTimer(_applicationPaths);
             
-            _logger.LogInformation("🔄 Refresh task started and timer restarted with {Hours}h interval", config.RefreshIntervalHours);
+            _logger.LogInformation("Refresh task started and timer restarted with {Hours}h interval", config.RefreshIntervalHours);
         }
         else
         {
-            _logger.LogError("❌ Invalid configuration detected, keeping previous settings");
+            _logger.LogError("Invalid configuration detected, keeping previous settings");
         }
     }
     
@@ -99,13 +94,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             return false;
         }
         
-        if (config.RefreshIntervalHours <= 0 || config.RefreshIntervalHours > 8760) // Max 1 year
+        if (config.RefreshIntervalHours <= 0 || config.RefreshIntervalHours > 8760)
         {
             _logger.LogError("RefreshIntervalHours is invalid: {Hours}", config.RefreshIntervalHours);
             return false;
         }
-        
-        // Log current configuration for debugging
+
         _logger.LogInformation("Configuration validation passed - using settings: {Settings}", 
             System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
         
@@ -119,37 +113,35 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             var config = Configuration;
             bool configChanged = false;
             
-            _logger.LogInformation("🔍 Checking configuration defaults...");
-            
-            // Ensure RefreshIntervalHours has a valid default
+            _logger.LogInformation("Checking configuration defaults...");
+
             if (config.RefreshIntervalHours <= 0)
             {
                 config.RefreshIntervalHours = 24;
                 configChanged = true;
-                _logger.LogInformation("✅ Set default RefreshIntervalHours to 24");
+                _logger.LogInformation("Set default RefreshIntervalHours to 24");
             }
-            
-            // Ensure AdminPickIds exists
+
             if (config.AdminPickIds == null)
             {
                 config.AdminPickIds = new List<string>();
                 configChanged = true;
-                _logger.LogInformation("✅ Set default empty AdminPickIds");
+                _logger.LogInformation("Set default empty AdminPickIds");
             }
             
             if (configChanged)
             {
                 SaveConfiguration();
-                _logger.LogInformation("💾 Configuration defaults saved successfully");
+                _logger.LogInformation("Configuration defaults saved successfully");
             }
             else
             {
-                _logger.LogInformation("✅ Configuration already has valid defaults");
+                _logger.LogInformation("Configuration already has valid defaults");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to ensure configuration defaults");
+            _logger.LogError(ex, "Failed to ensure configuration defaults");
         }
     }
     
@@ -157,24 +149,24 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     {
         try
         {
-            _logger.LogInformation("🚀 Starting recommendations refresh...");
+            _logger.LogInformation("Starting recommendations refresh...");
             var recommendations = await GenerateRecommendationsAsync();
-            _logger.LogInformation("📊 Generated {Count} recommendations", recommendations.Count);
+            _logger.LogInformation("Generated {Count} recommendations", recommendations.Count);
             
             await SaveRecommendationsAsync(recommendations);
-            _logger.LogInformation("💾 Saved recommendations to {Path}", _recommendationsPath);
+            _logger.LogInformation("Saved recommendations to {Path}", _recommendationsPath);
             
             await CreateWebScriptAsync(applicationPaths, recommendations);
-            _logger.LogInformation("🎨 Created web script for recommendations");
+            _logger.LogInformation("Created web script for recommendations");
             
             await InjectIntoIndexHtmlAsync(applicationPaths);
-            _logger.LogInformation("🏠 Injected recommendations into home page");
+            _logger.LogInformation("Injected recommendations into home page");
             
-            _logger.LogInformation("✅ Recommendations refresh completed successfully!");
+            _logger.LogInformation("Recommendations refresh completed successfully!");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to refresh recommendations");
+            _logger.LogError(ex, "Failed to refresh recommendations");
         }
     }
 
@@ -182,11 +174,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     {
         try
         {
-            _logger.LogInformation("🎯 Initializing Jellyfeatured plugin...");
-            
-            // Log current configuration being used for initialization
+            _logger.LogInformation("Initializing Jellyfeatured plugin...");
+
             var config = Configuration;
-            _logger.LogInformation("📋 Initial configuration: RefreshInterval={Hours}h, AdminPicks={AdminPicks}", 
+            _logger.LogInformation("Initial configuration: RefreshInterval={Hours}h, AdminPicks={AdminPicks}", 
                 config.RefreshIntervalHours, config.EnableAdminPicks);
             
             var recommendations = await GenerateRecommendationsAsync();
@@ -195,11 +186,11 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             await CreateWebScriptAsync(applicationPaths, recommendations);
             await InjectIntoIndexHtmlAsync(applicationPaths);
             
-            _logger.LogInformation("✅ Jellyfeatured plugin initialization completed successfully");
+            _logger.LogInformation("Jellyfeatured plugin initialization completed successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Jellyfeatured plugin initialization failed");
+            _logger.LogError(ex, "Jellyfeatured plugin initialization failed");
         }
     }
     private async Task<List<RecommendationItem>> GenerateRecommendationsAsync()
@@ -207,16 +198,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         var recommendations = new List<RecommendationItem>();
         var categoryItems = new Dictionary<string, RecommendationItem>();
         
-        // Use standard Jellyfin configuration
         var config = Configuration;
         
-        _logger.LogInformation("📋 Current configuration being used: RefreshInterval={Hours}h, AdminPicksEnabled={AdminPicks}, AdminPickIds=[{AdminIds}]", 
+        _logger.LogInformation("Current configuration being used: RefreshInterval={Hours}h, AdminPicksEnabled={AdminPicks}, AdminPickIds=[{AdminIds}]", 
             config.RefreshIntervalHours, config.EnableAdminPicks, string.Join(", ", config.AdminPickIds));
-        
-        // Fixed category order (no longer configurable)
+
         var fixedCategoryOrder = new List<string>
         {
-            "featuredPick",      // Admin's Pick (if enabled)
+            "featuredPick",
             "latestRelease", 
             "recentlyAddedFilms",
             "recentlyAddedSeries",
@@ -224,7 +213,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             "bestRatedSeries"
         };
         
-        // Category variable mapping
         var categoryMapping = new Dictionary<string, string>
         {
             { "featuredPick", "Admin's Pick" },
@@ -243,7 +231,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 IsVirtualItem = false
             }).ToList();
             
-            // Ensure we have items before proceeding
             if (allItems == null || allItems.Count == 0)
             {
                 _logger.LogWarning("No media items found in library");
@@ -335,7 +322,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 };
             }
             
-            // Handle Admin's Picks (featuredPick) using standard configuration
             _logger.LogInformation("Admin picks check - EnableAdminPicks: {Enabled}, AdminPickIds count: {Count}", 
                 config.EnableAdminPicks, config.AdminPickIds?.Count ?? 0);
                 
@@ -377,8 +363,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                         _logger.LogWarning(ex, "Failed to load admin pick item with ID: {ItemId}", itemId);
                     }
                 }
-                
-                // If we have admin pick items, add them as a category
+
                 if (adminPickItems.Count > 0)
                 {
                     categoryItems["featuredPick"] = adminPickItems.First();
@@ -389,11 +374,9 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                     _logger.LogWarning("No valid admin pick items found despite having AdminPickIds configured");
                 }
             }
-            
-            // Use fixed category order and only include categories that exist
+
             foreach (var categoryVariable in fixedCategoryOrder)
             {
-                // Skip featuredPick if admin picks are disabled or no items available
                 if (categoryVariable == "featuredPick" && (!config.EnableAdminPicks || !categoryItems.ContainsKey("featuredPick")))
                 {
                     continue;

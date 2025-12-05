@@ -215,11 +215,6 @@
     outline-offset: 2px;
 }
 
-.carousel-dot:focus {
-    outline: 2px solid var(--highlightOutlineColor);
-    outline-offset: 2px;
-}
-
 @keyframes slideIn {
     from {
         opacity: 0;
