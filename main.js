@@ -5,8 +5,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     let currentSlide = 0;
     let autoSlideInterval;
     let isUserInteracting = false;
-    
-    // Touch/Swipe support variables
+
     let startX = 0;
     let startY = 0;
     let endX = 0;
@@ -228,7 +227,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
 
     function handleTouchStart(e) {
-        // Only handle touch if it starts within the featured div
         const featuredDiv = document.getElementById('jellyfeatured-div');
         if (!featuredDiv || !featuredDiv.contains(e.target)) {
             return;
@@ -244,7 +242,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     function handleTouchMove(e) {
         if (!startX || !startY) return;
         
-        // Only prevent default if we're swiping on the featured div
         const featuredDiv = document.getElementById('jellyfeatured-div');
         if (!featuredDiv || !featuredDiv.contains(e.target)) {
             return;
@@ -257,21 +254,20 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         const deltaX = Math.abs(startX - endX);
         const deltaY = Math.abs(startY - endY);
 
-        if (deltaX > deltaY && deltaX > 10) {
+        if (deltaX > 10) {
             e.preventDefault();
+            e.stopPropagation();
             isSwiping = true;
         }
     }
     
     function handleTouchEnd(e) {
-        if (!startX || !startY || !isSwiping) {
+        if (!startX || !startY) {
             return;
         }
         
-        // Only process touch if it's within the featured div
         const featuredDiv = document.getElementById('jellyfeatured-div');
         if (!featuredDiv || !featuredDiv.contains(e.target)) {
-            // Reset values and return
             startX = 0;
             startY = 0;
             endX = 0;
@@ -280,14 +276,19 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             return;
         }
         
-        const deltaX = startX - endX;
-        const deltaY = Math.abs(startY - endY);
+        if (isSwiping) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const deltaX = startX - endX;
+            const deltaY = Math.abs(startY - endY);
 
-        if (Math.abs(deltaX) > minSwipeDistance && deltaY < maxVerticalSwipe) {
-            if (deltaX > 0) {
-                nextSlide();
-            } else {
-                previousSlide();
+            if (Math.abs(deltaX) > minSwipeDistance && deltaY < maxVerticalSwipe) {
+                if (deltaX > 0) {
+                    nextSlide();
+                } else {
+                    previousSlide();
+                }
             }
         }
         
@@ -410,10 +411,14 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                             pauseAutoSlide();
                         }
                     });
-                    
+
+                    featuredDiv.addEventListener('touchstart', handleTouchStart, { passive: true });
+                    featuredDiv.addEventListener('touchmove', handleTouchMove, { passive: false });
+                    featuredDiv.addEventListener('touchend', handleTouchEnd, { passive: false });
+
                     carouselContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
                     carouselContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
-                    carouselContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
+                    carouselContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
 
                     setTimeout(startAutoSlide, 2000);
 

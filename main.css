@@ -16,7 +16,7 @@
     height: 60vh;
     transition: transform 125ms, border-color 125ms;
     background: var(--cardBackgroundGradient);
-    touch-action: pan-y; /* Allow vertical scrolling but capture horizontal swipes */
+    touch-action: pan-y;
 }
 
 #recommendations-carousel {
