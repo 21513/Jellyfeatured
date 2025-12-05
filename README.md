@@ -25,10 +25,15 @@ I need your help testing on more clients! Please open an issue if you find any b
 
 ## Features
 - Automatic Recommendations
-- Customizable Categories
 - Responsive Design
 - ElegantFin Theme Support
-- Auto-Refresh
+
+Features that will be added in the future:
+- Customizable category order
+- Additional categories
+- Randomized featured items
+- Auto-refresh
+- Refresh interval settings
 
 ## Requirements
 - Jellyfin Server v10.11.4 or higher
@@ -40,9 +45,10 @@ This plugin is made for Jellyfin `v10.11.4`
 1. Add `https://raw.githubusercontent.com/21513/Jellyfeatured/main/manifest.json` to your plugin repository list in the Jellyfin dashboard.
 2. Find Jellyfeatured in the plugin catalog and install it.
 3. Restart your Jellyfin server.
-4. Go to the plugin settings page to configure your featured items.
-5. Sometimes you have to force refresh your web interface to see the changes: `Ctrl + Shift + R`
+4. Sometimes you have to force refresh your web interface to see the changes: `Ctrl + Shift + R`
 
 ## Configuration
 
-Access the configuration page through **Dashboard > Plugins > Jellyfeatured > Settings**.
+Access the configuration page through **Dashboard > Jellyfeatured**. Currently, there are no configurable settings for this plugin. Settings will be added in the future.
+
+All categories are enabled by default and are hard-coded. For future versions I want to add more customizability.
