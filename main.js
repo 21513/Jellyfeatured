@@ -228,6 +228,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
 
     function handleTouchStart(e) {
+        // Only handle touch if it starts within the featured div
+        const featuredDiv = document.getElementById('jellyfeatured-div');
+        if (!featuredDiv || !featuredDiv.contains(e.target)) {
+            return;
+        }
+        
         const touch = e.touches[0] || e.changedTouches[0];
         startX = touch.clientX;
         startY = touch.clientY;
@@ -237,6 +243,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     function handleTouchMove(e) {
         if (!startX || !startY) return;
+        
+        // Only prevent default if we're swiping on the featured div
+        const featuredDiv = document.getElementById('jellyfeatured-div');
+        if (!featuredDiv || !featuredDiv.contains(e.target)) {
+            return;
+        }
         
         const touch = e.touches[0] || e.changedTouches[0];
         endX = touch.clientX;
@@ -253,6 +265,18 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     function handleTouchEnd(e) {
         if (!startX || !startY || !isSwiping) {
+            return;
+        }
+        
+        // Only process touch if it's within the featured div
+        const featuredDiv = document.getElementById('jellyfeatured-div');
+        if (!featuredDiv || !featuredDiv.contains(e.target)) {
+            // Reset values and return
+            startX = 0;
+            startY = 0;
+            endX = 0;
+            endY = 0;
+            isSwiping = false;
             return;
         }
         

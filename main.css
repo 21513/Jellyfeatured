@@ -16,6 +16,7 @@
     height: 60vh;
     transition: transform 125ms, border-color 125ms;
     background: var(--cardBackgroundGradient);
+    touch-action: pan-y; /* Allow vertical scrolling but capture horizontal swipes */
 }
 
 #recommendations-carousel {
@@ -23,21 +24,16 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    touch-action: pan-y;
     user-select: none;
 }
 
 #carousel-dots {
     position: absolute;
     bottom: 16px;
-    left: 50%;
+    right: 0;
     transform: translateX(-50%);
     display: flex;
     z-index: 10;
-    padding: 8px;
-    border-radius: 20px;
-    background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(8px);
 }
 
 .carousel-slide {
@@ -156,30 +152,15 @@
     border: 1px solid rgba(255, 255, 255, 0.6);
     cursor: pointer;
     transition: all 0.3s ease;
-    min-width: 44px;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-.carousel-dot::before {
-    content: '';
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    transition: all 0.3s ease;
-}
-
-.carousel-dot.active::before {
+.carousel-dot.active {
     background: var(--textColor);
     transform: scale(1.2);
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
-.carousel-dot:hover::before {
+.carousel-dot:hover {
     background: rgba(255, 255, 255, 0.8);
     transform: scale(1.1);
 }
@@ -230,14 +211,8 @@
     }
     
     .carousel-dot {
-        min-width: 48px;
-        min-height: 48px;
-        margin: 2px;
-    }
-    
-    .carousel-dot::before {
-        width: 10px;
-        height: 10px;
+        width: 8px;
+        height: 8px;
     }
     
     .slide-logo-container {
@@ -301,10 +276,6 @@
 
 .carousel-slide:active {
     transform: scale(0.98);
-}
-
-.carousel-dot:active::before {
-    transform: scale(0.9);
 }
 
 @media (max-width: 480px) {
