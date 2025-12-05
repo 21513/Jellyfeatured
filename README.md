@@ -7,7 +7,7 @@
 
 #### I do not always have time to fix bugs or add features. If you want me to update this, contact me or consider sponsoring this project.
 
-Adds a featured section to your Jellyfin home screen with automatic recommendations. Modify or reorder categories to fit your preferences.
+Adds a featured section to your Jellyfin home page with automatic recommendations. Modify or reorder categories to fit your preferences.
 
 ![Jellyfeatured on desktop](jellyfeatured-desktop.png)
 
