@@ -6,6 +6,15 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     let autoSlideInterval;
     let isUserInteracting = false;
     
+    // Touch/Swipe support variables
+    let startX = 0;
+    let startY = 0;
+    let endX = 0;
+    let endY = 0;
+    let isSwiping = false;
+    const minSwipeDistance = 50;
+    const maxVerticalSwipe = 100;
+    
     function getJellyfinApiKey() {
         try {
             if (window.ApiClient && window.ApiClient.accessToken) {
@@ -213,6 +222,58 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         goToSlide(nextIndex);
     }
     
+    function previousSlide() {
+        const prevIndex = (currentSlide - 1 + recommendations.length) % recommendations.length;
+        goToSlide(prevIndex);
+    }
+
+    function handleTouchStart(e) {
+        const touch = e.touches[0] || e.changedTouches[0];
+        startX = touch.clientX;
+        startY = touch.clientY;
+        isSwiping = false;
+        pauseAutoSlide();
+    }
+    
+    function handleTouchMove(e) {
+        if (!startX || !startY) return;
+        
+        const touch = e.touches[0] || e.changedTouches[0];
+        endX = touch.clientX;
+        endY = touch.clientY;
+        
+        const deltaX = Math.abs(startX - endX);
+        const deltaY = Math.abs(startY - endY);
+
+        if (deltaX > deltaY && deltaX > 10) {
+            e.preventDefault();
+            isSwiping = true;
+        }
+    }
+    
+    function handleTouchEnd(e) {
+        if (!startX || !startY || !isSwiping) {
+            return;
+        }
+        
+        const deltaX = startX - endX;
+        const deltaY = Math.abs(startY - endY);
+
+        if (Math.abs(deltaX) > minSwipeDistance && deltaY < maxVerticalSwipe) {
+            if (deltaX > 0) {
+                nextSlide();
+            } else {
+                previousSlide();
+            }
+        }
+        
+        startX = 0;
+        startY = 0;
+        endX = 0;
+        endY = 0;
+        isSwiping = false;
+    }
+    
     function startAutoSlide() {
         if (recommendations.length > 1) {
             clearInterval(autoSlideInterval);
@@ -315,8 +376,20 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                                 const year = activeSlide.getAttribute('data-year');
                                 await navigateToMedia(title, year);
                             }
+                        } else if (e.key === 'ArrowLeft') {
+                            e.preventDefault();
+                            previousSlide();
+                            pauseAutoSlide();
+                        } else if (e.key === 'ArrowRight') {
+                            e.preventDefault();
+                            nextSlide();
+                            pauseAutoSlide();
                         }
                     });
+                    
+                    carouselContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+                    carouselContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+                    carouselContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
 
                     setTimeout(startAutoSlide, 2000);
 
