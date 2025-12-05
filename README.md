@@ -42,7 +42,19 @@ Features that will be added in the future:
 ## Installation
 This plugin is made for Jellyfin `v10.11.4`
 
-1. Add `https://raw.githubusercontent.com/21513/Jellyfeatured/main/manifest.json` to your plugin repository list in the Jellyfin dashboard.
+1. Add
+```
+https://baeac.xyz/jellyfin/plugins/manifest.json
+```
+to your plugin repository list in the Jellyfin dashboard.
+
+Or add
+```
+https://raw.githubusercontent.com/21513/Jellyfeatured/main/manifest.json
+```
+
+for the latest development version (unstable).
+
 2. Find Jellyfeatured in the plugin catalog and install it.
 3. Restart your Jellyfin server.
 4. Sometimes you have to force refresh your web interface to see the changes: `Ctrl + Shift + R`
