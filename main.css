@@ -1,10 +1,10 @@
-#jellyfeatured-div:hover {
+#jellyfeatured_div:hover {
     transform: scale(1.01);
     border-color: white !important;
-    transition: transform 125ms, border-color 125ms;
+    transition: 125ms ease-in-out;
 }
 
-#jellyfeatured-div {
+#jellyfeatured_div {
     width: 90%;
     margin: auto;
     position: relative;
@@ -14,12 +14,12 @@
     box-shadow: var(--shadow);
     border: var(--borderWidthDouble) solid var(--darkerBorderColor);
     height: 60vh;
-    transition: transform 125ms, border-color 125ms;
+    transition: 125ms ease-in-out;
     background: var(--cardBackgroundGradient);
     touch-action: pan-y;
 }
 
-#recommendations-carousel {
+#featured_items {
     position: relative;
     width: 100%;
     height: 100%;
@@ -27,7 +27,7 @@
     user-select: none;
 }
 
-#carousel-dots {
+#featuredDots {
     position: absolute;
     bottom: 16px;
     right: 0;
@@ -36,14 +36,14 @@
     z-index: 10;
 }
 
-.carousel-slide {
+.featuredItem {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     opacity: 0;
-    transition: opacity 0.8s ease-in-out;
+    transition: 0.8s ease-in-out;
     cursor: pointer;
     background-size: cover;
     background-position: center;
@@ -52,17 +52,17 @@
     visibility: hidden;
 }
 
-.carousel-slide.active {
+.featuredItem.active {
     opacity: 1;
     z-index: 2;
     visibility: visible;
 }
 
-.carousel-slide {
+.featuredItem {
     overflow: hidden;
 }
 
-.carousel-slide::after {
+.featuredItem::after {
     content: "";
     transition: 0.5s;
     position: absolute;
@@ -75,12 +75,12 @@
     opacity: 0.4;
 }
 
-.carousel-slide:hover::after {
+.featuredItem:hover::after {
     transform: translateY(0) translateX(100%);
     opacity: 0;
 }
 
-.slide-content {
+.featuredContent {
     position: absolute;
     bottom: 0;
     left: 0;
@@ -94,7 +94,7 @@
     text-shadow: var(--shadow);
 }
 
-.slide-logo-container {
+.featuredLogoContainer {
     flex-shrink: 0;
     max-width: 256px;
     max-height: 256px;
@@ -102,19 +102,19 @@
     margin-right: 32px;
 }
 
-.slide-logo {
+.featuredLogo {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
     filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.8));
 }
 
-.slide-text-content {
+.featuredText {
     flex: 1;
     min-width: 0;
 }
 
-.slide-title {
+.featuredTitle {
     font-size: 1.5rem;
     font-weight: 700;
     margin: 0 0 8px 0;
@@ -122,7 +122,7 @@
     line-height: 1.2;
 }
 
-.slide-subtitle {
+.featuredSubtitle {
     font-size: 0.9rem;
     font-weight: 400;
     margin: 0 0 8px 0;
@@ -130,7 +130,7 @@
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
 }
 
-.slide-rating {
+.slideRating {
     display: inline-flex;
     align-items: center;
     gap: 0.25em;
@@ -143,7 +143,7 @@
     backdrop-filter: var(--blurDefault);
 }
 
-.carousel-dot {
+.featuredDot {
     width: 12px;
     height: 12px;
     margin: 4px;
@@ -154,25 +154,24 @@
     transition: all 0.3s ease;
 }
 
-.carousel-dot.active {
+.featuredDot.active {
     background: var(--textColor);
     transform: scale(1.2);
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
-.carousel-dot:hover {
+.featuredDot:hover {
     background: rgba(255, 255, 255, 0.8);
     transform: scale(1.1);
 }
 
-.loading-slide {
+.loadingSlide {
     display: flex;
     align-items: center;
     justify-content: center;
     background: linear-gradient(0deg, var(--darkerGradientPoint, #111827) 35%, var(--lighterGradientPoint, #1d2635));
 }
 
-.loading-text {
+.loadingText {
     opacity: 0.8;
     color: var(--dimTextColor);
     margin: 0;
@@ -184,73 +183,73 @@
 }
 
 @media (max-width: 768px) {
-    #jellyfeatured-div {
+    #jellyfeatured_div {
         width: 95%;
         height: 250px;
         margin: auto;
     }
     
-    .slide-content {
+    .featuredContent {
         padding: 30px 15px 15px;
         gap: 6px;
     }
     
-    .slide-title {
+    .featuredTitle {
         font-size: 1.1rem;
         margin-bottom: 6px;
     }
     
-    .slide-subtitle {
+    .featuredSubtitle {
         font-size: 0.75rem;
         margin-bottom: 6px;
     }
     
-    .slide-rating {
+    .slideRating {
         font-size: 0.7rem;
         padding: 3px 6px;
     }
     
-    .carousel-dot {
+    .featuredDot {
         width: 8px;
         height: 8px;
     }
     
-    .slide-logo-container {
+    .featuredLogoContainer {
         display: none;
     }
     
-    #carousel-dots {
+    #featuredDots {
         bottom: 12px;
         padding: 6px;
     }
 }
 
 @media (max-width: 50em) {
-    #jellyfeatured-div {
+    #jellyfeatured_div {
         height: 200px;
-        width: 98%;
+        width: 95%;
     }
     
-    .slide-content {
+    .featuredContent {
         padding: 25px 12px 12px;
     }
     
-    .slide-title {
+    .featuredTitle {
         font-size: 1rem;
         line-height: 1.1;
     }
     
-    .slide-subtitle {
+    .featuredSubtitle {
         font-size: 0.7rem;
     }
     
-    .slide-rating {
+    .slideRating {
         font-size: 0.65rem;
         padding: 2px 5px;
     }
 }
 
-.carousel-slide:focus {
+.featuredItem:focus {
     outline: 2px solid var(--highlightOutlineColor);
     outline-offset: 2px;
 }
@@ -266,29 +265,29 @@
     }
 }
 
-.carousel-slide.entering {
-    animation: slideIn 0.5s ease-out;
+.featuredItem.entering {
+    animation: 0.5s ease-in-out;
 }
 
-.carousel-slide {
+.featuredItem {
     transition: opacity 0.6s ease-in-out, transform 0.3s ease-out;
 }
 
-.carousel-slide:active {
-    transform: scale(0.98);
+.featuredItem:active {
+    transform: scale(1.1);
 }
 
 @media (max-width: 480px) {
-    .slide-text-content {
+    .featuredText {
         text-align: left;
     }
     
-    .slide-title {
+    .featuredTitle {
         text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9);
         font-weight: 800;
     }
     
-    .slide-subtitle {
+    .featuredSubtitle {
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
     }
 }

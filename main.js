@@ -107,7 +107,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     async function createCarouselSlide(recommendation, index) {
         const slide = document.createElement('div');
-        slide.className = 'carousel-slide';
+        slide.className = 'featuredItem';
         slide.setAttribute('data-index', index);
         slide.setAttribute('data-title', recommendation.title);
         slide.setAttribute('data-year', recommendation.year || '');
@@ -118,14 +118,14 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         slide.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
 
         slide.innerHTML = `
-            <div class="slide-content">
-                <div class="slide-logo-container">
-                    <img class="slide-logo" style="display: none;" alt="${recommendation.title} logo" />
+            <div class="featuredContent">
+                <div class="featuredLogoContainer">
+                    <img class="featuredLogo" style="display: none;" alt="${recommendation.title} logo" />
                 </div>
-                <div class="slide-text-content">
-                    <div class="slide-title">${recommendation.title} ${recommendation.year ? '(' + recommendation.year + ')' : ''}</div>
-                    <div class="slide-subtitle">${recommendation.type}</div>
-                    <div class="slide-rating">⭐ ${recommendation.rating}</div>
+                <div class="featuredText">
+                    <div class="featuredTitle">${recommendation.title} ${recommendation.year ? '(' + recommendation.year + ')' : ''}</div>
+                    <div class="featuredSubtitle">${recommendation.type}</div>
+                    <div class="slideRating">⭐ ${recommendation.rating}</div>
                 </div>
             </div>
         `;
@@ -148,7 +148,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     const apiKey = getJellyfinApiKey();
                     const baseUrl = getJellyfinBaseUrl();
                     const logoUrl = `${baseUrl}/Items/${item.Id}/Images/Logo?api_key=${apiKey}`;
-                    const logoImg = slide.querySelector('.slide-logo');
+                    const logoImg = slide.querySelector('.featuredLogo');
                     logoImg.src = logoUrl;
                     logoImg.style.display = 'block';
                 }
@@ -170,7 +170,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     function createNavigationDot(index) {
         const dot = document.createElement('div');
-        dot.className = 'carousel-dot';
+        dot.className = 'featuredDot';
         dot.setAttribute('data-index', index);
         dot.setAttribute('tabindex', '0');
         dot.setAttribute('role', 'button');
@@ -193,8 +193,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     function goToSlide(index) {
-        const slides = document.querySelectorAll('.carousel-slide');
-        const dots = document.querySelectorAll('.carousel-dot');
+        const slides = document.querySelectorAll('.featuredItem');
+        const dots = document.querySelectorAll('.featuredDot');
         
         if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
         
@@ -227,7 +227,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
 
     function handleTouchStart(e) {
-        const featuredDiv = document.getElementById('jellyfeatured-div');
+        const featuredDiv = document.getElementById('jellyfeatured_div');
         if (!featuredDiv || !featuredDiv.contains(e.target)) {
             return;
         }
@@ -242,7 +242,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     function handleTouchMove(e) {
         if (!startX || !startY) return;
         
-        const featuredDiv = document.getElementById('jellyfeatured-div');
+        const featuredDiv = document.getElementById('jellyfeatured_div');
         if (!featuredDiv || !featuredDiv.contains(e.target)) {
             return;
         }
@@ -266,7 +266,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             return;
         }
         
-        const featuredDiv = document.getElementById('jellyfeatured-div');
+        const featuredDiv = document.getElementById('jellyfeatured_div');
         if (!featuredDiv || !featuredDiv.contains(e.target)) {
             startX = 0;
             startY = 0;
@@ -338,7 +338,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     async function createFeaturedCarousel() {
-        if (document.getElementById('jellyfeatured-div')) return;
+        if (document.getElementById('jellyfeatured_div')) return;
         
         const pathname = window.location.pathname;
         if (!pathname.includes('home') && pathname !== '/' && pathname !== '/web/' && pathname !== '/web/index.html') {
@@ -353,11 +353,11 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         const featuredDiv = tempDiv.firstElementChild;
             
             if (featuredDiv) {
-                const carouselContainer = featuredDiv.querySelector('#recommendations-carousel');
-                const dotsContainer = featuredDiv.querySelector('#carousel-dots');
+                const carouselContainer = featuredDiv.querySelector('#featured_items');
+                const dotsContainer = featuredDiv.querySelector('#featuredDots');
                 
                 if (carouselContainer && recommendations.length > 0) {
-                    const loadingSlide = carouselContainer.querySelector('.loading-slide');
+                    const loadingSlide = carouselContainer.querySelector('.loadingSlide');
                     if (loadingSlide) {
                         loadingSlide.remove();
                     }
@@ -384,7 +384,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     currentSlide = 0;
 
                     carouselContainer.addEventListener('click', async (e) => {
-                        const activeSlide = carouselContainer.querySelector('.carousel-slide.active');
+                        const activeSlide = carouselContainer.querySelector('.featuredItem.active');
                         if (activeSlide && (e.target === activeSlide || activeSlide.contains(e.target))) {
                             const title = activeSlide.getAttribute('data-title');
                             const year = activeSlide.getAttribute('data-year');
@@ -394,7 +394,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
                     carouselContainer.addEventListener('keydown', async (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
-                            const activeSlide = carouselContainer.querySelector('.carousel-slide.active');
+                            const activeSlide = carouselContainer.querySelector('.featuredItem.active');
                             if (activeSlide && (e.target === activeSlide || activeSlide.contains(e.target))) {
                                 e.preventDefault();
                                 const title = activeSlide.getAttribute('data-title');
@@ -431,8 +431,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     
                 } else if (carouselContainer) {
                     carouselContainer.innerHTML = `
-                        <div class="loading-slide">
-                            <p class="loading-text">Loading recommendations...</p>
+                        <div class="loadingSlide">
+                            <p class="loadingText">Loading recommendations...</p>
                         </div>
                     `;
                 }
@@ -441,7 +441,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             }
     }
 
-    if (!document.getElementById('jellyfeatured-div')) {
+    if (!document.getElementById('jellyfeatured_div')) {
         createFeaturedCarousel();        
         setTimeout(() => createFeaturedCarousel(), 1000);
     }
