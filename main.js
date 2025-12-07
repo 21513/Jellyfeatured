@@ -441,14 +441,18 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             }
     }
 
-    if (!document.getElementById('jellyfeatured_div')) {
-        createFeaturedCarousel();
-    }
+    // if (!document.getElementById('jellyfeatured_div')) {
+    //     createFeaturedCarousel();
+    // }
 
-    // Try again but still check
-    setTimeout(() => {
-        if (!document.getElementById('jellyfeatured_div')) {
-            createFeaturedCarousel();
+    const observer = new MutationObserver(() => setTimeout(() => createFeaturedCarousel(), 500));
+    if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+
+    let lastUrl = location.href;
+    setInterval(() => {
+        if (location.href !== lastUrl) {
+            lastUrl = location.href;
+            setTimeout(() => createFeaturedCarousel(), 200);
         }
-    }, 200);
+    }, 1000);
 })();

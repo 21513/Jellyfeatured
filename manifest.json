@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/21513/Jellyfeatured/refs/heads/main/thumbnail.jpg",
         "versions": [
             {
+                "version": "0.0.1.6",
+                "changelog": "Updated web injection",
+                "targetAbi": "10.11.4.0",
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.6/Jellyfeatured-v0.0.1.6.zip",
+                "checksum": "f9c69a5df1272e3a466f076bfd49de82",
+                "timestamp": "2025-12-07T23:03:43Z"
+            },
+            {
                 "version": "0.0.1.5",
                 "changelog": "Updated web injection",
                 "targetAbi": "10.11.4.0",
