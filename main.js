@@ -441,10 +441,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             }
     }
 
-    // if (!document.getElementById('jellyfeatured_div')) {
-    //     createFeaturedCarousel();
-    // }
-
     const observer = new MutationObserver(() => setTimeout(() => createFeaturedCarousel(), 500));
     if (document.body) observer.observe(document.body, { childList: true, subtree: true });
 
