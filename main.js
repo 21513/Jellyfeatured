@@ -1,6 +1,17 @@
 const recommendations = [{{RECOMMENDATIONS_DATA}}];
 const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
+// Debug logging
+console.log('[JELLYFEATURED] Script loaded successfully!');
+console.log('[JELLYFEATURED] Recommendations count:', recommendations.length);
+console.log('[JELLYFEATURED] Sample recommendation:', recommendations[0] || 'None');
+console.log('[JELLYFEATURED] HTML template length:', htmlTemplate.length);
+
+// Global marker for verification
+window.JellyfeaturedLoaded = true;
+window.JellyfeaturedVersion = '1.0.0-debug';
+console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoaded');
+
 (function() {
     let currentSlide = 0;
     let autoSlideInterval;
@@ -406,25 +417,42 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     async function createFeaturedCarousel() {
-        if (document.getElementById('jellyfeatured_div')) return;
+        console.log('[JELLYFEATURED] createFeaturedCarousel() called');
+        console.log('[JELLYFEATURED] Current pathname:', window.location.pathname);
+        
+        if (document.getElementById('jellyfeatured_div')) {
+            console.log('[JELLYFEATURED] Featured div already exists, skipping');
+            return;
+        }
         
         const pathname = window.location.pathname;
         if (!pathname.includes('home') && pathname !== '/' && pathname !== '/web/' && pathname !== '/web/index.html') {
+            console.log('[JELLYFEATURED] Not on home page, skipping. Path:', pathname);
             return;
         }
         
         const targetContainer = document.querySelector('.homePage');
-        if (!targetContainer) return;
+        console.log('[JELLYFEATURED] Target container found:', !!targetContainer);
+        if (!targetContainer) {
+            console.log('[JELLYFEATURED] No .homePage container found');
+            return;
+        }
         
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlTemplate;
         const featuredDiv = tempDiv.firstElementChild;
+        console.log('[JELLYFEATURED] Template processed, featuredDiv created:', !!featuredDiv);
             
             if (featuredDiv) {
+                console.log('[JELLYFEATURED] Looking for main item and thumbnails container');
                 const mainItem = featuredDiv.querySelector('#featured-main-item');
                 const thumbnailsContainer = featuredDiv.querySelector('#featured-thumbnails');
+                console.log('[JELLYFEATURED] Main item found:', !!mainItem);
+                console.log('[JELLYFEATURED] Thumbnails container found:', !!thumbnailsContainer);
+                console.log('[JELLYFEATURED] Recommendations available:', recommendations.length);
                 
                 if (mainItem && thumbnailsContainer && recommendations.length > 0) {
+                    console.log('[JELLYFEATURED] Starting thumbnail creation for', recommendations.length, 'items');
                     // Create thumbnail items
                     const thumbnailPromises = [];
                     for (let i = 0; i < recommendations.length; i++) {
@@ -432,7 +460,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         thumbnailPromises.push(createThumbnailItem(rec, i));
                     }
 
+                    console.log('[JELLYFEATURED] Waiting for thumbnail creation...');
                     const thumbnails = await Promise.all(thumbnailPromises);
+                    console.log('[JELLYFEATURED] Thumbnails created:', thumbnails.length);
 
                     thumbnails.forEach((thumbnail, index) => {
                         thumbnailsContainer.appendChild(thumbnail);
@@ -505,8 +535,10 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                             startAutoSlide();
                         }
                     });
+                    console.log('[JELLYFEATURED] Setting up event handlers and injecting into page...');
                     
                 } else if (mainItem) {
+                    console.log('[JELLYFEATURED] Missing components or no recommendations. Main item:', !!mainItem, 'Thumbnails:', !!thumbnailsContainer, 'Recs:', recommendations.length);
                     mainItem.innerHTML = `
                         <div class="loadingSlide">
                             <p class="loadingText">Loading recommendations...</p>
@@ -514,18 +546,31 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     `;
                 }
                 
+                console.log('[JELLYFEATURED] Injecting featured div into page...');
                 targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
+                console.log('[JELLYFEATURED] Featured div injected successfully!');
+            } else {
+                console.error('[JELLYFEATURED] Failed to create featuredDiv from template');
             }
     }
 
-    const observer = new MutationObserver(() => setTimeout(() => createFeaturedCarousel(), 500));
+    console.log('[JELLYFEATURED] Setting up MutationObserver and URL monitoring...');
+    const observer = new MutationObserver(() => {
+        console.log('[JELLYFEATURED] DOM mutation detected, scheduling carousel creation...');
+        setTimeout(() => createFeaturedCarousel(), 500);
+    });
     if (document.body) observer.observe(document.body, { childList: true, subtree: true });
 
     let lastUrl = location.href;
     setInterval(() => {
         if (location.href !== lastUrl) {
             lastUrl = location.href;
+            console.log('[JELLYFEATURED] URL changed to:', location.href);
             setTimeout(() => createFeaturedCarousel(), 200);
         }
     }, 1000);
+    
+    // Initial call
+    console.log('[JELLYFEATURED] Making initial call to createFeaturedCarousel...');
+    setTimeout(() => createFeaturedCarousel(), 1000);
 })();
