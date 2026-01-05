@@ -244,18 +244,31 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
     }
     
     function setupNavigation() {
+        console.log('[JELLYFEATURED] Setting up navigation buttons');
         const prevButton = document.getElementById('featured-prev');
         const nextButton = document.getElementById('featured-next');
         
+        console.log('[JELLYFEATURED] Prev button found:', !!prevButton);
+        console.log('[JELLYFEATURED] Next button found:', !!nextButton);
+        
         if (prevButton) {
-            prevButton.addEventListener('click', () => {
+            // Remove any existing listeners
+            prevButton.replaceWith(prevButton.cloneNode(true));
+            const newPrevButton = document.getElementById('featured-prev');
+            
+            newPrevButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[JELLYFEATURED] Previous button clicked');
                 previousSlide();
                 pauseAutoSlide();
             });
             
-            prevButton.addEventListener('keydown', (e) => {
+            newPrevButton.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[JELLYFEATURED] Previous button key pressed');
                     previousSlide();
                     pauseAutoSlide();
                 }
@@ -263,36 +276,53 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         }
         
         if (nextButton) {
-            nextButton.addEventListener('click', () => {
+            // Remove any existing listeners
+            nextButton.replaceWith(nextButton.cloneNode(true));
+            const newNextButton = document.getElementById('featured-next');
+            
+            newNextButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[JELLYFEATURED] Next button clicked');
                 nextSlide();
                 pauseAutoSlide();
             });
             
-            nextButton.addEventListener('keydown', (e) => {
+            newNextButton.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[JELLYFEATURED] Next button key pressed');
                     nextSlide();
                     pauseAutoSlide();
                 }
             });
         }
+        
+        console.log('[JELLYFEATURED] Navigation setup complete');
     }
     
     function goToSlide(index) {
+        console.log('[JELLYFEATURED] goToSlide called with index:', index, 'current:', currentSlide);
         const thumbnails = document.querySelectorAll('.featured-thumbnail');
         
-        if (recommendations.length === 0 || index >= recommendations.length || index === currentSlide) return;
+        if (recommendations.length === 0 || index >= recommendations.length || index === currentSlide) {
+            console.log('[JELLYFEATURED] goToSlide aborted - invalid index or same slide');
+            return;
+        }
         
         // Update active thumbnail
         thumbnails.forEach(thumbnail => thumbnail.classList.remove('active'));
         if (thumbnails[index]) {
             thumbnails[index].classList.add('active');
+            console.log('[JELLYFEATURED] Thumbnail', index, 'set as active');
         }
         
         // Update main featured item
         createFeaturedMainItem(recommendations[index], index);
         
         currentSlide = index;
+        console.log('[JELLYFEATURED] Slide changed to:', currentSlide);
     }
     
     function nextSlide() {
@@ -311,11 +341,17 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
             return;
         }
         
+        // Only handle touches on mobile devices
+        if (window.innerWidth > 768) {
+            return;
+        }
+        
         const touch = e.touches[0] || e.changedTouches[0];
         startX = touch.clientX;
         startY = touch.clientY;
         isSwiping = false;
         pauseAutoSlide();
+        console.log('[JELLYFEATURED] Touch start at:', startX, startY);
     }
     
     function handleTouchMove(e) {
@@ -326,6 +362,11 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
             return;
         }
         
+        // Only handle touches on mobile devices
+        if (window.innerWidth > 768) {
+            return;
+        }
+        
         const touch = e.touches[0] || e.changedTouches[0];
         endX = touch.clientX;
         endY = touch.clientY;
@@ -333,10 +374,11 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         const deltaX = Math.abs(startX - endX);
         const deltaY = Math.abs(startY - endY);
 
-        if (deltaX > 10) {
+        if (deltaX > 15 && deltaX > deltaY) {
             e.preventDefault();
             e.stopPropagation();
             isSwiping = true;
+            console.log('[JELLYFEATURED] Swiping detected, deltaX:', deltaX);
         }
     }
     
@@ -355,6 +397,16 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
             return;
         }
         
+        // Only handle touches on mobile devices
+        if (window.innerWidth > 768) {
+            startX = 0;
+            startY = 0;
+            endX = 0;
+            endY = 0;
+            isSwiping = false;
+            return;
+        }
+        
         if (isSwiping) {
             e.preventDefault();
             e.stopPropagation();
@@ -362,10 +414,14 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
             const deltaX = startX - endX;
             const deltaY = Math.abs(startY - endY);
 
+            console.log('[JELLYFEATURED] Swipe end, deltaX:', deltaX, 'deltaY:', deltaY);
+
             if (Math.abs(deltaX) > minSwipeDistance && deltaY < maxVerticalSwipe) {
                 if (deltaX > 0) {
+                    console.log('[JELLYFEATURED] Swiped left - next slide');
                     nextSlide();
                 } else {
+                    console.log('[JELLYFEATURED] Swiped right - previous slide');
                     previousSlide();
                 }
             }
