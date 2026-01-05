@@ -83,6 +83,28 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         return null;
     }
     
+    function getPosterImageUrl(title, year) {
+        return searchForItem(title, year).then(item => {
+            if (item && item.ImageTags && item.ImageTags.Primary) {
+                const apiKey = getJellyfinApiKey();
+                const baseUrl = getJellyfinBaseUrl();
+                return `${baseUrl}/Items/${item.Id}/Images/Primary?api_key=${apiKey}`;
+            } else {
+                const colors = [
+                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
+                    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+                ];
+                const hash = title.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
+                return colors[Math.abs(hash) % colors.length];
+            }
+        }).catch(() => {
+            return `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+        });
+    }
+    
     function getBackdropImageUrl(title, year) {
         return searchForItem(title, year).then(item => {
             if (item && item.BackdropImageTags && item.BackdropImageTags.length > 0) {
@@ -105,20 +127,21 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         });
     }
     
-    async function createCarouselSlide(recommendation, index) {
-        const slide = document.createElement('div');
-        slide.className = 'featuredItem';
-        slide.setAttribute('data-index', index);
-        slide.setAttribute('data-title', recommendation.title);
-        slide.setAttribute('data-year', recommendation.year || '');
-        slide.setAttribute('tabindex', '0');
-        slide.setAttribute('role', 'button');
-        slide.setAttribute('aria-label', `View ${recommendation.title}`);
+    async function createFeaturedMainItem(recommendation, index) {
+        const mainItem = document.getElementById('featured-main-item');
+        if (!mainItem) return;
+        
+        mainItem.setAttribute('data-index', index);
+        mainItem.setAttribute('data-title', recommendation.title);
+        mainItem.setAttribute('data-year', recommendation.year || '');
+        mainItem.setAttribute('tabindex', '0');
+        mainItem.setAttribute('role', 'button');
+        mainItem.setAttribute('aria-label', `View ${recommendation.title}`);
 
-        slide.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+        mainItem.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
 
-        slide.innerHTML = `
-            <div class="featuredContent">
+        mainItem.innerHTML = `
+            <div class="featuredContent featured-content-entering">
                 <div class="featuredLogoContainer">
                     <img class="featuredLogo" style="display: none;" alt="${recommendation.title} logo" />
                 </div>
@@ -138,17 +161,17 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     const apiKey = getJellyfinApiKey();
                     const baseUrl = getJellyfinBaseUrl();
                     const backdropUrl = `${baseUrl}/Items/${item.Id}/Images/Backdrop?api_key=${apiKey}`;
-                    slide.style.background = `url("${backdropUrl}")`;
-                    slide.style.backgroundSize = 'cover';
-                    slide.style.backgroundPosition = 'center';
-                    slide.style.backgroundRepeat = 'no-repeat';
+                    mainItem.style.background = `url("${backdropUrl}")`;
+                    mainItem.style.backgroundSize = 'cover';
+                    mainItem.style.backgroundPosition = 'center';
+                    mainItem.style.backgroundRepeat = 'no-repeat';
                 }
                 
                 if (item.ImageTags && item.ImageTags.Logo) {
                     const apiKey = getJellyfinApiKey();
                     const baseUrl = getJellyfinBaseUrl();
                     const logoUrl = `${baseUrl}/Items/${item.Id}/Images/Logo?api_key=${apiKey}`;
-                    const logoImg = slide.querySelector('.featuredLogo');
+                    const logoImg = mainItem.querySelector('.featuredLogo');
                     logoImg.src = logoUrl;
                     logoImg.style.display = 'block';
                 }
@@ -162,56 +185,58 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
             ];
             const hash = recommendation.title.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
-            slide.style.background = colors[Math.abs(hash) % colors.length];
+            mainItem.style.background = colors[Math.abs(hash) % colors.length];
         }
-        
-        return slide;
     }
     
-    function createNavigationDot(index) {
-        const dot = document.createElement('div');
-        dot.className = 'featuredDot';
-        dot.setAttribute('data-index', index);
-        dot.setAttribute('tabindex', '0');
-        dot.setAttribute('role', 'button');
-        dot.setAttribute('aria-label', `Go to slide ${index + 1}`);
+    function setupNavigation() {
+        const prevButton = document.getElementById('featured-prev');
+        const nextButton = document.getElementById('featured-next');
         
-        dot.addEventListener('click', () => {
-            goToSlide(index);
-            pauseAutoSlide();
-        });
-        
-        dot.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                goToSlide(index);
+        if (prevButton) {
+            prevButton.addEventListener('click', () => {
+                previousSlide();
                 pauseAutoSlide();
-            }
-        });
+            });
+            
+            prevButton.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    previousSlide();
+                    pauseAutoSlide();
+                }
+            });
+        }
         
-        return dot;
+        if (nextButton) {
+            nextButton.addEventListener('click', () => {
+                nextSlide();
+                pauseAutoSlide();
+            });
+            
+            nextButton.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    nextSlide();
+                    pauseAutoSlide();
+                }
+            });
+        }
     }
     
     function goToSlide(index) {
-        const slides = document.querySelectorAll('.featuredItem');
-        const dots = document.querySelectorAll('.featuredDot');
+        const thumbnails = document.querySelectorAll('.featured-thumbnail');
         
-        if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
+        if (recommendations.length === 0 || index >= recommendations.length || index === currentSlide) return;
         
-        slides.forEach((slide, i) => {
-            if (i !== index) {
-                slide.classList.remove('active', 'entering');
-            }
-        });
-        dots.forEach(dot => dot.classList.remove('active'));
-
-        if (slides[index]) {
-            slides[index].classList.add('active');
+        // Update active thumbnail
+        thumbnails.forEach(thumbnail => thumbnail.classList.remove('active'));
+        if (thumbnails[index]) {
+            thumbnails[index].classList.add('active');
         }
         
-        if (dots[index]) {
-            dots[index].classList.add('active');
-        }
+        // Update main featured item
+        createFeaturedMainItem(recommendations[index], index);
         
         currentSlide = index;
     }
@@ -353,54 +378,61 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         const featuredDiv = tempDiv.firstElementChild;
             
             if (featuredDiv) {
-                const carouselContainer = featuredDiv.querySelector('#featured_items');
-                const dotsContainer = featuredDiv.querySelector('#featuredDots');
+                const mainItem = featuredDiv.querySelector('#featured-main-item');
+                const thumbnailsContainer = featuredDiv.querySelector('#featured-thumbnails');
                 
-                if (carouselContainer && recommendations.length > 0) {
-                    const loadingSlide = carouselContainer.querySelector('.loadingSlide');
-                    if (loadingSlide) {
-                        loadingSlide.remove();
-                    }
-                    
-                    const slidePromises = [];
+                if (mainItem && thumbnailsContainer && recommendations.length > 0) {
+                    // Create thumbnail items
+                    const thumbnailPromises = [];
                     for (let i = 0; i < recommendations.length; i++) {
                         const rec = recommendations[i];
-                        slidePromises.push(createCarouselSlide(rec, i));
+                        thumbnailPromises.push(createThumbnailItem(rec, i));
                     }
 
-                    const slides = await Promise.all(slidePromises);
+                    const thumbnails = await Promise.all(thumbnailPromises);
 
-                    slides.forEach((slide, index) => {
-                        carouselContainer.appendChild(slide);
-                        const dot = createNavigationDot(index);
-                        dotsContainer.appendChild(dot);
+                    thumbnails.forEach((thumbnail, index) => {
+                        thumbnailsContainer.appendChild(thumbnail);
 
                         if (index === 0) {
-                            slide.classList.add('active');
-                            dot.classList.add('active');
+                            thumbnail.classList.add('active');
                         }
-                    });
 
-                    currentSlide = 0;
+                        // Add click handler for each thumbnail
+                        thumbnail.addEventListener('click', () => {
+                            goToSlide(index);
+                            pauseAutoSlide();
+                        });
 
-                    carouselContainer.addEventListener('click', async (e) => {
-                        const activeSlide = carouselContainer.querySelector('.featuredItem.active');
-                        if (activeSlide && (e.target === activeSlide || activeSlide.contains(e.target))) {
-                            const title = activeSlide.getAttribute('data-title');
-                            const year = activeSlide.getAttribute('data-year');
-                            await navigateToMedia(title, year);
-                        }
-                    });
-
-                    carouselContainer.addEventListener('keydown', async (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            const activeSlide = carouselContainer.querySelector('.featuredItem.active');
-                            if (activeSlide && (e.target === activeSlide || activeSlide.contains(e.target))) {
+                        thumbnail.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
-                                const title = activeSlide.getAttribute('data-title');
-                                const year = activeSlide.getAttribute('data-year');
-                                await navigateToMedia(title, year);
+                                goToSlide(index);
+                                pauseAutoSlide();
                             }
+                        });
+                    });
+
+                    // Initialize with first item
+                    currentSlide = 0;
+                    await createFeaturedMainItem(recommendations[0], 0);
+
+                    // Setup navigation buttons
+                    setupNavigation();
+
+                    // Main item click handler
+                    mainItem.addEventListener('click', async (e) => {
+                        const title = mainItem.getAttribute('data-title');
+                        const year = mainItem.getAttribute('data-year');
+                        await navigateToMedia(title, year);
+                    });
+
+                    mainItem.addEventListener('keydown', async (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const title = mainItem.getAttribute('data-title');
+                            const year = mainItem.getAttribute('data-year');
+                            await navigateToMedia(title, year);
                         } else if (e.key === 'ArrowLeft') {
                             e.preventDefault();
                             previousSlide();
@@ -412,14 +444,16 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         }
                     });
 
+                    // Touch event handlers
                     featuredDiv.addEventListener('touchstart', handleTouchStart, { passive: true });
                     featuredDiv.addEventListener('touchmove', handleTouchMove, { passive: false });
                     featuredDiv.addEventListener('touchend', handleTouchEnd, { passive: false });
 
-                    carouselContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
-                    carouselContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
-                    carouselContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
+                    mainItem.addEventListener('touchstart', handleTouchStart, { passive: true });
+                    mainItem.addEventListener('touchmove', handleTouchMove, { passive: false });
+                    mainItem.addEventListener('touchend', handleTouchEnd, { passive: false });
 
+                    // Auto-slide functionality
                     setTimeout(startAutoSlide, 2000);
 
                     featuredDiv.addEventListener('mouseenter', pauseAutoSlide);
@@ -429,8 +463,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         }
                     });
                     
-                } else if (carouselContainer) {
-                    carouselContainer.innerHTML = `
+                } else if (mainItem) {
+                    mainItem.innerHTML = `
                         <div class="loadingSlide">
                             <p class="loadingText">Loading recommendations...</p>
                         </div>

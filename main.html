@@ -1,6 +1,20 @@
 <div id="jellyfeatured_div">
     <style>{{CSS_STYLES}}</style>
     
-    <div id="featured_items"></div>
-    <div id="featuredDots"></div>
+    <div class="featured-main-container">
+        <div id="featured-main-item"></div>
+        <div class="featured-nav-container">
+            <button id="featured-prev" class="nav-button nav-prev" aria-label="Previous item">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                </svg>
+            </button>
+            <div id="featured-thumbnails"></div>
+            <button id="featured-next" class="nav-button nav-next" aria-label="Next item">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
 </div>
