@@ -127,6 +127,49 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         });
     }
     
+    async function createThumbnailItem(recommendation, index) {
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'featured-thumbnail';
+        thumbnail.setAttribute('data-index', index);
+        thumbnail.setAttribute('data-title', recommendation.title);
+        thumbnail.setAttribute('data-year', recommendation.year || '');
+        thumbnail.setAttribute('tabindex', '0');
+        thumbnail.setAttribute('role', 'button');
+        thumbnail.setAttribute('aria-label', `View ${recommendation.title}`);
+
+        thumbnail.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+
+        thumbnail.innerHTML = `
+            <div class="thumbnail-title">${recommendation.title}</div>
+        `;
+
+        try {
+            const item = await searchForItem(recommendation.title, recommendation.year);
+            
+            if (item && item.ImageTags && item.ImageTags.Primary) {
+                const apiKey = getJellyfinApiKey();
+                const baseUrl = getJellyfinBaseUrl();
+                const posterUrl = `${baseUrl}/Items/${item.Id}/Images/Primary?api_key=${apiKey}`;
+                thumbnail.style.background = `url("${posterUrl}")`;
+                thumbnail.style.backgroundSize = 'cover';
+                thumbnail.style.backgroundPosition = 'center';
+                thumbnail.style.backgroundRepeat = 'no-repeat';
+            }
+        } catch (e) {
+            const colors = [
+                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
+                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+            ];
+            const hash = recommendation.title.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
+            thumbnail.style.background = colors[Math.abs(hash) % colors.length];
+        }
+        
+        return thumbnail;
+    }
+    
     async function createFeaturedMainItem(recommendation, index) {
         const mainItem = document.getElementById('featured-main-item');
         if (!mainItem) return;
