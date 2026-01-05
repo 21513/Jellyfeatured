@@ -1,3 +1,4 @@
+// @ts-nocheck
 const recommendations = [{{RECOMMENDATIONS_DATA}}];
 const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
@@ -15,7 +16,10 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
 (function() {
     let currentSlide = 0;
     let autoSlideInterval;
+    let autoSlideEnabled = false;
     let isUserInteracting = false;
+    let imageCache = new Map(); // Cache for all loaded images
+    let filteredRecommendations = []; // Only items with required images
 
     let startX = 0;
     let startY = 0;
@@ -280,13 +284,13 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
     function goToSlide(index) {
         console.log('[JELLYFEATURED] goToSlide called with index:', index, 'current:', currentSlide);
         
-        if (recommendations.length === 0 || index >= recommendations.length || index === currentSlide) {
+        if (filteredRecommendations.length === 0 || index >= filteredRecommendations.length || index === currentSlide) {
             console.log('[JELLYFEATURED] goToSlide aborted - invalid index or same slide');
             return;
         }
         
         currentSlide = index;
-        updateCarouselDisplay();
+        createInfiniteCarouselItems();
         console.log('[JELLYFEATURED] Slide changed to:', currentSlide);
     }
     
@@ -294,37 +298,71 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         const itemsContainer = document.getElementById('featured-items-container');
         if (!itemsContainer) return;
         
-        // Re-order items so current slide is first
-        const items = Array.from(itemsContainer.children);
+        // Clear existing items
+        itemsContainer.innerHTML = '';
         
-        // Remove all items
-        items.forEach(item => item.remove());
+        // Create items for infinite scroll effect (current + next items)
+        const itemsToShow = Math.min(recommendations.length, 6); // Show max 6 items
         
-        // Create new ordering starting with current slide
-        const reorderedItems = [];
-        for (let i = 0; i < recommendations.length; i++) {
+        for (let i = 0; i < itemsToShow; i++) {
             const actualIndex = (currentSlide + i) % recommendations.length;
-            const item = items.find(item => item.getAttribute('data-index') == actualIndex);
-            if (item) {
-                // Update classes: first item is primary, others are posters
-                item.className = 'featured-item ' + (i === 0 ? 'primary' : 'poster');
-                
-                // Update image type based on position
-                updateItemImage(item, recommendations[actualIndex], i);
-                reorderedItems.push(item);
-            }
+            const recommendation = recommendations[actualIndex];
+            
+            createCarouselItemInline(recommendation, actualIndex, i === 0).then(item => {
+                itemsContainer.appendChild(item);
+            });
         }
         
-        // Re-append items in new order
-        reorderedItems.forEach(item => itemsContainer.appendChild(item));
-        
-        // Scroll back to start
-        itemsContainer.scrollLeft = 0;
+        // Reset and start progress bar
+        resetProgressBar();
+        startProgressBar();
         
         console.log('[JELLYFEATURED] Carousel display updated, currentSlide:', currentSlide);
     }
     
-    async function updateItemImage(item, recommendation, displayIndex) {
+    async function createCarouselItemInline(recommendation, originalIndex, isPrimary) {
+        const item = document.createElement('div');
+        item.className = 'featured-item ' + (isPrimary ? 'primary' : 'poster');
+        item.setAttribute('data-index', originalIndex);
+        item.setAttribute('data-title', recommendation.title);
+        item.setAttribute('data-year', recommendation.year || '');
+        item.setAttribute('tabindex', '0');
+        item.setAttribute('role', 'button');
+        item.setAttribute('aria-label', `View ${recommendation.title}`);
+
+        // Set default background
+        item.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+
+        // Only add content for primary item
+        if (isPrimary) {
+            item.innerHTML = `
+                <div class="featuredContent">
+                    <div class="featuredLogoContainer">
+                        <img class="featuredLogo" style="display: none;" alt="${recommendation.title} logo" />
+                    </div>
+                    <div class="featuredText">
+                        <div class="featuredTitle">${recommendation.title} ${recommendation.year ? '(' + recommendation.year + ')' : ''}</div>
+                        <div class="featuredSubtitle">${recommendation.type}</div>
+                        <div class="slideRating">⭐ ${recommendation.rating}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Add click handlers
+        item.addEventListener('click', async (e) => {
+            const clickedIndex = parseInt(item.getAttribute('data-index'));
+            if (isPrimary) {
+                const title = item.getAttribute('data-title');
+                const year = item.getAttribute('data-year');
+                await navigateToMedia(title, year);
+            } else {
+                goToSlide(clickedIndex);
+                pauseAutoSlide();
+            }
+        });
+
+        // Load appropriate image
         try {
             const item_data = await searchForItem(recommendation.title, recommendation.year);
             
@@ -332,15 +370,14 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                 const apiKey = getJellyfinApiKey();
                 const baseUrl = getJellyfinBaseUrl();
                 
-                // Use backdrop for primary item (index 0), poster for others
-                if (displayIndex === 0 && item_data.BackdropImageTags && item_data.BackdropImageTags.length > 0) {
+                if (isPrimary && item_data.BackdropImageTags && item_data.BackdropImageTags.length > 0) {
+                    // Use backdrop for primary item
                     const backdropUrl = `${baseUrl}/Items/${item_data.Id}/Images/Backdrop?api_key=${apiKey}`;
                     item.style.background = `url("${backdropUrl}")`;
                     item.style.backgroundSize = 'cover';
                     item.style.backgroundPosition = 'center';
-                    item.style.backgroundRepeat = 'no-repeat';
                     
-                    // Show logo for primary item
+                    // Add logo if available
                     if (item_data.ImageTags && item_data.ImageTags.Logo) {
                         const logoUrl = `${baseUrl}/Items/${item_data.Id}/Images/Logo?api_key=${apiKey}`;
                         const logoImg = item.querySelector('.featuredLogo');
@@ -349,32 +386,29 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                             logoImg.style.display = 'block';
                         }
                     }
-                } else if (displayIndex > 0 && item_data.ImageTags && item_data.ImageTags.Primary) {
+                } else if (!isPrimary && item_data.ImageTags && item_data.ImageTags.Primary) {
+                    // Use poster for non-primary items
                     const posterUrl = `${baseUrl}/Items/${item_data.Id}/Images/Primary?api_key=${apiKey}`;
                     item.style.background = `url("${posterUrl}")`;
                     item.style.backgroundSize = 'cover';
                     item.style.backgroundPosition = 'center';
-                    item.style.backgroundRepeat = 'no-repeat';
-                    
-                    // Hide logo for poster items
-                    const logoImg = item.querySelector('.featuredLogo');
-                    if (logoImg) {
-                        logoImg.style.display = 'none';
-                    }
                 }
             }
         } catch (e) {
-            // Fallback to gradient background
+            // Keep gradient background
         }
+        
+        return item;
     }
     
+    
     function nextSlide() {
-        const nextIndex = (currentSlide + 1) % recommendations.length;
+        const nextIndex = (currentSlide + 1) % filteredRecommendations.length;
         goToSlide(nextIndex);
     }
     
     function previousSlide() {
-        const prevIndex = (currentSlide - 1 + recommendations.length) % recommendations.length;
+        const prevIndex = (currentSlide - 1 + filteredRecommendations.length) % filteredRecommendations.length;
         goToSlide(prevIndex);
     }
 
@@ -478,19 +512,23 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
     }
     
     function startAutoSlide() {
-        if (recommendations.length > 1) {
+        if (filteredRecommendations.length > 1) {
             clearInterval(autoSlideInterval);
+            autoSlideEnabled = true;
             autoSlideInterval = setInterval(() => {
                 if (!isUserInteracting) {
                     nextSlide();
                 }
-            }, 6000);
+            }, 5000); // Match SLIDE_DURATION
+            startProgressBar();
         }
     }
     
     function pauseAutoSlide() {
         isUserInteracting = true;
+        autoSlideEnabled = false;
         clearInterval(autoSlideInterval);
+        pauseProgressBar();
         
         setTimeout(() => {
             isUserInteracting = false;
@@ -498,6 +536,80 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         }, 10000);
     }
     
+    async function preloadAndFilterRecommendations() {
+        console.log('[JELLYFEATURED] Preloading and filtering recommendations...');
+        const apiKey = getJellyfinApiKey();
+        const baseUrl = getJellyfinBaseUrl();
+        
+        if (!apiKey) {
+            console.log('[JELLYFEATURED] No API key available for preloading');
+            filteredRecommendations = recommendations.slice();
+            return;
+        }
+
+        const validItems = [];
+        const preloadPromises = [];
+
+        for (const recommendation of recommendations) {
+            try {
+                const item_data = await searchForItem(recommendation.title, recommendation.year);
+                
+                if (item_data) {
+                    const hasBackdrop = item_data.BackdropImageTags && item_data.BackdropImageTags.length > 0;
+                    const hasPoster = item_data.ImageTags && item_data.ImageTags.Primary;
+                    
+                    // Only include items that have both backdrop and poster images
+                    if (hasBackdrop && hasPoster) {
+                        // Cache the image URLs
+                        const backdropUrl = `${baseUrl}/Items/${item_data.Id}/Images/Backdrop?api_key=${apiKey}`;
+                        const posterUrl = `${baseUrl}/Items/${item_data.Id}/Images/Primary?api_key=${apiKey}`;
+                        
+                        let logoUrl = null;
+                        if (item_data.ImageTags && item_data.ImageTags.Logo) {
+                            logoUrl = `${baseUrl}/Items/${item_data.Id}/Images/Logo?api_key=${apiKey}`;
+                        }
+                        
+                        // Store in cache
+                        const cacheKey = `${recommendation.title}_${recommendation.year || ''}`;
+                        imageCache.set(cacheKey, {
+                            backdrop: backdropUrl,
+                            poster: posterUrl,
+                            logo: logoUrl,
+                            itemData: item_data
+                        });
+                        
+                        validItems.push(recommendation);
+                        
+                        // Preload images
+                        preloadPromises.push(preloadImage(backdropUrl));
+                        preloadPromises.push(preloadImage(posterUrl));
+                        if (logoUrl) {
+                            preloadPromises.push(preloadImage(logoUrl));
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log('[JELLYFEATURED] Failed to process recommendation:', recommendation.title, e);
+            }
+        }
+
+        // Wait for all images to preload
+        console.log('[JELLYFEATURED] Preloading', preloadPromises.length, 'images...');
+        await Promise.allSettled(preloadPromises);
+        
+        filteredRecommendations = validItems;
+        console.log('[JELLYFEATURED] Filtered recommendations:', filteredRecommendations.length, 'of', recommendations.length);
+    }
+    
+    function preloadImage(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(url);
+            img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+            img.src = url;
+        });
+    }
+
     async function navigateToMedia(title, year) {
         try {
             const item = await searchForItem(title, year);
@@ -549,61 +661,23 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                 console.log('[JELLYFEATURED] Recommendations available:', recommendations.length);
                 
                 if (itemsContainer && recommendations.length > 0) {
-                    console.log('[JELLYFEATURED] Creating horizontal carousel items for', recommendations.length, 'items');
+                    // Preload and filter recommendations first
+                    await preloadAndFilterRecommendations();
                     
-                    // Create all items
-                    const itemPromises = [];
-                    for (let i = 0; i < recommendations.length; i++) {
-                        const rec = recommendations[i];
-                        itemPromises.push(createCarouselItem(rec, i));
+                    if (filteredRecommendations.length === 0) {
+                        console.log('[JELLYFEATURED] No valid recommendations with required images');
+                        itemsContainer.innerHTML = `
+                            <div class="featured-item primary" style="display: flex; align-items: center; justify-content: center; background: var(--cardBackgroundGradient);">
+                                <p style="color: var(--textColor); font-size: 1.2rem;">No content available with required images...</p>
+                            </div>
+                        `;
+                        return;
                     }
-
-                    console.log('[JELLYFEATURED] Waiting for item creation...');
-                    const items = await Promise.all(itemPromises);
-                    console.log('[JELLYFEATURED] Items created:', items.length);
-
-                    items.forEach((item, index) => {
-                        itemsContainer.appendChild(item);
-                        
-                        // Add click handler for each item
-                        item.addEventListener('click', async (e) => {
-                            const originalIndex = parseInt(item.getAttribute('data-index'));
-                            console.log('[JELLYFEATURED] Item clicked - original index:', originalIndex, 'current slide:', currentSlide);
-                            
-                            // If clicking the primary item (leftmost), navigate to media
-                            if (item.classList.contains('primary')) {
-                                const title = item.getAttribute('data-title');
-                                const year = item.getAttribute('data-year');
-                                await navigateToMedia(title, year);
-                            } else {
-                                // Otherwise, make this item the primary one
-                                goToSlide(originalIndex);
-                                pauseAutoSlide();
-                            }
-                        });
-
-                        item.addEventListener('keydown', async (e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                const originalIndex = parseInt(item.getAttribute('data-index'));
-                                console.log('[JELLYFEATURED] Item key pressed - original index:', originalIndex);
-                                
-                                // Same logic for keyboard interaction
-                                if (item.classList.contains('primary')) {
-                                    const title = item.getAttribute('data-title');
-                                    const year = item.getAttribute('data-year');
-                                    await navigateToMedia(title, year);
-                                } else {
-                                    goToSlide(originalIndex);
-                                    pauseAutoSlide();
-                                }
-                            }
-                        });
-                    });
-
-                    // Initialize with first item
+                    console.log('[JELLYFEATURED] Creating horizontal carousel items for', filteredRecommendations.length, 'items');
+                    
+                    // Create initial set of items
                     currentSlide = 0;
-                    updateCarouselDisplay();
+                    await createInfiniteCarouselItems();
 
                     // Setup navigation buttons
                     setupNavigation();
@@ -616,7 +690,10 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                     // Auto-slide functionality
                     setTimeout(startAutoSlide, 2000);
 
-                    featuredDiv.addEventListener('mouseenter', pauseAutoSlide);
+                    featuredDiv.addEventListener('mouseenter', () => {
+                        pauseAutoSlide();
+                        pauseProgressBar();
+                    });
                     featuredDiv.addEventListener('mouseleave', () => {
                         if (!isUserInteracting) {
                             startAutoSlide();
@@ -656,6 +733,136 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
             setTimeout(() => createFeaturedCarousel(), 200);
         }
     }, 1000);
+    
+    // Progress bar functionality
+    let progressInterval;
+    let progressStartTime;
+    const SLIDE_DURATION = 5000; // 5 seconds per slide
+    
+    function resetProgressBar() {
+        const progressBar = document.getElementById('featured-progress-bar');
+        if (progressBar) {
+            progressBar.style.width = '0%';
+        }
+        if (progressInterval) {
+            clearInterval(progressInterval);
+        }
+    }
+    
+    function startProgressBar() {
+        const progressBar = document.getElementById('featured-progress-bar');
+        if (!progressBar || !autoSlideEnabled) return;
+        
+        progressStartTime = Date.now();
+        
+        progressInterval = setInterval(() => {
+            const elapsed = Date.now() - progressStartTime;
+            const progress = Math.min((elapsed / SLIDE_DURATION) * 100, 100);
+            progressBar.style.width = progress + '%';
+            
+            if (progress >= 100) {
+                clearInterval(progressInterval);
+            }
+        }, 50);
+    }
+    
+    function pauseProgressBar() {
+        if (progressInterval) {
+            clearInterval(progressInterval);
+        }
+    }
+    
+    async function createInfiniteCarouselItems() {
+        const itemsContainer = document.getElementById('featured-items-container');
+        if (!itemsContainer) return;
+        
+        // Clear existing items
+        itemsContainer.innerHTML = '';
+        
+        // Create items for infinite scroll effect (show current + next few items)
+        const itemsToShow = Math.min(filteredRecommendations.length, 6);
+        
+        for (let i = 0; i < itemsToShow; i++) {
+            const actualIndex = (currentSlide + i) % filteredRecommendations.length;
+            const recommendation = filteredRecommendations[actualIndex];
+            
+            const item = createCarouselItemInlineFromCache(recommendation, actualIndex, i === 0);
+            itemsContainer.appendChild(item);
+        }
+        
+        // Reset and start progress bar
+        resetProgressBar();
+        startProgressBar();
+        
+        console.log('[JELLYFEATURED] Infinite carousel items created for slide:', currentSlide);
+    }
+    
+    function createCarouselItemInlineFromCache(recommendation, originalIndex, isPrimary) {
+        const item = document.createElement('div');
+        item.className = 'featured-item ' + (isPrimary ? 'primary' : 'poster');
+        item.setAttribute('data-index', originalIndex);
+        item.setAttribute('data-title', recommendation.title);
+        item.setAttribute('data-year', recommendation.year || '');
+        item.setAttribute('tabindex', '0');
+        item.setAttribute('role', 'button');
+        item.setAttribute('aria-label', `View ${recommendation.title}`);
+
+        // Get cached image data
+        const cacheKey = `${recommendation.title}_${recommendation.year || ''}`;
+        const cachedImages = imageCache.get(cacheKey);
+
+        if (cachedImages) {
+            if (isPrimary) {
+                // Use backdrop for primary item
+                item.style.background = `url("${cachedImages.backdrop}")`;
+                item.style.backgroundSize = 'cover';
+                item.style.backgroundPosition = 'center';
+                
+                // Add content for primary item
+                item.innerHTML = `
+                    <div class="featuredContent">
+                        <div class="featuredLogoContainer">
+                            <img class="featuredLogo" style="display: ${cachedImages.logo ? 'block' : 'none'};" alt="${recommendation.title} logo" ${cachedImages.logo ? `src="${cachedImages.logo}"` : ''} />
+                        </div>
+                        <div class="featuredText">
+                            <div class="featuredTitle">${recommendation.title} ${recommendation.year ? '(' + recommendation.year + ')' : ''}</div>
+                            <div class="featuredSubtitle">${recommendation.type}</div>
+                            <div class="slideRating">⭐ ${recommendation.rating}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Use poster for non-primary items
+                item.style.background = `url("${cachedImages.poster}")`;
+                item.style.backgroundSize = 'cover';
+                item.style.backgroundPosition = 'center';
+            }
+        } else {
+            // Fallback background if not in cache
+            item.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+        }
+
+        // Add click handlers
+        item.addEventListener('click', async (e) => {
+            const clickedIndex = parseInt(item.getAttribute('data-index'));
+            if (isPrimary) {
+                const title = item.getAttribute('data-title');
+                const year = item.getAttribute('data-year');
+                await navigateToMedia(title, year);
+            } else {
+                goToSlide(clickedIndex);
+                pauseAutoSlide();
+                pauseProgressBar();
+            }
+        });
+        
+        return item;
+    }
+    
+    // Legacy function for compatibility - now redirects to cached version
+    async function createCarouselItemInline(recommendation, originalIndex, isPrimary) {
+        return createCarouselItemInlineFromCache(recommendation, originalIndex, isPrimary);
+    }
     
     // Initial call
     console.log('[JELLYFEATURED] Making initial call to createFeaturedCarousel...');

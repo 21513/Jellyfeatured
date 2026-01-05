@@ -50,6 +50,26 @@
     transition: transform 0.5s ease;
 }
 
+.featured-progress-container {
+    position: absolute;
+    bottom: 20px;
+    left: 60px;
+    right: 40%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    overflow: hidden;
+    z-index: 5;
+}
+
+.featured-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--theme-primary-color, #00a4dc);
+    border-radius: 2px;
+    transition: width 0.1s linear;
+}
+
 .featured-item {
     flex-shrink: 0;
     position: relative;
@@ -64,14 +84,18 @@
 
 .featured-item.primary {
     width: 600px;
+    height: 337.5px; /* 16:9 aspect ratio: 600 * 9/16 = 337.5 */
     aspect-ratio: 16/9;
-    height: 100%;
 }
 
 .featured-item.poster {
-    width: 240px;
-    aspect-ratio: 4/5;
-    height: auto;
+    width: 180px; 
+    height: 270px; /* 2:3 aspect ratio for proper poster proportions */
+    aspect-ratio: 2/3;
+}
+
+.featured-item.poster .featuredContent {
+    display: none; /* Hide all text content on poster items */
 }
 
 .featured-item:hover {
