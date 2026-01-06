@@ -6,12 +6,15 @@
 
 #jellyfeatured_div {
     width: 100%;
-    margin: auto;
-    display: flex;
+    margin: 0; /* Remove auto margin to align items */
+    display: block; /* Ensure each div is treated as a block-level element */
     position: relative;
     overflow: hidden;
     transition: 125ms ease-in-out;
     touch-action: pan-y;
+    flex: 0 0 50vw; /* Each div takes 50% of the viewport width */
+    aspect-ratio: 16 / 9;
+    scroll-snap-align: start;
 }
 
 #featured_items {
@@ -33,16 +36,11 @@
 }
 
 #featuredDots {
-    position: absolute;
-    bottom: 16px;
-    right: 0;
-    transform: translateX(-50%);
-    display: flex;
-    z-index: 10;
+    display: none; /* Remove dots */
 }
 
 .featuredItem {
-    position: absolute;
+    position: relative;
     top: 0;
     left: 0;
     width: 100%;
@@ -55,6 +53,8 @@
     background-repeat: no-repeat;
     z-index: 1;
     visibility: hidden;
+    border-radius: var(--largeRadius);
+    box-shadow: var(--shadow);
 }
 
 .featuredItem.active {
