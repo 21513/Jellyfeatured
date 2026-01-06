@@ -832,7 +832,7 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                     
                     // Create initial set of items
                     currentSlide = 0;
-                    await createInfiniteCarouselItems();
+                    await createInfiniteCarouselItems(itemsContainer);
 
                     // Setup navigation buttons
                     setupNavigation();
@@ -930,11 +930,10 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         }
     }
     
-    async function createInfiniteCarouselItems() {
+    async function createInfiniteCarouselItems(itemsContainer) {
         console.log('[JELLYFEATURED] createInfiniteCarouselItems called');
-        const itemsContainer = document.getElementById('featured-items-container');
         if (!itemsContainer) {
-            console.log('[JELLYFEATURED] No items container found in createInfiniteCarouselItems');
+            console.log('[JELLYFEATURED] No items container passed to createInfiniteCarouselItems');
             return;
         }
 
