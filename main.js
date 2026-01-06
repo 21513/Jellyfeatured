@@ -193,26 +193,24 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     function goToSlide(index) {
+        const slidesContainer = document.getElementById('featured_items');
         const slides = document.querySelectorAll('.featuredItem');
         const dots = document.querySelectorAll('.featuredDot');
-        
-        if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
-        
-        slides.forEach((slide, i) => {
-            if (i !== index) {
-                slide.classList.remove('active', 'entering');
-            }
-        });
-        dots.forEach(dot => dot.classList.remove('active'));
 
-        if (slides[index]) {
-            slides[index].classList.add('active');
-        }
-        
+        if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
+
+        // Scroll to the selected slide
+        const slideWidth = slides[0].offsetWidth;
+        slidesContainer.scrollTo({
+            left: slideWidth * index,
+            behavior: 'smooth'
+        });
+
+        dots.forEach(dot => dot.classList.remove('active'));
         if (dots[index]) {
             dots[index].classList.add('active');
         }
-        
+
         currentSlide = index;
     }
     
