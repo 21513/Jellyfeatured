@@ -16,7 +16,7 @@
     transition: none;
     background: transparent;
     touch-action: pan-x;
-    padding: 0 60px;
+    padding: 0;
 }
 
 .featured-carousel-container {
@@ -24,6 +24,7 @@
     width: 100%;
     height: 400px;
     overflow: hidden;
+    margin: 0 4%; /* Standard Jellyfin section margins */
 }
 
 .featured-carousel-track {
@@ -47,14 +48,14 @@
     height: 100%;
     gap: 16px;
     padding: 0;
-    transition: transform 0.5s ease;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease;
 }
 
 .featured-progress-container {
     position: absolute;
     bottom: 20px;
-    left: 60px;
-    right: 40%;
+    left: 4%;
+    right: 44%; /* Adjusted for new margin structure */
     height: 4px;
     background: rgba(255, 255, 255, 0.3);
     border-radius: 2px;
@@ -79,7 +80,7 @@
     border-radius: 8px;
     cursor: pointer;
     overflow: hidden;
-    transition: all 0.3s ease;
+    transition: all 0.3s ease, opacity 0.5s ease, transform 0.5s ease;
 }
 
 .featured-item.primary {
@@ -90,7 +91,7 @@
 
 .featured-item.poster {
     width: 180px; 
-    height: 270px; /* 2:3 aspect ratio for proper poster proportions */
+    height: 337.5px; /* Match the height of the primary item */
     aspect-ratio: 2/3;
 }
 
@@ -121,9 +122,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     z-index: 10;
-    opacity: 0;
+    opacity: 0.6;
 }
 
 .featured-carousel-container:hover .nav-button {
@@ -140,11 +141,11 @@
 }
 
 .nav-prev {
-    left: 10px;
+    left: calc(4% + 10px); /* Position within the margin area */
 }
 
 .nav-next {
-    right: 10px;
+    right: calc(4% + 10px); /* Position within the margin area */
 }
 
 .featured-item::before {

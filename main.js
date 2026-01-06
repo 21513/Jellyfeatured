@@ -224,8 +224,8 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
     
     function setupNavigation() {
         console.log('[JELLYFEATURED] Setting up navigation buttons');
-        const prevButton = document.getElementById('featured-prev');
-        const nextButton = document.getElementById('featured-next');
+        const prevButton = document.querySelector('#jellyfeatured_div #featured-prev');
+        const nextButton = document.querySelector('#jellyfeatured_div #featured-next');
         
         console.log('[JELLYFEATURED] Prev button found:', !!prevButton);
         console.log('[JELLYFEATURED] Next button found:', !!nextButton);
@@ -233,7 +233,7 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         if (prevButton) {
             // Remove any existing listeners
             prevButton.replaceWith(prevButton.cloneNode(true));
-            const newPrevButton = document.getElementById('featured-prev');
+            const newPrevButton = document.querySelector('#jellyfeatured_div #featured-prev');
             
             newPrevButton.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -257,7 +257,7 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         if (nextButton) {
             // Remove any existing listeners
             nextButton.replaceWith(nextButton.cloneNode(true));
-            const newNextButton = document.getElementById('featured-next');
+            const newNextButton = document.querySelector('#jellyfeatured_div #featured-next');
             
             newNextButton.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -536,8 +536,8 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         }, 10000);
     }
     
-    async function preloadAndFilterRecommendations() {
-        console.log('[JELLYFEATURED] Preloading and filtering recommendations...');
+    async function preloadAndCacheImages() {
+        console.log('[JELLYFEATURED] Preloading images for recommendations...');
         const apiKey = getJellyfinApiKey();
         const baseUrl = getJellyfinBaseUrl();
         
@@ -547,7 +547,6 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
             return;
         }
 
-        const validItems = [];
         const preloadPromises = [];
 
         for (const recommendation of recommendations) {
@@ -555,37 +554,30 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                 const item_data = await searchForItem(recommendation.title, recommendation.year);
                 
                 if (item_data) {
-                    const hasBackdrop = item_data.BackdropImageTags && item_data.BackdropImageTags.length > 0;
-                    const hasPoster = item_data.ImageTags && item_data.ImageTags.Primary;
+                    // Since server-side filtering ensures all items have required images,
+                    // we can assume these images exist
+                    const backdropUrl = `${baseUrl}/Items/${item_data.Id}/Images/Backdrop?api_key=${apiKey}`;
+                    const posterUrl = `${baseUrl}/Items/${item_data.Id}/Images/Primary?api_key=${apiKey}`;
                     
-                    // Only include items that have both backdrop and poster images
-                    if (hasBackdrop && hasPoster) {
-                        // Cache the image URLs
-                        const backdropUrl = `${baseUrl}/Items/${item_data.Id}/Images/Backdrop?api_key=${apiKey}`;
-                        const posterUrl = `${baseUrl}/Items/${item_data.Id}/Images/Primary?api_key=${apiKey}`;
-                        
-                        let logoUrl = null;
-                        if (item_data.ImageTags && item_data.ImageTags.Logo) {
-                            logoUrl = `${baseUrl}/Items/${item_data.Id}/Images/Logo?api_key=${apiKey}`;
-                        }
-                        
-                        // Store in cache
-                        const cacheKey = `${recommendation.title}_${recommendation.year || ''}`;
-                        imageCache.set(cacheKey, {
-                            backdrop: backdropUrl,
-                            poster: posterUrl,
-                            logo: logoUrl,
-                            itemData: item_data
-                        });
-                        
-                        validItems.push(recommendation);
-                        
-                        // Preload images
-                        preloadPromises.push(preloadImage(backdropUrl));
-                        preloadPromises.push(preloadImage(posterUrl));
-                        if (logoUrl) {
-                            preloadPromises.push(preloadImage(logoUrl));
-                        }
+                    let logoUrl = null;
+                    if (item_data.ImageTags && item_data.ImageTags.Logo) {
+                        logoUrl = `${baseUrl}/Items/${item_data.Id}/Images/Logo?api_key=${apiKey}`;
+                    }
+                    
+                    // Store in cache
+                    const cacheKey = `${recommendation.title}_${recommendation.year || ''}`;
+                    imageCache.set(cacheKey, {
+                        backdrop: backdropUrl,
+                        poster: posterUrl,
+                        logo: logoUrl,
+                        itemData: item_data
+                    });
+                    
+                    // Preload images
+                    preloadPromises.push(preloadImage(backdropUrl));
+                    preloadPromises.push(preloadImage(posterUrl));
+                    if (logoUrl) {
+                        preloadPromises.push(preloadImage(logoUrl));
                     }
                 }
             } catch (e) {
@@ -597,8 +589,9 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         console.log('[JELLYFEATURED] Preloading', preloadPromises.length, 'images...');
         await Promise.allSettled(preloadPromises);
         
-        filteredRecommendations = validItems;
-        console.log('[JELLYFEATURED] Filtered recommendations:', filteredRecommendations.length, 'of', recommendations.length);
+        // All recommendations are already filtered server-side
+        filteredRecommendations = recommendations;
+        console.log('[JELLYFEATURED] Image preloading completed. Using all', filteredRecommendations.length, 'server-filtered recommendations');
     }
     
     function preloadImage(url) {
@@ -661,14 +654,21 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                 console.log('[JELLYFEATURED] Recommendations available:', recommendations.length);
                 
                 if (itemsContainer && recommendations.length > 0) {
-                    // Preload and filter recommendations first
-                    await preloadAndFilterRecommendations();
+                    // Show loading state
+                    itemsContainer.innerHTML = `
+                        <div class="featured-item primary" style="display: flex; align-items: center; justify-content: center; background: var(--cardBackgroundGradient); opacity: 0.8;">
+                            <p style="color: var(--textColor); font-size: 1.2rem;">Loading featured content...</p>
+                        </div>
+                    `;
+                    
+                    // Preload images for all server-filtered recommendations  
+                    await preloadAndCacheImages();
                     
                     if (filteredRecommendations.length === 0) {
-                        console.log('[JELLYFEATURED] No valid recommendations with required images');
+                        console.log('[JELLYFEATURED] No valid recommendations after image preloading');
                         itemsContainer.innerHTML = `
                             <div class="featured-item primary" style="display: flex; align-items: center; justify-content: center; background: var(--cardBackgroundGradient);">
-                                <p style="color: var(--textColor); font-size: 1.2rem;">No content available with required images...</p>
+                                <p style="color: var(--textColor); font-size: 1.2rem;">No content available...</p>
                             </div>
                         `;
                         return;
@@ -776,25 +776,33 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         const itemsContainer = document.getElementById('featured-items-container');
         if (!itemsContainer) return;
         
-        // Clear existing items
-        itemsContainer.innerHTML = '';
+        // Add fade out transition
+        itemsContainer.style.opacity = '0.7';
         
-        // Create items for infinite scroll effect (show current + next few items)
-        const itemsToShow = Math.min(filteredRecommendations.length, 6);
-        
-        for (let i = 0; i < itemsToShow; i++) {
-            const actualIndex = (currentSlide + i) % filteredRecommendations.length;
-            const recommendation = filteredRecommendations[actualIndex];
+        // Clear existing items after a short delay for smooth transition
+        setTimeout(() => {
+            itemsContainer.innerHTML = '';
             
-            const item = createCarouselItemInlineFromCache(recommendation, actualIndex, i === 0);
-            itemsContainer.appendChild(item);
-        }
-        
-        // Reset and start progress bar
-        resetProgressBar();
-        startProgressBar();
-        
-        console.log('[JELLYFEATURED] Infinite carousel items created for slide:', currentSlide);
+            // Create items for infinite scroll effect (show current + next few items)
+            const itemsToShow = Math.min(filteredRecommendations.length, 6);
+            
+            for (let i = 0; i < itemsToShow; i++) {
+                const actualIndex = (currentSlide + i) % filteredRecommendations.length;
+                const recommendation = filteredRecommendations[actualIndex];
+                
+                const item = createCarouselItemInlineFromCache(recommendation, actualIndex, i === 0);
+                itemsContainer.appendChild(item);
+            }
+            
+            // Fade back in
+            itemsContainer.style.opacity = '1';
+            
+            // Reset and start progress bar
+            resetProgressBar();
+            startProgressBar();
+            
+            console.log('[JELLYFEATURED] Infinite carousel items created for slide:', currentSlide);
+        }, 150);
     }
     
     function createCarouselItemInlineFromCache(recommendation, originalIndex, isPrimary) {

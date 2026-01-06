@@ -14,6 +14,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Model.Plugins;
+using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
 using Jellyfin.Data.Enums;
 
@@ -205,6 +206,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
 
         var fixedCategoryOrder = new List<string>
         {
+            "trending",
             "featuredPick",
             "latestRelease", 
             "recentlyAddedFilms",
@@ -215,6 +217,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         
         var categoryMapping = new Dictionary<string, string>
         {
+            { "trending", "Trending Now" },
             { "featuredPick", "Admin's Pick" },
             { "latestRelease", "Latest Release" },
             { "recentlyAddedFilms", "Recently Added in Films" },
@@ -239,9 +242,72 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             
             await Task.Delay(1);
 
+            // Get trending item (most played recently with required images)
+            var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
+            var trendingItem = allItems
+                .Where(item => HasRequiredImages(item))
+                .Where(item => item.DateCreated >= sevenDaysAgo.AddDays(-30)) // Consider items from last 30 days
+                .OrderByDescending(item => {
+                    // Score based on recent activity and rating
+                    var recentScore = 0.0;
+                    
+                    // Boost score if recently added
+                    if (item.DateCreated >= sevenDaysAgo)
+                        recentScore += 100;
+                    else if (item.DateCreated >= sevenDaysAgo.AddDays(-14)) 
+                        recentScore += 50;
+                    
+                    // Add community rating as additional score
+                    if (item.CommunityRating.HasValue)
+                        recentScore += item.CommunityRating.Value * 10;
+                    
+                    return recentScore;
+                })
+                .FirstOrDefault();
+
+            // If no recent items, fallback to highest rated item
+            if (trendingItem == null)
+            {
+                trendingItem = allItems
+                    .Where(item => HasRequiredImages(item))
+                    .Where(item => item.CommunityRating.HasValue)
+                    .OrderByDescending(item => item.CommunityRating)
+                    .ThenByDescending(item => item.DateCreated)
+                    .FirstOrDefault();
+            }
+
+            // Final fallback to most recent item with images
+            if (trendingItem == null)
+            {
+                trendingItem = allItems
+                    .Where(item => HasRequiredImages(item))
+                    .OrderByDescending(item => item.DateCreated)
+                    .FirstOrDefault();
+            }
+                
+            if (trendingItem != null)
+            {
+                _logger.LogInformation("Selected trending item: {Name} (Rating: {Rating}, Created: {Created})", 
+                    trendingItem.Name, 
+                    trendingItem.CommunityRating?.ToString("F1") ?? "N/A",
+                    trendingItem.DateCreated.ToString("yyyy-MM-dd"));
+                    
+                categoryItems["trending"] = new RecommendationItem
+                {
+                    Title = trendingItem.Name,
+                    Type = "Trending Now",
+                    Year = trendingItem.PremiereDate?.Year.ToString() ?? "",
+                    Rating = trendingItem.CommunityRating?.ToString("F1") ?? "N/A"
+                };
+            }
+            else
+            {
+                _logger.LogWarning("No trending item found with required images");
+            }
+
             var latestMovie = allItems
                 .OfType<Movie>()
-                .Where(m => m.PremiereDate.HasValue)
+                .Where(m => m.PremiereDate.HasValue && HasRequiredImages(m))
                 .OrderByDescending(m => m.PremiereDate)
                 .FirstOrDefault();
                 
@@ -258,6 +324,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
 
             var recentAddedMovie = allItems
                 .OfType<Movie>()
+                .Where(m => HasRequiredImages(m))
                 .OrderByDescending(m => m.DateCreated)
                 .FirstOrDefault();
                 
@@ -274,6 +341,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             
             var recentAddedShow = allItems
                 .OfType<Series>()
+                .Where(s => HasRequiredImages(s))
                 .OrderByDescending(s => s.DateCreated)
                 .FirstOrDefault();
                 
@@ -290,7 +358,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             
             var bestMovie = allItems
                 .OfType<Movie>()
-                .Where(m => m.CommunityRating.HasValue && m.CommunityRating > 0 && m.CommunityRating < 10.0)
+                .Where(m => m.CommunityRating.HasValue && m.CommunityRating > 0 && m.CommunityRating < 10.0 && HasRequiredImages(m))
                 .OrderByDescending(m => m.CommunityRating)
                 .FirstOrDefault();
                 
@@ -307,7 +375,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             
             var bestShow = allItems
                 .OfType<Series>()
-                .Where(s => s.CommunityRating.HasValue && s.CommunityRating > 0 && s.CommunityRating < 10.0)
+                .Where(s => s.CommunityRating.HasValue && s.CommunityRating > 0 && s.CommunityRating < 10.0 && HasRequiredImages(s))
                 .OrderByDescending(s => s.CommunityRating)
                 .FirstOrDefault();
                 
@@ -337,9 +405,9 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                         if (Guid.TryParse(itemId, out var guid))
                         {
                             var item = _libraryManager.GetItemById(guid);
-                            if (item != null)
+                            if (item != null && HasRequiredImages(item))
                             {
-                                _logger.LogInformation("Found admin pick item: {Name}", item.Name);
+                                _logger.LogInformation("Found admin pick item with required images: {Name}", item.Name);
                                 adminPickItems.Add(new RecommendationItem
                                 {
                                     Title = item.Name,
@@ -347,6 +415,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                                     Year = item.PremiereDate?.Year.ToString() ?? "",
                                     Rating = item.CommunityRating?.ToString("F1") ?? "N/A"
                                 });
+                            }
+                            else if (item != null)
+                            {
+                                _logger.LogWarning("Admin pick item {Name} found but missing required images (backdrop and poster)", item.Name);
                             }
                             else
                             {
@@ -402,6 +474,27 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         }
         
         return recommendations;
+    }
+    
+    /// <summary>
+    /// Checks if an item has the required images (backdrop and poster).
+    /// </summary>
+    /// <param name="item">The media item to check.</param>
+    /// <returns>True if the item has both backdrop and poster images.</returns>
+    private bool HasRequiredImages(BaseItem item)
+    {
+        if (item == null) return false;
+        
+        // Check for backdrop image
+        var hasBackdrop = item.HasImage(ImageType.Backdrop);
+        
+        // Check for poster/primary image
+        var hasPoster = item.HasImage(ImageType.Primary);
+        
+        _logger.LogDebug("Image check for {ItemName}: Backdrop={HasBackdrop}, Poster={HasPoster}", 
+            item.Name, hasBackdrop, hasPoster);
+        
+        return hasBackdrop && hasPoster;
     }
     
     private async Task SaveRecommendationsAsync(List<RecommendationItem> recommendations)
