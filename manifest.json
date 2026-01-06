@@ -13,8 +13,8 @@
                 "changelog": "Added logging for debugging",
                 "targetAbi": "10.11.4.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.15/Jellyfeatured-v0.0.1.15.zip",
-                "checksum": "38fc0230ab767df051310145133e5640",
-                "timestamp": "2026-01-06T14:28:55Z"
+                "checksum": "6dad3fab429d0d82fdac46226247d67d",
+                "timestamp": "2026-01-06T14:36:51Z"
             },
             {
                 "version": "0.0.1.14",
