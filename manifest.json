@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/21513/Jellyfeatured/refs/heads/main/thumbnail.jpg",
         "versions": [
             {
+                "version": "0.0.1.23",
+                "changelog": "Updated carousel",
+                "targetAbi": "10.11.4.0",
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.23/Jellyfeatured-v0.0.1.23.zip",
+                "checksum": "796e229768917f767543a7c569ef852b",
+                "timestamp": "2026-01-06T15:28:08Z"
+            },
+            {
                 "version": "0.0.1.22",
                 "changelog": "Updated carousel",
                 "targetAbi": "10.11.4.0",
