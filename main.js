@@ -65,18 +65,22 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         const baseUrl = getJellyfinBaseUrl();
         
         if (!apiKey) {
+            console.log('[JELLYFEATURED] No API key available for search');
             return null;
         }
         
         try {
             const searchUrl = `${baseUrl}/Items?searchTerm=${encodeURIComponent(title)}&Recursive=true&Fields=PrimaryImageAspectRatio,BackdropImageTags,ImageTags&ImageTypeLimit=1&EnableImageTypes=Primary,Backdrop,Logo&Limit=5&api_key=${apiKey}`;
             
+            console.log('[JELLYFEATURED] Searching with URL:', searchUrl);
             const response = await fetch(searchUrl);
             if (!response.ok) {
                 throw new Error(`Search failed: ${response.status}`);
             }
             
             const data = await response.json();
+            console.log('[JELLYFEATURED] Search results for', title, ':', data.Items?.length || 0, 'items');
+            
             if (data.Items && data.Items.length > 0) {
                 let bestMatch = data.Items[0];
                 
@@ -86,13 +90,14 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                     );
                     if (yearMatch) {
                         bestMatch = yearMatch;
+                        console.log('[JELLYFEATURED] Found year match for', title, year);
                     }
                 }
                 
                 return bestMatch;
             }
         } catch (e) {
-            // Search failed
+            console.log('[JELLYFEATURED] Search error for', title, ':', e.message);
         }
         
         return null;
@@ -682,14 +687,18 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
 
         for (const recommendation of recommendations) {
             try {
+                console.log('[JELLYFEATURED] Searching for:', recommendation.title, recommendation.year);
                 const item_data = await searchForItem(recommendation.title, recommendation.year);
                 
                 if (item_data) {
+                    console.log('[JELLYFEATURED] Found item:', item_data.Name, 'ID:', item_data.Id);
                     // Load images at 50% resolution for faster loading
                     // Primary backdrop: 720px * 0.5 = 360px width
                     // Poster: 270px * 0.5 = 135px width
                     const backdropUrl = `${baseUrl}/Items/${item_data.Id}/Images/Backdrop?api_key=${apiKey}&maxWidth=360&maxHeight=203&quality=80`;
                     const posterUrl = `${baseUrl}/Items/${item_data.Id}/Images/Primary?api_key=${apiKey}&maxWidth=135&maxHeight=203&quality=80`;
+                    
+                    console.log('[JELLYFEATURED] Image URLs - Backdrop:', backdropUrl, 'Poster:', posterUrl);
                     
                     let logoUrl = null;
                     if (item_data.ImageTags && item_data.ImageTags.Logo) {
@@ -715,6 +724,8 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                     }
                     
                     processedCount++;
+                } else {
+                    console.log('[JELLYFEATURED] No item found for:', recommendation.title, recommendation.year);
                 }
             } catch (e) {
                 console.log('[JELLYFEATURED] Failed to process recommendation:', recommendation.title, e.message);
@@ -1002,13 +1013,19 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         // Get cached image data
         const cacheKey = `${recommendation.title}_${recommendation.year || ''}`;
         const cachedImages = imageCache.get(cacheKey);
+        
+        console.log('[JELLYFEATURED] Creating item for:', recommendation.title, 'isPrimary:', isPrimary, 'cachedImages:', !!cachedImages);
 
         if (cachedImages) {
             if (isPrimary) {
                 // Use backdrop for primary item
-                item.style.background = `url("${cachedImages.backdrop}")`;
+                const backgroundUrl = `url("${cachedImages.backdrop}")`;
+                item.style.background = backgroundUrl;
                 item.style.backgroundSize = 'cover';
                 item.style.backgroundPosition = 'center';
+                item.style.backgroundRepeat = 'no-repeat';
+                
+                console.log('[JELLYFEATURED] Applied primary background:', backgroundUrl);
                 
                 // Add content for primary item
                 item.innerHTML = `
@@ -1025,13 +1042,19 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                 `;
             } else {
                 // Use poster for non-primary items
-                item.style.background = `url("${cachedImages.poster}")`;
+                const backgroundUrl = `url("${cachedImages.poster}")`;
+                item.style.background = backgroundUrl;
                 item.style.backgroundSize = 'cover';
                 item.style.backgroundPosition = 'center';
+                item.style.backgroundRepeat = 'no-repeat';
+                
+                console.log('[JELLYFEATURED] Applied poster background:', backgroundUrl);
             }
         } else {
             // Fallback background if not in cache
-            item.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+            const fallbackBg = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+            item.style.background = fallbackBg;
+            console.log('[JELLYFEATURED] Applied fallback background for:', recommendation.title);
         }
 
         // Add click handlers
