@@ -867,4 +867,29 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
     // Initial call
     console.log('[JELLYFEATURED] Making initial call to createFeaturedCarousel...');
     setTimeout(() => createFeaturedCarousel(), 1000);
+
+    // Lazy load images
+    function lazyLoadImages() {
+        const images = document.querySelectorAll('#featured-items-container img');
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    const dataSrc = img.getAttribute('data-src');
+                    if (dataSrc) {
+                        img.src = dataSrc;
+                        img.onload = () => img.classList.add('loaded');
+                        observer.unobserve(img);
+                    }
+                }
+            });
+        }, { threshold: 0.1 });
+
+        images.forEach(img => observer.observe(img));
+    }
+
+    // Call lazyLoadImages after DOM content is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        lazyLoadImages();
+    });
 })();

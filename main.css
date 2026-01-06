@@ -80,6 +80,14 @@
     cursor: pointer;
     overflow: hidden;
     transition: all 0.3s ease;
+    width: calc(100% / 3); /* Example: 3 items per row */
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    border-radius: 8px;
+    background-color: #f0f0f0; /* Placeholder background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .featured-item.primary {
@@ -319,6 +327,47 @@
     font-style: italic;
     font-family: "Inter", sans-serif;
     font-size: 1.1rem;
+}
+
+/* Ensure all poster items maintain a 2:3 aspect ratio */
+.featured-item {
+    position: relative;
+    width: calc(100% / 3); /* Example: 3 items per row */
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    border-radius: 8px;
+    background-color: #f0f0f0; /* Placeholder background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Ensure images fit within the poster items */
+.featured-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+/* Add a loading spinner or placeholder */
+.featured-item .loading-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(45deg, #e0e0e0, #e0e0e0 10px, #f0f0f0 10px, #f0f0f0 20px);
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 100% 100%;
+    }
 }
 
 @media (max-width: 768px) {
