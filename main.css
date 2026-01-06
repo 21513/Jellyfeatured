@@ -5,32 +5,25 @@
 }
 
 #jellyfeatured_div {
-    flex: 0 0 50vw; /* Each div takes 50% of the viewport width */
-    aspect-ratio: 16 / 9;
-    margin: 0; /* Remove auto margin to align items */
-    scroll-snap-align: start;
-    width: 90%;
+    width: 50%;
+    margin: auto;
     position: relative;
     font-family: "Inter", sans-serif;
     border-radius: var(--largeRadius);
     overflow: hidden;
     box-shadow: var(--shadow);
     border: var(--borderWidthDouble) solid var(--darkerBorderColor);
+    aspect-ratio: 16 / 9;
     transition: 125ms ease-in-out;
     background: var(--cardBackgroundGradient);
     touch-action: pan-y;
 }
 
 #featured_items {
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    gap: 16px; /* Optional spacing between items */
     position: relative;
     width: 100%;
     height: 100%;
+    overflow: hidden;
     user-select: none;
 }
 
@@ -57,13 +50,6 @@
     background-repeat: no-repeat;
     z-index: 1;
     visibility: hidden;
-    flex: 0 0 100%; /* Each item takes up 100% of the container width */
-    scroll-snap-align: start;
-    position: relative;
-    width: 100%;
-    height: 100%;
-    opacity: 1; /* Ensure all items are visible */
-    visibility: visible;
 }
 
 .featuredItem.active {
