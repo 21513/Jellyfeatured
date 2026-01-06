@@ -6,15 +6,12 @@
 
 #jellyfeatured_div {
     width: 100%;
-    margin: 0; /* Remove auto margin to align items */
-    display: block; /* Ensure each div is treated as a block-level element */
+    margin: auto;
+    display: flex;
     position: relative;
     overflow: hidden;
     transition: 125ms ease-in-out;
     touch-action: pan-y;
-    flex: 0 0 50vw; /* Each div takes 50% of the viewport width */
-    aspect-ratio: 16 / 9;
-    scroll-snap-align: start;
 }
 
 #featured_items {
