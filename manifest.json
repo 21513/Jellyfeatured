@@ -13,8 +13,8 @@
                 "changelog": "Updated carousel",
                 "targetAbi": "10.11.4.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.29/Jellyfeatured-v0.0.1.29.zip",
-                "checksum": "38826af74afacfd172afe10ad58618e1",
-                "timestamp": "2026-01-06T16:13:33Z"
+                "checksum": "5a32a7f1cf9482752bc1e63c71bcdd63",
+                "timestamp": "2026-01-06T16:16:59Z"
             },
             {
                 "version": "0.0.1.28",
