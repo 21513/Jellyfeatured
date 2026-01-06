@@ -6,24 +6,33 @@
 
 #jellyfeatured_div {
     width: 100%;
-    margin: auto;
-    display: flex;
+    margin: 0; /* Remove auto margin to align items */
+    display: block; /* Ensure each div is treated as a block-level element */
     position: relative;
-    font-family: "Inter", sans-serif;
-    border-radius: var(--largeRadius);
     overflow: hidden;
-    box-shadow: var(--shadow);
-    border: var(--borderWidthDouble) solid var(--darkerBorderColor);
     transition: 125ms ease-in-out;
-    background: var(--cardBackgroundGradient);
     touch-action: pan-y;
+    flex: 0 0 50vw; /* Each div takes 50% of the viewport width */
+    aspect-ratio: 16 / 9;
+    scroll-snap-align: start;
 }
 
 #featured_items {
+    font-family: "Inter", sans-serif;
+    border-radius: var(--largeRadius);
+    box-shadow: var(--shadow);
+    border: var(--borderWidthDouble) solid var(--darkerBorderColor);
+    background: var(--cardBackgroundGradient);
     position: relative;
     width: 40%;
     aspect-ratio: 16 / 9;
     user-select: none;
+    display: flex;
+    flex-wrap: nowrap; /* Ensure items are in a single row */
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    gap: 16px; /* Optional spacing between items */
 }
 
 #featuredDots {
