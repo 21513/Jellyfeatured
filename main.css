@@ -5,31 +5,22 @@
 }
 
 #jellyfeatured_div {
-    width: 90%;
-    margin: auto;
+    flex: 0 0 auto; /* Allow items to take up their natural width */
+    width: auto;
+    height: 40vh; /* Set height to 40% of the viewport */
+    aspect-ratio: 16 / 9; /* Maintain a 16:9 aspect ratio */
+    scroll-snap-align: start;
     position: relative;
-    font-family: "Inter", sans-serif;
-    border-radius: var(--largeRadius);
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    border: var(--borderWidthDouble) solid var(--darkerBorderColor);
-    aspect-ratio: 16 / 9;
-    transition: 125ms ease-in-out;
-    background: var(--cardBackgroundGradient);
-    touch-action: pan-y;
+    margin: auto; /* Center the items vertically */
 }
 
 #featured_items {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    user-select: none;
     display: flex;
     flex-direction: row;
-    overflow-x: auto;
+    overflow-x: hidden;
     scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
+    width: 100vw; /* Ensure it spans the full viewport width */
+    height: 100%;
 }
 
 #featuredDots {

@@ -194,12 +194,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     function goToSlide(index) {
         const slidesContainer = document.getElementById('featured_items');
-        const slides = document.querySelectorAll('.featuredItem');
+        const slides = document.querySelectorAll('#jellyfeatured_div');
         const dots = document.querySelectorAll('.featuredDot');
 
         if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
 
-        // Scroll to the selected slide
+        // Scroll to the selected featured_div
         const slideWidth = slides[0].offsetWidth;
         slidesContainer.scrollTo({
             left: slideWidth * index,
