@@ -224,16 +224,19 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
     
     function setupNavigation() {
         console.log('[JELLYFEATURED] Setting up navigation buttons');
-        const prevButton = document.querySelector('#jellyfeatured_div #featured-prev');
-        const nextButton = document.querySelector('#jellyfeatured_div #featured-next');
         
-        console.log('[JELLYFEATURED] Prev button found:', !!prevButton);
-        console.log('[JELLYFEATURED] Next button found:', !!nextButton);
-        
-        if (prevButton) {
-            // Remove any existing listeners
-            prevButton.replaceWith(prevButton.cloneNode(true));
-            const newPrevButton = document.querySelector('#jellyfeatured_div #featured-prev');
+        // Add a small delay to ensure DOM is fully rendered
+        setTimeout(() => {
+            const prevButton = document.querySelector('#jellyfeatured_div #featured-prev');
+            const nextButton = document.querySelector('#jellyfeatured_div #featured-next');
+            
+            console.log('[JELLYFEATURED] Prev button found:', !!prevButton);
+            console.log('[JELLYFEATURED] Next button found:', !!nextButton);
+            
+            if (prevButton) {
+                // Remove any existing listeners
+                prevButton.replaceWith(prevButton.cloneNode(true));
+                const newPrevButton = document.querySelector('#jellyfeatured_div #featured-prev');
             
             newPrevButton.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -254,31 +257,32 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
             });
         }
         
-        if (nextButton) {
-            // Remove any existing listeners
-            nextButton.replaceWith(nextButton.cloneNode(true));
-            const newNextButton = document.querySelector('#jellyfeatured_div #featured-next');
-            
-            newNextButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('[JELLYFEATURED] Next button clicked');
-                nextSlide();
-                pauseAutoSlide();
-            });
-            
-            newNextButton.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
+            if (nextButton) {
+                // Remove any existing listeners
+                nextButton.replaceWith(nextButton.cloneNode(true));
+                const newNextButton = document.querySelector('#jellyfeatured_div #featured-next');
+                
+                newNextButton.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('[JELLYFEATURED] Next button key pressed');
+                    console.log('[JELLYFEATURED] Next button clicked');
                     nextSlide();
                     pauseAutoSlide();
-                }
-            });
-        }
-        
-        console.log('[JELLYFEATURED] Navigation setup complete');
+                });
+                
+                newNextButton.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('[JELLYFEATURED] Next button key pressed');
+                        nextSlide();
+                        pauseAutoSlide();
+                    }
+                });
+            }
+            
+            console.log('[JELLYFEATURED] Navigation setup complete');
+        }, 100); // 100ms delay to ensure DOM is ready
     }
     
     function goToSlide(index) {
@@ -289,8 +293,23 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
             return;
         }
         
+        const itemsContainer = document.getElementById('featured-items-container');
+        if (!itemsContainer) return;
+        
         currentSlide = index;
-        createInfiniteCarouselItems();
+        
+        // Calculate position based on new infinite scroll layout with relative dimensions
+        const { primaryWidth, posterWidth, gap } = getItemDimensions();
+        const itemWidth = posterWidth + gap;
+        const primaryItemWidth = primaryWidth + gap;
+        
+        const translateX = currentSlide === 0 ? -itemWidth : -(itemWidth + primaryItemWidth + (currentSlide - 1) * itemWidth);
+        itemsContainer.style.transform = `translateX(${translateX}px)`;
+        
+        updatePrimaryItem();
+        resetProgressBar();
+        startProgressBar();
+        
         console.log('[JELLYFEATURED] Slide changed to:', currentSlide);
     }
     
@@ -402,14 +421,125 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
     }
     
     
+    function getItemDimensions() {
+        // Get computed CSS custom property values
+        const jellyfeaturedDiv = document.getElementById('jellyfeatured_div');
+        if (!jellyfeaturedDiv) return { primaryWidth: 720, posterWidth: 270, gap: 16, baseHeight: 405 };
+        
+        const computedStyle = getComputedStyle(jellyfeaturedDiv);
+        const baseHeight = parseFloat(computedStyle.getPropertyValue('--carousel-base-height').replace('px', ''));
+        const gap = parseFloat(computedStyle.getPropertyValue('--item-gap').replace('rem', '')) * 16; // Convert rem to px
+        
+        // Calculate widths based on aspect ratios
+        const primaryAspectRatio = 16/9;
+        const posterAspectRatio = 2/3;
+        
+        const primaryWidth = baseHeight * primaryAspectRatio;
+        const posterWidth = baseHeight * posterAspectRatio;
+        
+        return { primaryWidth, posterWidth, gap, baseHeight };
+    }
+    
     function nextSlide() {
-        const nextIndex = (currentSlide + 1) % filteredRecommendations.length;
-        goToSlide(nextIndex);
+        const itemsContainer = document.getElementById('featured-items-container');
+        if (!itemsContainer) return;
+        
+        const totalItems = filteredRecommendations.length;
+        const { primaryWidth, posterWidth, gap } = getItemDimensions();
+        const itemWidth = posterWidth + gap;
+        const primaryItemWidth = primaryWidth + gap;
+        
+        if (currentSlide === totalItems - 1) {
+            // Going from last item to first - use cloned first item for seamless transition
+            const currentTransform = itemsContainer.style.transform.match(/-?[\d.]+/);
+            const currentX = currentTransform ? parseFloat(currentTransform[0]) : 0;
+            const newX = currentX - itemWidth;
+            
+            itemsContainer.style.transform = `translateX(${newX}px)`;
+            
+            // After animation completes, jump to actual first item
+            setTimeout(() => {
+                currentSlide = 0;
+                itemsContainer.style.transition = 'none';
+                itemsContainer.style.transform = `translateX(-${itemWidth}px)`;
+                
+                setTimeout(() => {
+                    itemsContainer.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    updatePrimaryItem();
+                }, 50);
+            }, 600);
+        } else {
+            // Normal progression
+            currentSlide = (currentSlide + 1) % totalItems;
+            const translateX = currentSlide === 0 ? -itemWidth : -(itemWidth + primaryItemWidth + (currentSlide - 1) * itemWidth);
+            itemsContainer.style.transform = `translateX(${translateX}px)`;
+            updatePrimaryItem();
+        }
+        
+        resetProgressBar();
+        startProgressBar();
+        console.log('[JELLYFEATURED] Advanced to slide:', currentSlide);
     }
     
     function previousSlide() {
-        const prevIndex = (currentSlide - 1 + filteredRecommendations.length) % filteredRecommendations.length;
-        goToSlide(prevIndex);
+        const itemsContainer = document.getElementById('featured-items-container');
+        if (!itemsContainer) return;
+        
+        const totalItems = filteredRecommendations.length;
+        const { primaryWidth, posterWidth, gap } = getItemDimensions();
+        const itemWidth = posterWidth + gap;
+        const primaryItemWidth = primaryWidth + gap;
+        
+        if (currentSlide === 0) {
+            // Going from first item to last - use cloned last item for seamless transition
+            const currentTransform = itemsContainer.style.transform.match(/-?[\d.]+/);
+            const currentX = currentTransform ? parseFloat(currentTransform[0]) : 0;
+            const newX = currentX + itemWidth;
+            
+            itemsContainer.style.transform = `translateX(${newX}px)`;
+            
+            // After animation completes, jump to actual last item
+            setTimeout(() => {
+                currentSlide = totalItems - 1;
+                itemsContainer.style.transition = 'none';
+                const lastItemX = -(itemWidth + primaryItemWidth + (totalItems - 2) * itemWidth);
+                itemsContainer.style.transform = `translateX(${lastItemX}px)`;
+                
+                setTimeout(() => {
+                    itemsContainer.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    updatePrimaryItem();
+                }, 50);
+            }, 600);
+        } else {
+            // Normal progression
+            currentSlide = (currentSlide - 1 + totalItems) % totalItems;
+            const translateX = currentSlide === 0 ? -itemWidth : -(itemWidth + primaryItemWidth + (currentSlide - 1) * itemWidth);
+            itemsContainer.style.transform = `translateX(${translateX}px)`;
+            updatePrimaryItem();
+        }
+        
+        resetProgressBar();
+        startProgressBar();
+        console.log('[JELLYFEATURED] Moved back to slide:', currentSlide);
+    }
+
+    function updatePrimaryItem() {
+        const itemsContainer = document.getElementById('featured-items-container');
+        if (!itemsContainer) return;
+        
+        // Remove primary class from all items
+        const allItems = itemsContainer.querySelectorAll('.featured-item');
+        allItems.forEach(item => {
+            item.classList.remove('primary');
+            item.classList.add('poster');
+        });
+        
+        // Add primary class to current slide item
+        const currentItem = itemsContainer.querySelector(`[data-actual-index="${currentSlide}"]`);
+        if (currentItem) {
+            currentItem.classList.remove('poster');
+            currentItem.classList.add('primary');
+        }
     }
 
     function handleTouchStart(e) {
@@ -548,20 +678,22 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         }
 
         const preloadPromises = [];
+        let processedCount = 0;
 
         for (const recommendation of recommendations) {
             try {
                 const item_data = await searchForItem(recommendation.title, recommendation.year);
                 
                 if (item_data) {
-                    // Since server-side filtering ensures all items have required images,
-                    // we can assume these images exist
-                    const backdropUrl = `${baseUrl}/Items/${item_data.Id}/Images/Backdrop?api_key=${apiKey}`;
-                    const posterUrl = `${baseUrl}/Items/${item_data.Id}/Images/Primary?api_key=${apiKey}`;
+                    // Load images at 50% resolution for faster loading
+                    // Primary backdrop: 720px * 0.5 = 360px width
+                    // Poster: 270px * 0.5 = 135px width
+                    const backdropUrl = `${baseUrl}/Items/${item_data.Id}/Images/Backdrop?api_key=${apiKey}&maxWidth=360&maxHeight=203&quality=80`;
+                    const posterUrl = `${baseUrl}/Items/${item_data.Id}/Images/Primary?api_key=${apiKey}&maxWidth=135&maxHeight=203&quality=80`;
                     
                     let logoUrl = null;
                     if (item_data.ImageTags && item_data.ImageTags.Logo) {
-                        logoUrl = `${baseUrl}/Items/${item_data.Id}/Images/Logo?api_key=${apiKey}`;
+                        logoUrl = `${baseUrl}/Items/${item_data.Id}/Images/Logo?api_key=${apiKey}&maxWidth=200&maxHeight=100&quality=80`;
                     }
                     
                     // Store in cache
@@ -573,21 +705,33 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                         itemData: item_data
                     });
                     
-                    // Preload images
+                    // Prioritize backdrop and poster, preload logo separately
                     preloadPromises.push(preloadImage(backdropUrl));
                     preloadPromises.push(preloadImage(posterUrl));
+                    
+                    // Preload logo with lower priority (don't wait for it)
                     if (logoUrl) {
-                        preloadPromises.push(preloadImage(logoUrl));
+                        preloadImage(logoUrl).catch(e => console.log('[JELLYFEATURED] Logo preload failed:', e.message));
                     }
+                    
+                    processedCount++;
                 }
             } catch (e) {
-                console.log('[JELLYFEATURED] Failed to process recommendation:', recommendation.title, e);
+                console.log('[JELLYFEATURED] Failed to process recommendation:', recommendation.title, e.message);
             }
         }
 
-        // Wait for all images to preload
-        console.log('[JELLYFEATURED] Preloading', preloadPromises.length, 'images...');
-        await Promise.allSettled(preloadPromises);
+        // Wait for only essential images (backdrop + poster), with timeout
+        console.log('[JELLYFEATURED] Preloading', preloadPromises.length, 'essential images...');
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Preload timeout')), 5000)
+        );
+        
+        try {
+            await Promise.race([Promise.allSettled(preloadPromises), timeoutPromise]);
+        } catch (e) {
+            console.log('[JELLYFEATURED] Preload timeout reached, proceeding with cached images');
+        }
         
         // All recommendations are already filtered server-side
         filteredRecommendations = recommendations;
@@ -713,6 +857,9 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                 console.log('[JELLYFEATURED] Injecting featured div into page...');
                 targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
                 console.log('[JELLYFEATURED] Featured div injected successfully!');
+                
+                // Setup navigation buttons after injection
+                setupNavigation();
             } else {
                 console.error('[JELLYFEATURED] Failed to create featuredDiv from template');
             }
@@ -783,16 +930,53 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         setTimeout(() => {
             itemsContainer.innerHTML = '';
             
-            // Create items for infinite scroll effect (show current + next few items)
-            const itemsToShow = Math.min(filteredRecommendations.length, 6);
+            // Create true infinite scroll: clone last item + all items + clone first item
+            const totalRecommendations = filteredRecommendations.length;
             
-            for (let i = 0; i < itemsToShow; i++) {
-                const actualIndex = (currentSlide + i) % filteredRecommendations.length;
-                const recommendation = filteredRecommendations[actualIndex];
-                
-                const item = createCarouselItemInlineFromCache(recommendation, actualIndex, i === 0);
+            // Clone last item at beginning for backwards infinite scroll
+            const lastRecommendation = filteredRecommendations[totalRecommendations - 1];
+            const clonedLastItem = createCarouselItemInlineFromCache(lastRecommendation, totalRecommendations - 1, false);
+            clonedLastItem.classList.add('cloned-item');
+            clonedLastItem.setAttribute('data-cloned', 'last');
+            itemsContainer.appendChild(clonedLastItem);
+            
+            // Add all actual items
+            for (let i = 0; i < totalRecommendations; i++) {
+                const recommendation = filteredRecommendations[i];
+                const isPrimary = (i === currentSlide);
+                const item = createCarouselItemInlineFromCache(recommendation, i, isPrimary);
+                item.setAttribute('data-actual-index', i);
                 itemsContainer.appendChild(item);
             }
+            
+            // Clone first item at end for forward infinite scroll
+            const firstRecommendation = filteredRecommendations[0];
+            const clonedFirstItem = createCarouselItemInlineFromCache(firstRecommendation, 0, false);
+            clonedFirstItem.classList.add('cloned-item');
+            clonedFirstItem.setAttribute('data-cloned', 'first');
+            itemsContainer.appendChild(clonedFirstItem);
+            
+            // Position container to show current slide (accounting for cloned item at start)
+            const { primaryWidth, posterWidth, gap } = getItemDimensions();
+            const itemWidth = posterWidth + gap;
+            const primaryItemWidth = primaryWidth + gap;
+            
+            let translateX = 0;
+            
+            // Calculate position: skip cloned last item + position to current slide
+            if (currentSlide === 0) {
+                translateX = -(itemWidth); // Position to show first actual item (skip cloned last)
+            } else {
+                translateX = -(itemWidth + primaryItemWidth + (currentSlide - 1) * itemWidth);
+            }
+            
+            itemsContainer.style.transform = `translateX(${translateX}px)`;
+            itemsContainer.style.transition = 'none'; // No transition for initial positioning
+            
+            // Re-enable transitions after positioning
+            setTimeout(() => {
+                itemsContainer.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            }, 50);
             
             // Fade back in
             itemsContainer.style.opacity = '1';

@@ -5,6 +5,12 @@
 }
 
 #jellyfeatured_div {
+    /* CSS Custom Properties for responsive sizing */
+    --carousel-base-height: min(25vw, 405px);
+    --item-gap: 1rem;
+    --primary-aspect-ratio: 16/9;
+    --poster-aspect-ratio: 2/3;
+    
     width: 100%;
     margin: 0;
     position: relative;
@@ -22,7 +28,7 @@
 .featured-carousel-container {
     position: relative;
     width: 100%;
-    height: 400px;
+    height: calc(var(--carousel-base-height) + 5rem); /* Base height plus padding */
     overflow: hidden;
     margin: 0 4%; /* Standard Jellyfin section margins */
 }
@@ -46,7 +52,7 @@
 #featured-items-container {
     display: flex;
     height: 100%;
-    gap: 16px;
+    gap: var(--item-gap);
     padding: 0;
     transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease;
 }
@@ -81,18 +87,20 @@
     cursor: pointer;
     overflow: hidden;
     transition: all 0.3s ease, opacity 0.5s ease, transform 0.5s ease;
+    height: var(--carousel-base-height);
 }
 
 .featured-item.primary {
-    width: 600px;
-    height: 337.5px; /* 16:9 aspect ratio: 600 * 9/16 = 337.5 */
-    aspect-ratio: 16/9;
+    aspect-ratio: var(--primary-aspect-ratio);
+    width: calc(var(--carousel-base-height) * var(--primary-aspect-ratio));
 }
 
 .featured-item.poster {
-    width: 180px; 
-    height: 337.5px; /* Match the height of the primary item */
-    aspect-ratio: 2/3;
+    aspect-ratio: var(--poster-aspect-ratio);
+    width: calc(var(--carousel-base-height) * var(--poster-aspect-ratio));
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .featured-item.poster .featuredContent {
@@ -141,11 +149,11 @@
 }
 
 .nav-prev {
-    left: calc(4% + 10px); /* Position within the margin area */
+    left: calc(4% + 0.625rem);
 }
 
 .nav-next {
-    right: calc(4% + 10px); /* Position within the margin area */
+    right: calc(4% + 0.625rem);
 }
 
 .featured-item::before {
