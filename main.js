@@ -293,7 +293,7 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
     function goToSlide(index) {
         console.log('[JELLYFEATURED] goToSlide called with index:', index, 'current:', currentSlide);
         
-        if (filteredRecommendations.length === 0 || index >= filteredRecommendations.length || index === currentSlide) {
+        if (filteredRecommendations.length === 0 || index >= filteredRecommendations.length || index < 0 || index === currentSlide) {
             console.log('[JELLYFEATURED] goToSlide aborted - invalid index or same slide');
             return;
         }
@@ -303,12 +303,12 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         
         currentSlide = index;
         
-        // Calculate position based on new infinite scroll layout with relative dimensions
+        // Calculate position for normal carousel
         const { primaryWidth, posterWidth, gap } = getItemDimensions();
         const itemWidth = posterWidth + gap;
         const primaryItemWidth = primaryWidth + gap;
         
-        const translateX = currentSlide === 0 ? -itemWidth : -(itemWidth + primaryItemWidth + (currentSlide - 1) * itemWidth);
+        const translateX = currentSlide === 0 ? 0 : -(primaryItemWidth + (currentSlide - 1) * itemWidth);
         itemsContainer.style.transform = `translateX(${translateX}px)`;
         
         updatePrimaryItem();
@@ -446,86 +446,31 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
     }
     
     function nextSlide() {
-        const itemsContainer = document.getElementById('featured-items-container');
-        if (!itemsContainer) return;
-        
         const totalItems = filteredRecommendations.length;
-        const { primaryWidth, posterWidth, gap } = getItemDimensions();
-        const itemWidth = posterWidth + gap;
-        const primaryItemWidth = primaryWidth + gap;
+        if (totalItems === 0) return;
         
-        if (currentSlide === totalItems - 1) {
-            // Going from last item to first - use cloned first item for seamless transition
-            const currentTransform = itemsContainer.style.transform.match(/-?[\d.]+/);
-            const currentX = currentTransform ? parseFloat(currentTransform[0]) : 0;
-            const newX = currentX - itemWidth;
-            
-            itemsContainer.style.transform = `translateX(${newX}px)`;
-            
-            // After animation completes, jump to actual first item
-            setTimeout(() => {
-                currentSlide = 0;
-                itemsContainer.style.transition = 'none';
-                itemsContainer.style.transform = `translateX(-${itemWidth}px)`;
-                
-                setTimeout(() => {
-                    itemsContainer.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-                    updatePrimaryItem();
-                }, 50);
-            }, 600);
-        } else {
-            // Normal progression
-            currentSlide = (currentSlide + 1) % totalItems;
-            const translateX = currentSlide === 0 ? -itemWidth : -(itemWidth + primaryItemWidth + (currentSlide - 1) * itemWidth);
-            itemsContainer.style.transform = `translateX(${translateX}px)`;
-            updatePrimaryItem();
-        }
+        // Simple next slide logic - stop at last item or loop back to first
+        const nextIndex = (currentSlide + 1) % totalItems;
+        goToSlide(nextIndex);
         
         resetProgressBar();
         startProgressBar();
-        console.log('[JELLYFEATURED] Advanced to slide:', currentSlide);
+        
+        console.log('[JELLYFEATURED] Next slide:', nextIndex);
     }
     
     function previousSlide() {
-        const itemsContainer = document.getElementById('featured-items-container');
-        if (!itemsContainer) return;
-        
         const totalItems = filteredRecommendations.length;
-        const { primaryWidth, posterWidth, gap } = getItemDimensions();
-        const itemWidth = posterWidth + gap;
-        const primaryItemWidth = primaryWidth + gap;
+        if (totalItems === 0) return;
         
-        if (currentSlide === 0) {
-            // Going from first item to last - use cloned last item for seamless transition
-            const currentTransform = itemsContainer.style.transform.match(/-?[\d.]+/);
-            const currentX = currentTransform ? parseFloat(currentTransform[0]) : 0;
-            const newX = currentX + itemWidth;
-            
-            itemsContainer.style.transform = `translateX(${newX}px)`;
-            
-            // After animation completes, jump to actual last item
-            setTimeout(() => {
-                currentSlide = totalItems - 1;
-                itemsContainer.style.transition = 'none';
-                const lastItemX = -(itemWidth + primaryItemWidth + (totalItems - 2) * itemWidth);
-                itemsContainer.style.transform = `translateX(${lastItemX}px)`;
-                
-                setTimeout(() => {
-                    itemsContainer.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-                    updatePrimaryItem();
-                }, 50);
-            }, 600);
-        } else {
-            // Normal progression
-            currentSlide = (currentSlide - 1 + totalItems) % totalItems;
-            const translateX = currentSlide === 0 ? -itemWidth : -(itemWidth + primaryItemWidth + (currentSlide - 1) * itemWidth);
-            itemsContainer.style.transform = `translateX(${translateX}px)`;
-            updatePrimaryItem();
-        }
+        // Simple previous slide logic
+        const prevIndex = currentSlide === 0 ? totalItems - 1 : currentSlide - 1;
+        goToSlide(prevIndex);
         
         resetProgressBar();
         startProgressBar();
-        console.log('[JELLYFEATURED] Moved back to slide:', currentSlide);
+        
+        console.log('[JELLYFEATURED] Previous slide:', prevIndex);
     }
 
     function updatePrimaryItem() {
@@ -832,7 +777,7 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
                     
                     // Create initial set of items
                     currentSlide = 0;
-                    await createInfiniteCarouselItems(itemsContainer);
+                    await createCarouselItems(itemsContainer);
 
                     // Setup navigation buttons
                     setupNavigation();
@@ -930,90 +875,55 @@ console.log('[JELLYFEATURED] Global markers set - check window.JellyfeaturedLoad
         }
     }
     
-    async function createInfiniteCarouselItems(itemsContainer) {
-        console.log('[JELLYFEATURED] createInfiniteCarouselItems called');
+    async function createCarouselItems(itemsContainer) {
+        console.log('[JELLYFEATURED] createCarouselItems called');
         if (!itemsContainer) {
-            console.log('[JELLYFEATURED] No items container passed to createInfiniteCarouselItems');
+            console.log('[JELLYFEATURED] No items container passed to createCarouselItems');
             return;
         }
 
         console.log('[JELLYFEATURED] Items container found, filteredRecommendations:', filteredRecommendations.length);
         console.log('[JELLYFEATURED] Current slide:', currentSlide);
         
-        // Add fade out transition
-        itemsContainer.style.opacity = '0.7';
+        // Clear existing items
+        itemsContainer.innerHTML = '';
         
-        // Clear existing items after a short delay for smooth transition
-        setTimeout(() => {
-            console.log('[JELLYFEATURED] Clearing existing items...');
-            itemsContainer.innerHTML = '';
-            
-            // Create true infinite scroll: clone last item + all items + clone first item
-            const totalRecommendations = filteredRecommendations.length;
-            console.log('[JELLYFEATURED] Creating items for', totalRecommendations, 'recommendations');
-            
-            // Clone last item at beginning for backwards infinite scroll
-            const lastRecommendation = filteredRecommendations[totalRecommendations - 1];
-            console.log('[JELLYFEATURED] Creating cloned last item:', lastRecommendation.title);
-            const clonedLastItem = createCarouselItemInlineFromCache(lastRecommendation, totalRecommendations - 1, false);
-            clonedLastItem.classList.add('cloned-item');
-            clonedLastItem.setAttribute('data-cloned', 'last');
-            itemsContainer.appendChild(clonedLastItem);
-            console.log('[JELLYFEATURED] Cloned last item appended');
-            
-            // Add all actual items
-            for (let i = 0; i < totalRecommendations; i++) {
-                const recommendation = filteredRecommendations[i];
-                const isPrimary = (i === currentSlide);
-                console.log('[JELLYFEATURED] Creating item', i, ':', recommendation.title, 'isPrimary:', isPrimary);
-                const item = createCarouselItemInlineFromCache(recommendation, i, isPrimary);
-                item.setAttribute('data-actual-index', i);
-                itemsContainer.appendChild(item);
-                console.log('[JELLYFEATURED] Item', i, 'appended to container');
-            }
-            
-            // Clone first item at end for forward infinite scroll
-            const firstRecommendation = filteredRecommendations[0];
-            console.log('[JELLYFEATURED] Creating cloned first item:', firstRecommendation.title);
-            const clonedFirstItem = createCarouselItemInlineFromCache(firstRecommendation, 0, false);
-            clonedFirstItem.classList.add('cloned-item');
-            clonedFirstItem.setAttribute('data-cloned', 'first');
-            itemsContainer.appendChild(clonedFirstItem);
-            console.log('[JELLYFEATURED] Cloned first item appended');
-            
-            console.log('[JELLYFEATURED] All items created, total children:', itemsContainer.children.length);
-            
-            // Position container to show current slide (accounting for cloned item at start)
-            const { primaryWidth, posterWidth, gap } = getItemDimensions();
-            const itemWidth = posterWidth + gap;
-            const primaryItemWidth = primaryWidth + gap;
-            
-            let translateX = 0;
-            
-            // Calculate position: skip cloned last item + position to current slide
-            if (currentSlide === 0) {
-                translateX = -(itemWidth); // Position to show first actual item (skip cloned last)
-            } else {
-                translateX = -(itemWidth + primaryItemWidth + (currentSlide - 1) * itemWidth);
-            }
-            
-            itemsContainer.style.transform = `translateX(${translateX}px)`;
-            itemsContainer.style.transition = 'none'; // No transition for initial positioning
-            
-            // Re-enable transitions after positioning
-            setTimeout(() => {
-                itemsContainer.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-            }, 50);
-            
-            // Fade back in
-            itemsContainer.style.opacity = '1';
-            
-            // Reset and start progress bar
-            resetProgressBar();
-            startProgressBar();
-            
-            console.log('[JELLYFEATURED] Infinite carousel items created for slide:', currentSlide);
-        }, 150);
+        // Create all items normally
+        const totalRecommendations = filteredRecommendations.length;
+        console.log('[JELLYFEATURED] Creating items for', totalRecommendations, 'recommendations');
+        
+        for (let i = 0; i < totalRecommendations; i++) {
+            const recommendation = filteredRecommendations[i];
+            const isPrimary = (i === currentSlide);
+            console.log('[JELLYFEATURED] Creating item', i, ':', recommendation.title, 'isPrimary:', isPrimary);
+            const item = createCarouselItemInlineFromCache(recommendation, i, isPrimary);
+            item.setAttribute('data-actual-index', i);
+            itemsContainer.appendChild(item);
+            console.log('[JELLYFEATURED] Item', i, 'appended to container');
+        }
+        
+        console.log('[JELLYFEATURED] All items created, total children:', itemsContainer.children.length);
+        
+        // Position container to show current slide
+        const { primaryWidth, posterWidth, gap } = getItemDimensions();
+        const itemWidth = posterWidth + gap;
+        const primaryItemWidth = primaryWidth + gap;
+        
+        let translateX = 0;
+        if (currentSlide === 0) {
+            translateX = 0; // Show first item at start
+        } else {
+            translateX = -(primaryItemWidth + (currentSlide - 1) * itemWidth);
+        }
+        
+        itemsContainer.style.transform = `translateX(${translateX}px)`;
+        itemsContainer.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        
+        // Reset and start progress bar
+        resetProgressBar();
+        startProgressBar();
+        
+        console.log('[JELLYFEATURED] Carousel items created for slide:', currentSlide);
     }
     
     function createCarouselItemInlineFromCache(recommendation, originalIndex, isPrimary) {

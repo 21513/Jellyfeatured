@@ -6,7 +6,7 @@
 
 #jellyfeatured_div {
     /* CSS Custom Properties for responsive sizing */
-    --carousel-base-height: min(25vw, 405px);
+    --carousel-base-height: min(27.5vw, 445.5px); /* Increased by 10% */
     --item-gap: 1rem;
     --primary-aspect-ratio: 16/9;
     --poster-aspect-ratio: 2/3;
