@@ -9,125 +9,13 @@
         "imageUrl": "https://raw.githubusercontent.com/21513/Jellyfeatured/refs/heads/main/thumbnail.jpg",
         "versions": [
             {
-                "version": "0.0.1.29",
-                "changelog": "Updated carousel",
+                "version": "0.0.2.0",
+                "changelog": "Minor fixes and improvements",
                 "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.29/Jellyfeatured-v0.0.1.29.zip",
-                "checksum": "5a32a7f1cf9482752bc1e63c71bcdd63",
-                "timestamp": "2026-01-06T16:16:59Z"
-            },
-            {
-                "version": "0.0.1.28",
-                "changelog": "Updated carousel",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.28/Jellyfeatured-v0.0.1.28.zip",
-                "checksum": "38826af74afacfd172afe10ad58618e1",
-                "timestamp": "2026-01-06T16:13:33Z"
-            },
-            {
-                "version": "0.0.1.27",
-                "changelog": "Updated carousel",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.27/Jellyfeatured-v0.0.1.27.zip",
-                "checksum": "ea894b74b9ef085e3ea18b1625f84ea7",
-                "timestamp": "2026-01-06T16:06:51Z"
-            },
-            {
-                "version": "0.0.1.26",
-                "changelog": "Updated carousel",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.26/Jellyfeatured-v0.0.1.26.zip",
-                "checksum": "1d5eb4af503297429d54d37a3c255dff",
-                "timestamp": "2026-01-06T16:01:53Z"
-            },
-            {
-                "version": "0.0.1.25",
-                "changelog": "Updated carousel",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.25/Jellyfeatured-v0.0.1.25.zip",
-                "checksum": "bae0324917172106d6e03f2895e2b797",
-                "timestamp": "2026-01-06T15:55:27Z"
-            },
-            {
-                "version": "0.0.1.24",
-                "changelog": "Updated carousel",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.24/Jellyfeatured-v0.0.1.24.zip",
-                "checksum": "e91b1013dc3f7671b8ae544d7fa224df",
-                "timestamp": "2026-01-06T15:50:30Z"
-            },
-            {
-                "version": "0.0.1.23",
-                "changelog": "Updated carousel",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.23/Jellyfeatured-v0.0.1.23.zip",
-                "checksum": "c2b676c7bd7a9f18a7a99adb15fc265c",
-                "timestamp": "2026-01-06T15:41:11Z"
-            },
-            {
-                "version": "0.0.1.22",
-                "changelog": "Updated carousel",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.22/Jellyfeatured-v0.0.1.22.zip",
-                "checksum": "796e229768917f767543a7c569ef852b",
-                "timestamp": "2026-01-06T15:28:08Z"
-            },
-            {
-                "version": "0.0.1.21",
-                "changelog": "Updated carousel aspect ratio to 16:9 for better experience.",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.21/Jellyfeatured-v0.0.1.21.zip",
-                "checksum": "21ce978fccff98496d110cff42f1b647",
-                "timestamp": "2026-01-06T15:21:01Z"
-            },
-            {
-                "version": "0.0.1.6",
-                "changelog": "Updated web injection",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.6/Jellyfeatured-v0.0.1.6.zip",
-                "checksum": "0f18b98d26f9f8c1bc2fe14fa62382b7",
-                "timestamp": "2025-12-07T23:07:42Z"
-            },
-            {
-                "version": "0.0.1.5",
-                "changelog": "Updated web injection",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.5/Jellyfeatured-v0.0.1.5.zip",
-                "checksum": "f9c69a5df1272e3a466f076bfd49de82",
-                "timestamp": "2025-12-07T23:03:43Z"
-            },
-            {
-                "version": "0.0.1.4",
-                "changelog": "Updated styles",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.4/Jellyfeatured-v0.0.1.4.zip",
-                "checksum": "e847547410ed5a2a695d31edc75f4d1f",
-                "timestamp": "2025-12-05T12:37:12Z"
-            },
-            {
-                "version": "0.0.1.3",
-                "changelog": "Updated mobile responsiveness and swipe support for navigation.",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.3/Jellyfeatured-v0.0.1.3.zip",
-                "checksum": "ecf42ab8696802329bf67f56f597f8a6",
-                "timestamp": "2025-12-05T12:23:30Z"
-            },
-            {
-                "version": "0.0.1.2",
-                "changelog": "Updated mobile responsiveness and swipe support for navigation.",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.2/Jellyfeatured-v0.0.1.2.zip",
-                "checksum": "6982b3a28caf88b257552477be4038d8",
-                "timestamp": "2025-12-05T12:15:08Z"
-            },
-            {
-                "version": "0.0.1.1",
-                "changelog": "Added mobile responsiveness and swipe support for navigation.",
-                "targetAbi": "10.11.4.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.1.1/Jellyfeatured-v0.0.1.1.zip",
-                "checksum": "6df9ca294e59c01c73dba6e4b84b0128",
-                "timestamp": "2025-12-05T12:08:08Z"
-            },
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.2.0/Jellyfeatured-v0.0.2.0.zip",
+                "checksum": "20370f2e3f3ab149a1358a6909b9315e",
+                "timestamp": "2025-12-05T10:16:00Z"
+            }
             {
                 "version": "0.0.1.0",
                 "changelog": "First stable release",

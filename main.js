@@ -168,19 +168,51 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         return slide;
     }
     
-    function goToSlide(index) {
-        const slidesContainer = document.getElementById('featured_items');
-        const slides = document.querySelectorAll('#featured_items > #jellyfeatured_div');
-
-        if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
-
-        // Scroll to the selected featured_div
-        const slideWidth = slides[0].offsetWidth;
-        slidesContainer.scrollTo({
-            left: slideWidth * index,
-            behavior: 'smooth'
+    function createNavigationDot(index) {
+        const dot = document.createElement('div');
+        dot.className = 'featuredDot';
+        dot.setAttribute('data-index', index);
+        dot.setAttribute('tabindex', '0');
+        dot.setAttribute('role', 'button');
+        dot.setAttribute('aria-label', `Go to slide ${index + 1}`);
+        
+        dot.addEventListener('click', () => {
+            goToSlide(index);
+            pauseAutoSlide();
         });
+        
+        dot.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                goToSlide(index);
+                pauseAutoSlide();
+            }
+        });
+        
+        return dot;
+    }
+    
+    function goToSlide(index) {
+        const slides = document.querySelectorAll('.featuredItem');
+        const dots = document.querySelectorAll('.featuredDot');
+        
+        if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
+        
+        slides.forEach((slide, i) => {
+            if (i !== index) {
+                slide.classList.remove('active', 'entering');
+            }
+        });
+        dots.forEach(dot => dot.classList.remove('active'));
 
+        if (slides[index]) {
+            slides[index].classList.add('active');
+        }
+        
+        if (dots[index]) {
+            dots[index].classList.add('active');
+        }
+        
         currentSlide = index;
     }
     
@@ -340,9 +372,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
                     slides.forEach((slide, index) => {
                         carouselContainer.appendChild(slide);
+                        const dot = createNavigationDot(index);
+                        dotsContainer.appendChild(dot);
 
                         if (index === 0) {
                             slide.classList.add('active');
+                            dot.classList.add('active');
                         }
                     });
 
@@ -405,26 +440,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
             }
     }
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Shift') {
-            const slidesContainer = document.getElementById('featured_items');
-            slidesContainer.addEventListener('wheel', (event) => {
-                event.preventDefault();
-                slidesContainer.scrollBy({
-                    left: event.deltaY < 0 ? -slidesContainer.offsetWidth : slidesContainer.offsetWidth,
-                    behavior: 'smooth'
-                });
-            });
-        }
-    });
-
-    document.addEventListener('keyup', (e) => {
-        if (e.key === 'Shift') {
-            const slidesContainer = document.getElementById('featured_items');
-            slidesContainer.removeEventListener('wheel', () => {});
-        }
-    });
 
     // if (!document.getElementById('jellyfeatured_div')) {
     //     createFeaturedCarousel();
