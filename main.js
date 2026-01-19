@@ -178,14 +178,14 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         
         dot.addEventListener('click', () => {
             goToSlide(index);
-            pauseAutoSlide();
+            // pauseAutoSlide();
         });
         
         dot.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 goToSlide(index);
-                pauseAutoSlide();
+                // pauseAutoSlide();
             }
         });
         
@@ -236,7 +236,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         startX = touch.clientX;
         startY = touch.clientY;
         isSwiping = false;
-        pauseAutoSlide();
+        // pauseAutoSlide();
     }
     
     function handleTouchMove(e) {
@@ -299,26 +299,26 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         isSwiping = false;
     }
     
-    function startAutoSlide() {
-        if (recommendations.length > 1) {
-            clearInterval(autoSlideInterval);
-            autoSlideInterval = setInterval(() => {
-                if (!isUserInteracting) {
-                    nextSlide();
-                }
-            }, 6000);
-        }
-    }
+    // function startAutoSlide() {
+    //     if (recommendations.length > 1) {
+    //         clearInterval(autoSlideInterval);
+    //         autoSlideInterval = setInterval(() => {
+    //             if (!isUserInteracting) {
+    //                 nextSlide();
+    //             }
+    //         }, 6000);
+    //     }
+    // }
     
-    function pauseAutoSlide() {
-        isUserInteracting = true;
-        clearInterval(autoSlideInterval);
-        
-        setTimeout(() => {
-            isUserInteracting = false;
-            startAutoSlide();
-        }, 10000);
-    }
+    // function pauseAutoSlide() {
+    //     isUserInteracting = true;
+    //     clearInterval(autoSlideInterval);
+    //     
+    //     setTimeout(() => {
+    //         isUserInteracting = false;
+    //         startAutoSlide();
+    //     }, 10000);
+    // }
     
     async function navigateToMedia(title, year) {
         try {
@@ -404,11 +404,11 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         } else if (e.key === 'ArrowLeft') {
                             e.preventDefault();
                             previousSlide();
-                            pauseAutoSlide();
+                            // pauseAutoSlide();
                         } else if (e.key === 'ArrowRight') {
                             e.preventDefault();
                             nextSlide();
-                            pauseAutoSlide();
+                            // pauseAutoSlide();
                         }
                     });
 
@@ -420,14 +420,14 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     carouselContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
                     carouselContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
 
-                    setTimeout(startAutoSlide, 2000);
+                    // setTimeout(startAutoSlide, 2000);
 
-                    featuredDiv.addEventListener('mouseenter', pauseAutoSlide);
-                    featuredDiv.addEventListener('mouseleave', () => {
-                        if (!isUserInteracting) {
-                            startAutoSlide();
-                        }
-                    });
+                    // featuredDiv.addEventListener('mouseenter', pauseAutoSlide);
+                    // featuredDiv.addEventListener('mouseleave', () => {
+                    //     if (!isUserInteracting) {
+                    //         startAutoSlide();
+                    //     }
+                    // });
                     
                 } else if (carouselContainer) {
                     carouselContainer.innerHTML = `
