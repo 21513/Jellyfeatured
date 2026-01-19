@@ -1,5 +1,5 @@
 .featuredItem:hover {
-    transform: scale(1.01);
+    transform: scale(1.02);
     border-color: white !important;
     transition: 125ms ease-in-out;
 }
@@ -10,9 +10,7 @@
     height: 60vh;
     touch-action: pan-y;
     display: flex;
-    padding-left: calc(var(--sidePadding) - .375em);
-    padding-bottom: 1em;
-    padding-top: 1em;
+    overflow: visible;
 }
 
 #featured_items {
@@ -27,6 +25,9 @@
     scroll-behavior: smooth;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    padding-left: calc(var(--sidePadding) - .375em);
+    padding-bottom: 1em;
+    padding-top: 1em;
 }
 
 #featured_items::-webkit-scrollbar {
@@ -41,6 +42,7 @@
     background: var(--cardBackgroundGradient);
     box-shadow: var(--shadow);
     border-radius: var(--largeRadius);
+    border: var(--darkerBorderColor) solid var(--borderWidthDouble) !important;
     height: 100%;
     cursor: pointer;
     background-size: cover;
@@ -73,13 +75,12 @@
     transform: translateY(0) translateX(-100%);
     background: var(--hoverGradientH);
     opacity: 0.4;
-    transition: 125ms ease-in-out;
 }
 
 .featuredItem:hover::after {
     transform: translateY(0) translateX(100%);
     opacity: 0;
-    transition: 125ms ease-in-out;
+    transition: 0.5s;
 }
 
 .featuredContent {
@@ -258,22 +259,34 @@
     }
 }
 
-.featuredItem:focus {
-    outline: 2px solid var(--highlightOutlineColor);
-    outline-offset: 2px;
-}
-
-@keyframes slideIn {
+@keyframes fadeInScale {
     from {
-        transform: translateX(20px);
+        opacity: 0.7;
+        transform: scale(0.95);
     }
     to {
-        transform: translateX(0);
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes fadeOutScale {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0.9;
+        transform: scale(0.98);
     }
 }
 
 .featuredItem.entering {
-    animation: 0.5s ease-in-out;
+    animation: fadeInScale 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.featuredItem.exiting {
+    animation: fadeOutScale 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .featuredItem {

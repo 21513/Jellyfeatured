@@ -211,6 +211,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         
         slides.forEach((slide, i) => {
             if (i !== index) {
+                if (slide.classList.contains('active')) {
+                    slide.classList.add('exiting');
+                }
                 slide.classList.remove('active', 'entering');
                 // Switch to poster for inactive items
                 const posterUrl = slide.getAttribute('data-poster-url');
@@ -219,12 +222,15 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     slide.style.backgroundSize = 'cover';
                     slide.style.backgroundPosition = 'center';
                 }
+                // Remove exiting class after animation
+                setTimeout(() => slide.classList.remove('exiting'), 500);
             }
         });
         dots.forEach(dot => dot.classList.remove('active'));
 
         if (slides[index]) {
-            slides[index].classList.add('active');
+            slides[index].classList.add('active', 'entering');
+            slides[index].classList.remove('exiting');
             // Switch to backdrop for active item
             const backdropUrl = slides[index].getAttribute('data-backdrop-url');
             if (backdropUrl) {
@@ -232,6 +238,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 slides[index].style.backgroundSize = 'cover';
                 slides[index].style.backgroundPosition = 'center';
             }
+            // Remove entering class after animation
+            setTimeout(() => slides[index].classList.remove('entering'), 500);
         }
         
         if (dots[index]) {
