@@ -397,23 +397,38 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
                     slides.forEach((slide, index) => {
                         carouselContainer.appendChild(slide);
-                        const dot = createNavigationDot(index);
-                        dotsContainer.appendChild(dot);
 
                         if (index === 0) {
                             slide.classList.add('active');
-                            dot.classList.add('active');
+                            // Switch first item to backdrop
+                            const backdropUrl = slide.getAttribute('data-backdrop-url');
+                            if (backdropUrl) {
+                                slide.style.background = `url("${backdropUrl}")`;
+                                slide.style.backgroundSize = 'cover';
+                                slide.style.backgroundPosition = 'center';
+                            }
                         }
                     });
 
                     currentSlide = 0;
 
                     carouselContainer.addEventListener('click', async (e) => {
-                        const activeSlide = carouselContainer.querySelector('.featuredItem.active');
-                        if (activeSlide && (e.target === activeSlide || activeSlide.contains(e.target))) {
-                            const title = activeSlide.getAttribute('data-title');
-                            const year = activeSlide.getAttribute('data-year');
-                            await navigateToMedia(title, year);
+                        // Find which item was clicked
+                        let clickedSlide = e.target.closest('.featuredItem');
+                        
+                        if (clickedSlide) {
+                            const clickedIndex = parseInt(clickedSlide.getAttribute('data-index'));
+                            
+                            // If clicking a non-active item, make it active
+                            if (!clickedSlide.classList.contains('active')) {
+                                goToSlide(clickedIndex);
+                                pauseAutoSlide();
+                            } else {
+                                // If clicking the active item, navigate to it
+                                const title = clickedSlide.getAttribute('data-title');
+                                const year = clickedSlide.getAttribute('data-year');
+                                await navigateToMedia(title, year);
+                            }
                         }
                     });
 

@@ -11,34 +11,37 @@
     touch-action: pan-y;
     display: flex;
     padding-left: calc(var(--sidePadding) - .375em);
+    padding-bottom: 1em;
+    padding-top: 1em;
 }
 
 #featured_items {
     position: relative;
     width: 100%;
     height: 100%;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     user-select: none;
     display: flex;
     column-gap: var(--itemColumnGap);
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#featured_items::-webkit-scrollbar {
+    display: none;
 }
 
 #featuredDots {
-    position: absolute;
-    bottom: 16px;
-    right: 0;
-    transform: translateX(-50%);
-    display: flex;
-    z-index: 10;
+    display: none;
 }
 
 .featuredItem {
-    transition: 125ms ease-in-out;
     background: var(--cardBackgroundGradient);
     box-shadow: var(--shadow);
     border-radius: var(--largeRadius);
     height: 100%;
-    transition: 0.3s ease-out;
     cursor: pointer;
     background-size: cover;
     background-position: center;
@@ -47,11 +50,16 @@
     aspect-ratio: 2 / 3;
     position: relative;
     overflow: hidden;
+    flex-shrink: 0;
+    transition: aspect-ratio 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                flex 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.3s ease-out,
+                box-shadow 0.3s ease-out;
 }
 
 .featuredItem.active {
     aspect-ratio: 16 / 9;
-    flex: 1;
+    min-width: 0;
 }
 
 .featuredItem::after {
@@ -86,10 +94,13 @@
     display: none;
     align-items: flex-end;
     text-shadow: var(--shadow);
+    opacity: 0;
+    transition: opacity 0.3s ease-in 0.2s;
 }
 
 .featuredItem.active .featuredContent {
     display: flex;
+    opacity: 1;
 }
 
 .featuredLogoContainer {
