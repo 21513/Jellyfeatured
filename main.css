@@ -44,7 +44,14 @@
     background-position: center;
     background-repeat: no-repeat;
     z-index: 1;
+    aspect-ratio: 2 / 3;
+    position: relative;
+    overflow: hidden;
+}
+
+.featuredItem.active {
     aspect-ratio: 16 / 9;
+    flex: 1;
 }
 
 .featuredItem::after {
@@ -76,9 +83,13 @@
     padding: 60px 20px 20px;
     color: var(--textColor);
     font-family: "Inter", sans-serif;
-    display: flex;
+    display: none;
     align-items: flex-end;
     text-shadow: var(--shadow);
+}
+
+.featuredItem.active .featuredContent {
+    display: flex;
 }
 
 .featuredLogoContainer {
