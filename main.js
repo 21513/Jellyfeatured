@@ -89,16 +89,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 const apiKey = getJellyfinApiKey();
                 const baseUrl = getJellyfinBaseUrl();
                 return `url("${baseUrl}/Items/${item.Id}/Images/Backdrop?api_key=${apiKey}")`;
-            } else {
-                const colors = [
-                    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
-                    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
-                ];
-                const hash = title.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
-                return colors[Math.abs(hash) % colors.length];
             }
         }).catch(() => {
             return `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
@@ -136,8 +126,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             if (item) {
                 const apiKey = getJellyfinApiKey();
                 const baseUrl = getJellyfinBaseUrl();
-                
-                // Store both poster and backdrop URLs as data attributes
+
                 if (item.ImageTags && item.ImageTags.Primary) {
                     const posterUrl = `${baseUrl}/Items/${item.Id}/Images/Primary?api_key=${apiKey}`;
                     slide.setAttribute('data-poster-url', posterUrl);
@@ -147,8 +136,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     const backdropUrl = `${baseUrl}/Items/${item.Id}/Images/Backdrop?api_key=${apiKey}`;
                     slide.setAttribute('data-backdrop-url', backdropUrl);
                 }
-                
-                // Initially show poster (since not active by default)
+
                 const posterUrl = slide.getAttribute('data-poster-url');
                 if (posterUrl) {
                     slide.style.background = `url("${posterUrl}")`;
@@ -165,15 +153,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 }
             }
         } catch (e) {
-            const colors = [
-                'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', 
-                'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-                'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
-            ];
-            const hash = recommendation.title.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
-            slide.style.background = colors[Math.abs(hash) % colors.length];
+            // Failed to fetch item details
         }
         
         return slide;
@@ -211,12 +191,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
         if (slides.length === 0) return;
 
-        // If requested index is out of range, ignore
         if (index < 0 || index >= recommendations.length) return;
-        // If already active and no specific instance requested, ignore
         if (index === currentSlide && !instanceElement) return;
 
-        // Deactivate all slides and switch them to poster background
         slides.forEach(slide => {
             slide.classList.remove('active');
             const posterUrl = slide.getAttribute('data-poster-url');
@@ -227,11 +204,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             }
         });
 
-        // Find all slide instances that correspond to the original data-index
         const matchingSlides = slides.filter(s => parseInt(s.getAttribute('data-index')) === index);
         if (matchingSlides.length === 0) return;
 
-        // If a specific instance element was provided and it matches, prefer it
         let targetSlide = matchingSlides[0];
         if (instanceElement && matchingSlides.includes(instanceElement)) {
             targetSlide = instanceElement;
@@ -252,18 +227,14 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         }
         if (!targetSlide) return;
 
-        // If the activated item is the last original item, append one full set of original items
         (function appendOnLastActive(target) {
             try {
                 const originalCount = recommendations.length || 0;
                 if (!carouselContainer || originalCount === 0) return;
 
-                // Only append once per session to avoid unbounded growth
                 if (carouselContainer.dataset.appendedForLast === 'true') return;
 
-                // If the activated index is the last original index, append one clone set
                 if (index === originalCount - 1) {
-                    // Find one instance of each original index and clone them
                     for (let i = 0; i < originalCount; i++) {
                         const src = Array.from(carouselContainer.querySelectorAll('.featuredItem')).find(s => parseInt(s.getAttribute('data-index')) === i);
                         if (src) {
@@ -280,7 +251,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             }
         })(targetSlide);
 
-        // Activate target and switch to backdrop if available
         targetSlide.classList.add('active');
         const backdropUrl = targetSlide.getAttribute('data-backdrop-url');
         if (backdropUrl) {
@@ -289,12 +259,10 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             targetSlide.style.backgroundPosition = 'center';
         }
 
-        // Update dots (dots correspond to original indices)
         dots.forEach(dot => dot.classList.remove('active'));
         const matchingDot = Array.from(dots).find(d => parseInt(d.getAttribute('data-index')) === index);
         if (matchingDot) matchingDot.classList.add('active');
 
-        // Scroll the carousel so the activated slide becomes the first visible item
         if (carouselContainer && targetSlide) {
             try {
                 const containerRect = carouselContainer.getBoundingClientRect();
@@ -302,13 +270,11 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 const computed = getComputedStyle(carouselContainer);
                 const paddingLeft = parseFloat(computed.paddingLeft) || 0;
 
-                // Calculate the left offset within the scrollable content
                 const delta = slideRect.left - containerRect.left;
                 const targetLeft = Math.max(0, Math.round(carouselContainer.scrollLeft + delta - paddingLeft));
 
                 carouselContainer.scrollTo({ left: targetLeft, behavior: 'smooth' });
             } catch (e) {
-                // Fallback
                 try { targetSlide.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' }); } catch (er) {}
             }
         }
@@ -475,7 +441,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
                         if (index === 0) {
                             slide.classList.add('active');
-                            // Switch first item to backdrop
                             const backdropUrl = slide.getAttribute('data-backdrop-url');
                             if (backdropUrl) {
                                 slide.style.background = `url("${backdropUrl}")`;
@@ -485,8 +450,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         }
                     });
 
-                    // Append one cloned set to the right so there's at least one extra cycle
-                    // Guard with a data flag so this only runs once per page load
                     if (!carouselContainer.dataset.initialCloned) {
                         slides.forEach((origSlide) => {
                             const clone = origSlide.cloneNode(true);
@@ -500,20 +463,16 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     currentSlide = 0;
 
                     carouselContainer.addEventListener('click', async (e) => {
-                        // Find which item was clicked
                         let clickedSlide = e.target.closest('.featuredItem');
                         
                         if (clickedSlide) {
-                            // Use the original data-index so ordering changes don't affect behavior
                             const clickedIndex = parseInt(clickedSlide.getAttribute('data-index'));
                             const activeSlide = carouselContainer.querySelector('.featuredItem.active');
                             
-                            // If clicking a different instance (clone) of the same item, force activation of that instance
                             if (activeSlide !== clickedSlide) {
                                 goToSlide(clickedIndex, { instance: clickedSlide });
                                 pauseAutoSlide();
                             } else {
-                                // If clicking the active item instance, navigate to it
                                 const title = clickedSlide.getAttribute('data-title');
                                 const year = clickedSlide.getAttribute('data-year');
                                 await navigateToMedia(title, year);
@@ -570,7 +529,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             }
     }
 
-    // Initialize with retry mechanism
     let initAttempts = 0;
     const maxInitAttempts = 10;
     
@@ -584,25 +542,22 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         }
     }
     
-    // Try immediately if DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => setTimeout(tryInitialize, 100));
     } else {
         setTimeout(tryInitialize, 100);
     }
 
-    // Watch for DOM changes
     const observer = new MutationObserver(() => {
         setTimeout(() => createFeaturedCarousel(), 500);
     });
     if (document.body) observer.observe(document.body, { childList: true, subtree: true });
 
-    // Watch for URL changes (navigation)
     let lastUrl = location.href;
     setInterval(() => {
         if (location.href !== lastUrl) {
             lastUrl = location.href;
-            initAttempts = 0; // Reset attempts on navigation
+            initAttempts = 0;
             setTimeout(() => tryInitialize(), 200);
         }
     }, 1000);
