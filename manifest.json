@@ -13,8 +13,8 @@
                 "changelog": "Updated appearance; Fixed minor bugs; Improved scrolling; Looped carousel",
                 "targetAbi": "10.11.4.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.3.1/Jellyfeatured-v0.0.3.1.zip",
-                "checksum": "9fd85824c4eaf4f8c211e850ce4b1547",
-                "timestamp": "2026-01-19T21:29:56Z"
+                "checksum": "2a94c04f97abc34ca28e2d639b8e93df",
+                "timestamp": "2026-01-20T12:44:53Z"
             },
             {
                 "version": "0.0.3.0",
