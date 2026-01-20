@@ -193,6 +193,22 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             _logger.LogError(ex, "Jellyfeatured plugin initialization failed");
         }
     }
+    
+    private bool HasRequiredImages(BaseItem item)
+    {
+        if (item == null) return false;
+        
+        bool hasPoster = item.HasImage(MediaBrowser.Model.Entities.ImageType.Primary);
+        bool hasBackdrop = item.HasImage(MediaBrowser.Model.Entities.ImageType.Backdrop);
+        
+        if (!hasPoster || !hasBackdrop)
+        {
+            _logger.LogDebug("Item '{Title}' excluded: Poster={HasPoster}, Backdrop={HasBackdrop}", 
+                item.Name, hasPoster, hasBackdrop);
+        }
+        
+        return hasPoster && hasBackdrop;
+    }
     private async Task<List<RecommendationItem>> GenerateRecommendationsAsync()
     {
         var recommendations = new List<RecommendationItem>();
@@ -241,7 +257,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
 
             var latestMovie = allItems
                 .OfType<Movie>()
-                .Where(m => m.PremiereDate.HasValue)
+                .Where(m => m.PremiereDate.HasValue && HasRequiredImages(m))
                 .OrderByDescending(m => m.PremiereDate)
                 .FirstOrDefault();
                 
@@ -258,6 +274,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
 
             var recentAddedMovie = allItems
                 .OfType<Movie>()
+                .Where(m => HasRequiredImages(m))
                 .OrderByDescending(m => m.DateCreated)
                 .FirstOrDefault();
                 
@@ -274,6 +291,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             
             var recentAddedShow = allItems
                 .OfType<Series>()
+                .Where(s => HasRequiredImages(s))
                 .OrderByDescending(s => s.DateCreated)
                 .FirstOrDefault();
                 
@@ -290,7 +308,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             
             var bestMovie = allItems
                 .OfType<Movie>()
-                .Where(m => m.CommunityRating.HasValue && m.CommunityRating > 0 && m.CommunityRating < 10.0)
+                .Where(m => m.CommunityRating.HasValue && m.CommunityRating > 0 && m.CommunityRating < 10.0 && HasRequiredImages(m))
                 .OrderByDescending(m => m.CommunityRating)
                 .FirstOrDefault();
                 
@@ -307,7 +325,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             
             var bestShow = allItems
                 .OfType<Series>()
-                .Where(s => s.CommunityRating.HasValue && s.CommunityRating > 0 && s.CommunityRating < 10.0)
+                .Where(s => s.CommunityRating.HasValue && s.CommunityRating > 0 && s.CommunityRating < 10.0 && HasRequiredImages(s))
                 .OrderByDescending(s => s.CommunityRating)
                 .FirstOrDefault();
                 
@@ -337,7 +355,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                         if (Guid.TryParse(itemId, out var guid))
                         {
                             var item = _libraryManager.GetItemById(guid);
-                            if (item != null)
+                            if (item != null && HasRequiredImages(item))
                             {
                                 _logger.LogInformation("Found admin pick item: {Name}", item.Name);
                                 adminPickItems.Add(new RecommendationItem
@@ -347,6 +365,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                                     Year = item.PremiereDate?.Year.ToString() ?? "",
                                     Rating = item.CommunityRating?.ToString("F1") ?? "N/A"
                                 });
+                            }
+                            else if (item != null)
+                            {
+                                _logger.LogWarning("Admin pick item '{Name}' excluded - missing poster or backdrop", item.Name);
                             }
                             else
                             {

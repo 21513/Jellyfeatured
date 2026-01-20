@@ -209,41 +209,61 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         
         if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
         
-        slides.forEach((slide, i) => {
-            if (i !== index) {
-                if (slide.classList.contains('active')) {
-                    slide.classList.add('exiting');
-                }
-                slide.classList.remove('active', 'entering');
-                // Switch to poster for inactive items
-                const posterUrl = slide.getAttribute('data-poster-url');
-                if (posterUrl) {
-                    slide.style.background = `url("${posterUrl}")`;
-                    slide.style.backgroundSize = 'cover';
-                    slide.style.backgroundPosition = 'center';
-                }
-                // Remove exiting class after animation
-                setTimeout(() => slide.classList.remove('exiting'), 500);
+        const carouselContainer = document.getElementById('featured_items');
+        if (!carouselContainer) return;
+        
+        // Find the currently active slide
+        const currentActiveSlide = Array.from(slides).find(slide => slide.classList.contains('active'));
+        
+        // Remove active state from current slide
+        if (currentActiveSlide) {
+            currentActiveSlide.classList.remove('active');
+            
+            // Switch to poster
+            const posterUrl = currentActiveSlide.getAttribute('data-poster-url');
+            if (posterUrl) {
+                currentActiveSlide.style.background = `url("${posterUrl}")`;
+                currentActiveSlide.style.backgroundSize = 'cover';
+                currentActiveSlide.style.backgroundPosition = 'center';
             }
-        });
-        dots.forEach(dot => dot.classList.remove('active'));
-
-        if (slides[index]) {
-            slides[index].classList.add('active', 'entering');
-            slides[index].classList.remove('exiting');
-            // Switch to backdrop for active item
-            const backdropUrl = slides[index].getAttribute('data-backdrop-url');
-            if (backdropUrl) {
-                slides[index].style.background = `url("${backdropUrl}")`;
-                slides[index].style.backgroundSize = 'cover';
-                slides[index].style.backgroundPosition = 'center';
-            }
-            // Remove entering class after animation
-            setTimeout(() => slides[index].classList.remove('entering'), 500);
         }
         
-        if (dots[index]) {
-            dots[index].classList.add('active');
+        // Reorder slides: move items before the target index to the end
+        if (index > 0) {
+            const slidesArray = Array.from(document.querySelectorAll('.featuredItem'));
+            const itemsToMove = slidesArray.slice(0, index);
+            
+            // Move each item to the end
+            itemsToMove.forEach(slide => {
+                carouselContainer.appendChild(slide);
+            });
+            
+            // Update index to 0 since the active item is now first
+            index = 0;
+        }
+        
+        // Get updated slides after reordering
+        const updatedSlides = document.querySelectorAll('.featuredItem');
+        const newActiveSlide = updatedSlides[index];
+        
+        if (newActiveSlide) {
+            // Update dots
+            const originalIndex = parseInt(newActiveSlide.getAttribute('data-index'));
+            dots.forEach(dot => dot.classList.remove('active'));
+            if (dots[originalIndex]) {
+                dots[originalIndex].classList.add('active');
+            }
+            
+            // Activate new slide
+            newActiveSlide.classList.add('active');
+            
+            // Switch to backdrop for active item
+            const backdropUrl = newActiveSlide.getAttribute('data-backdrop-url');
+            if (backdropUrl) {
+                newActiveSlide.style.background = `url("${backdropUrl}")`;
+                newActiveSlide.style.backgroundSize = 'cover';
+                newActiveSlide.style.backgroundPosition = 'center';
+            }
         }
         
         currentSlide = index;
@@ -425,7 +445,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         let clickedSlide = e.target.closest('.featuredItem');
                         
                         if (clickedSlide) {
-                            const clickedIndex = parseInt(clickedSlide.getAttribute('data-index'));
+                            // Get the current DOM position of the clicked slide
+                            const allSlides = Array.from(carouselContainer.querySelectorAll('.featuredItem'));
+                            const clickedIndex = allSlides.indexOf(clickedSlide);
                             
                             // If clicking a non-active item, make it active
                             if (!clickedSlide.classList.contains('active')) {
@@ -489,18 +511,40 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             }
     }
 
-    // if (!document.getElementById('jellyfeatured_div')) {
-    //     createFeaturedCarousel();
-    // }
+    // Initialize with retry mechanism
+    let initAttempts = 0;
+    const maxInitAttempts = 10;
+    
+    function tryInitialize() {
+        const targetContainer = document.querySelector('.homePage');
+        if (targetContainer && !document.getElementById('jellyfeatured_div')) {
+            createFeaturedCarousel();
+        } else if (initAttempts < maxInitAttempts) {
+            initAttempts++;
+            setTimeout(tryInitialize, 500);
+        }
+    }
+    
+    // Try immediately if DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(tryInitialize, 100));
+    } else {
+        setTimeout(tryInitialize, 100);
+    }
 
-    const observer = new MutationObserver(() => setTimeout(() => createFeaturedCarousel(), 500));
+    // Watch for DOM changes
+    const observer = new MutationObserver(() => {
+        setTimeout(() => createFeaturedCarousel(), 500);
+    });
     if (document.body) observer.observe(document.body, { childList: true, subtree: true });
 
+    // Watch for URL changes (navigation)
     let lastUrl = location.href;
     setInterval(() => {
         if (location.href !== lastUrl) {
             lastUrl = location.href;
-            setTimeout(() => createFeaturedCarousel(), 200);
+            initAttempts = 0; // Reset attempts on navigation
+            setTimeout(() => tryInitialize(), 200);
         }
     }, 1000);
 })();
