@@ -206,6 +206,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     function goToSlide(index) {
         const slides = Array.from(document.querySelectorAll('.featuredItem'));
         const dots = document.querySelectorAll('.featuredDot');
+        const carouselContainer = document.getElementById('featured_items');
 
         if (slides.length === 0) return;
 
@@ -223,8 +224,25 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             }
         });
 
-        // Find the slide with the matching original data-index and activate it
-        const targetSlide = slides.find(s => parseInt(s.getAttribute('data-index')) === index);
+        // Find all slide instances that correspond to the original data-index
+        const matchingSlides = slides.filter(s => parseInt(s.getAttribute('data-index')) === index);
+        if (matchingSlides.length === 0) return;
+
+        // Choose the instance closest to the container's left edge (so it becomes the first visible)
+        let targetSlide = matchingSlides[0];
+        try {
+            const containerRect = carouselContainer ? carouselContainer.getBoundingClientRect() : null;
+            if (containerRect) {
+                let bestDelta = Infinity;
+                matchingSlides.forEach(s => {
+                    const rect = s.getBoundingClientRect();
+                    const delta = Math.abs(rect.left - containerRect.left);
+                    if (delta < bestDelta) { bestDelta = delta; targetSlide = s; }
+                });
+            }
+        } catch (e) {
+            targetSlide = matchingSlides[0];
+        }
         if (!targetSlide) return;
 
         // Activate target and switch to backdrop if available
@@ -240,6 +258,25 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         dots.forEach(dot => dot.classList.remove('active'));
         const matchingDot = Array.from(dots).find(d => parseInt(d.getAttribute('data-index')) === index);
         if (matchingDot) matchingDot.classList.add('active');
+
+        // Scroll the carousel so the activated slide becomes the first visible item
+        if (carouselContainer && targetSlide) {
+            try {
+                const containerRect = carouselContainer.getBoundingClientRect();
+                const slideRect = targetSlide.getBoundingClientRect();
+                const computed = getComputedStyle(carouselContainer);
+                const paddingLeft = parseFloat(computed.paddingLeft) || 0;
+
+                // Calculate the left offset within the scrollable content
+                const delta = slideRect.left - containerRect.left;
+                const targetLeft = Math.max(0, Math.round(carouselContainer.scrollLeft + delta - paddingLeft));
+
+                carouselContainer.scrollTo({ left: targetLeft, behavior: 'smooth' });
+            } catch (e) {
+                // Fallback
+                try { targetSlide.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' }); } catch (er) {}
+            }
+        }
 
         currentSlide = index;
     }
@@ -412,6 +449,17 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                             }
                         }
                     });
+
+                    // Append two cloned sets to the right so the carousel appears infinite
+                    // Clones keep the same `data-index` so clicks still map to the original items
+                    for (let clonePass = 0; clonePass < 2; clonePass++) {
+                        slides.forEach((origSlide) => {
+                            const clone = origSlide.cloneNode(true);
+                            // Ensure cloned slides do not have 'active' class
+                            clone.classList.remove('active', 'entering', 'exiting');
+                            carouselContainer.appendChild(clone);
+                        });
+                    }
 
                     currentSlide = 0;
 
