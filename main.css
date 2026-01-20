@@ -1,6 +1,6 @@
 .featuredItem:hover {
     transform: scale(1.02);
-    border-color: white !important;
+    border: var(--borderWidthDouble) solid white;
     transition: 125ms ease-in-out;
 }
 
@@ -36,6 +36,7 @@
     background: var(--cardBackgroundGradient);
     box-shadow: var(--shadow);
     border-radius: var(--largeRadius);
+    border: var(--borderWidthDouble) solid var(--darkerBorderColor);
     height: 100%;
     cursor: pointer;
     background-size: cover;
