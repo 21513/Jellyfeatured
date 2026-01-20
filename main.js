@@ -203,15 +203,18 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         return dot;
     }
     
-    function goToSlide(index) {
+    function goToSlide(index, options = {}) {
+        const instanceElement = options.instance || null;
         const slides = Array.from(document.querySelectorAll('.featuredItem'));
         const dots = document.querySelectorAll('.featuredDot');
         const carouselContainer = document.getElementById('featured_items');
 
         if (slides.length === 0) return;
 
-        // If requested index is out of range or already active, ignore
-        if (index < 0 || index >= recommendations.length || index === currentSlide) return;
+        // If requested index is out of range, ignore
+        if (index < 0 || index >= recommendations.length) return;
+        // If already active and no specific instance requested, ignore
+        if (index === currentSlide && !instanceElement) return;
 
         // Deactivate all slides and switch them to poster background
         slides.forEach(slide => {
@@ -228,22 +231,54 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         const matchingSlides = slides.filter(s => parseInt(s.getAttribute('data-index')) === index);
         if (matchingSlides.length === 0) return;
 
-        // Choose the instance closest to the container's left edge (so it becomes the first visible)
+        // If a specific instance element was provided and it matches, prefer it
         let targetSlide = matchingSlides[0];
-        try {
-            const containerRect = carouselContainer ? carouselContainer.getBoundingClientRect() : null;
-            if (containerRect) {
-                let bestDelta = Infinity;
-                matchingSlides.forEach(s => {
-                    const rect = s.getBoundingClientRect();
-                    const delta = Math.abs(rect.left - containerRect.left);
-                    if (delta < bestDelta) { bestDelta = delta; targetSlide = s; }
-                });
+        if (instanceElement && matchingSlides.includes(instanceElement)) {
+            targetSlide = instanceElement;
+        } else {
+            try {
+                const containerRect = carouselContainer ? carouselContainer.getBoundingClientRect() : null;
+                if (containerRect) {
+                    let bestDelta = Infinity;
+                    matchingSlides.forEach(s => {
+                        const rect = s.getBoundingClientRect();
+                        const delta = Math.abs(rect.left - containerRect.left);
+                        if (delta < bestDelta) { bestDelta = delta; targetSlide = s; }
+                    });
+                }
+            } catch (e) {
+                targetSlide = matchingSlides[0];
             }
-        } catch (e) {
-            targetSlide = matchingSlides[0];
         }
         if (!targetSlide) return;
+
+        // If the activated item is the last original item, append one full set of original items
+        (function appendOnLastActive(target) {
+            try {
+                const originalCount = recommendations.length || 0;
+                if (!carouselContainer || originalCount === 0) return;
+
+                // Only append once per session to avoid unbounded growth
+                if (carouselContainer.dataset.appendedForLast === 'true') return;
+
+                // If the activated index is the last original index, append one clone set
+                if (index === originalCount - 1) {
+                    // Find one instance of each original index and clone them
+                    for (let i = 0; i < originalCount; i++) {
+                        const src = Array.from(carouselContainer.querySelectorAll('.featuredItem')).find(s => parseInt(s.getAttribute('data-index')) === i);
+                        if (src) {
+                            const clone = src.cloneNode(true);
+                            clone.classList.remove('active', 'entering', 'exiting');
+                            clone.setAttribute('data-clone', 'true');
+                            carouselContainer.appendChild(clone);
+                        }
+                    }
+                    carouselContainer.dataset.appendedForLast = 'true';
+                }
+            } catch (e) {
+                // ignore
+            }
+        })(targetSlide);
 
         // Activate target and switch to backdrop if available
         targetSlide.classList.add('active');
@@ -450,15 +485,16 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         }
                     });
 
-                    // Append two cloned sets to the right so the carousel appears infinite
-                    // Clones keep the same `data-index` so clicks still map to the original items
-                    for (let clonePass = 0; clonePass < 2; clonePass++) {
+                    // Append one cloned set to the right so there's at least one extra cycle
+                    // Guard with a data flag so this only runs once per page load
+                    if (!carouselContainer.dataset.initialCloned) {
                         slides.forEach((origSlide) => {
                             const clone = origSlide.cloneNode(true);
-                            // Ensure cloned slides do not have 'active' class
                             clone.classList.remove('active', 'entering', 'exiting');
+                            clone.setAttribute('data-clone', 'initial');
                             carouselContainer.appendChild(clone);
                         });
+                        carouselContainer.dataset.initialCloned = 'true';
                     }
 
                     currentSlide = 0;
@@ -470,13 +506,14 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         if (clickedSlide) {
                             // Use the original data-index so ordering changes don't affect behavior
                             const clickedIndex = parseInt(clickedSlide.getAttribute('data-index'));
+                            const activeSlide = carouselContainer.querySelector('.featuredItem.active');
                             
-                            // If clicking a non-active item, make it active
-                            if (!clickedSlide.classList.contains('active')) {
-                                goToSlide(clickedIndex);
+                            // If clicking a different instance (clone) of the same item, force activation of that instance
+                            if (activeSlide !== clickedSlide) {
+                                goToSlide(clickedIndex, { instance: clickedSlide });
                                 pauseAutoSlide();
                             } else {
-                                // If clicking the active item, navigate to it
+                                // If clicking the active item instance, navigate to it
                                 const title = clickedSlide.getAttribute('data-title');
                                 const year = clickedSlide.getAttribute('data-year');
                                 await navigateToMedia(title, year);
