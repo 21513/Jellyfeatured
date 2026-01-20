@@ -204,68 +204,43 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     function goToSlide(index) {
-        const slides = document.querySelectorAll('.featuredItem');
+        const slides = Array.from(document.querySelectorAll('.featuredItem'));
         const dots = document.querySelectorAll('.featuredDot');
-        
-        if (slides.length === 0 || index >= slides.length || index === currentSlide) return;
-        
-        const carouselContainer = document.getElementById('featured_items');
-        if (!carouselContainer) return;
-        
-        // Find the currently active slide
-        const currentActiveSlide = Array.from(slides).find(slide => slide.classList.contains('active'));
-        
-        // Remove active state from current slide
-        if (currentActiveSlide) {
-            currentActiveSlide.classList.remove('active');
-            
-            // Switch to poster
-            const posterUrl = currentActiveSlide.getAttribute('data-poster-url');
+
+        if (slides.length === 0) return;
+
+        // If requested index is out of range or already active, ignore
+        if (index < 0 || index >= recommendations.length || index === currentSlide) return;
+
+        // Deactivate all slides and switch them to poster background
+        slides.forEach(slide => {
+            slide.classList.remove('active');
+            const posterUrl = slide.getAttribute('data-poster-url');
             if (posterUrl) {
-                currentActiveSlide.style.background = `url("${posterUrl}")`;
-                currentActiveSlide.style.backgroundSize = 'cover';
-                currentActiveSlide.style.backgroundPosition = 'center';
+                slide.style.background = `url("${posterUrl}")`;
+                slide.style.backgroundSize = 'cover';
+                slide.style.backgroundPosition = 'center';
             }
+        });
+
+        // Find the slide with the matching original data-index and activate it
+        const targetSlide = slides.find(s => parseInt(s.getAttribute('data-index')) === index);
+        if (!targetSlide) return;
+
+        // Activate target and switch to backdrop if available
+        targetSlide.classList.add('active');
+        const backdropUrl = targetSlide.getAttribute('data-backdrop-url');
+        if (backdropUrl) {
+            targetSlide.style.background = `url("${backdropUrl}")`;
+            targetSlide.style.backgroundSize = 'cover';
+            targetSlide.style.backgroundPosition = 'center';
         }
-        
-        // Reorder slides: move items before the target index to the end
-        if (index > 0) {
-            const slidesArray = Array.from(document.querySelectorAll('.featuredItem'));
-            const itemsToMove = slidesArray.slice(0, index);
-            
-            // Move each item to the end
-            itemsToMove.forEach(slide => {
-                carouselContainer.appendChild(slide);
-            });
-            
-            // Update index to 0 since the active item is now first
-            index = 0;
-        }
-        
-        // Get updated slides after reordering
-        const updatedSlides = document.querySelectorAll('.featuredItem');
-        const newActiveSlide = updatedSlides[index];
-        
-        if (newActiveSlide) {
-            // Update dots
-            const originalIndex = parseInt(newActiveSlide.getAttribute('data-index'));
-            dots.forEach(dot => dot.classList.remove('active'));
-            if (dots[originalIndex]) {
-                dots[originalIndex].classList.add('active');
-            }
-            
-            // Activate new slide
-            newActiveSlide.classList.add('active');
-            
-            // Switch to backdrop for active item
-            const backdropUrl = newActiveSlide.getAttribute('data-backdrop-url');
-            if (backdropUrl) {
-                newActiveSlide.style.background = `url("${backdropUrl}")`;
-                newActiveSlide.style.backgroundSize = 'cover';
-                newActiveSlide.style.backgroundPosition = 'center';
-            }
-        }
-        
+
+        // Update dots (dots correspond to original indices)
+        dots.forEach(dot => dot.classList.remove('active'));
+        const matchingDot = Array.from(dots).find(d => parseInt(d.getAttribute('data-index')) === index);
+        if (matchingDot) matchingDot.classList.add('active');
+
         currentSlide = index;
     }
     
@@ -445,9 +420,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         let clickedSlide = e.target.closest('.featuredItem');
                         
                         if (clickedSlide) {
-                            // Get the current DOM position of the clicked slide
-                            const allSlides = Array.from(carouselContainer.querySelectorAll('.featuredItem'));
-                            const clickedIndex = allSlides.indexOf(clickedSlide);
+                            // Use the original data-index so ordering changes don't affect behavior
+                            const clickedIndex = parseInt(clickedSlide.getAttribute('data-index'));
                             
                             // If clicking a non-active item, make it active
                             if (!clickedSlide.classList.contains('active')) {
