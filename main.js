@@ -11,6 +11,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     let endX = 0;
     let endY = 0;
     let isSwiping = false;
+    let lastSwipeTime = 0;
     const minSwipeDistance = 50;
     const maxVerticalSwipe = 100;
     
@@ -292,77 +293,70 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         goToSlide(prevIndex);
     }
 
-    function handleTouchStart(e) {
-        const featuredDiv = document.getElementById('jellyfeatured_div');
-        if (!featuredDiv || !featuredDiv.contains(e.target)) {
-            return;
-        }
-        
-        const touch = e.touches[0] || e.changedTouches[0];
-        startX = touch.clientX;
-        startY = touch.clientY;
-        isSwiping = false;
-        pauseAutoSlide();
-    }
-    
-    function handleTouchMove(e) {
-        if (!startX || !startY) return;
-        
-        const featuredDiv = document.getElementById('jellyfeatured_div');
-        if (!featuredDiv || !featuredDiv.contains(e.target)) {
-            return;
-        }
-        
-        const touch = e.touches[0] || e.changedTouches[0];
-        endX = touch.clientX;
-        endY = touch.clientY;
-        
-        const deltaX = Math.abs(startX - endX);
-        const deltaY = Math.abs(startY - endY);
+    // Unified pointer-based swipe handlers for more consistent mobile UX
+    function initPointerSwipeHandlers(rootEl) {
+        if (!rootEl) return;
 
-        if (deltaX > 10) {
-            e.preventDefault();
-            e.stopPropagation();
-            isSwiping = true;
-        }
-    }
-    
-    function handleTouchEnd(e) {
-        if (!startX || !startY) {
-            return;
-        }
-        
-        const featuredDiv = document.getElementById('jellyfeatured_div');
-        if (!featuredDiv || !featuredDiv.contains(e.target)) {
-            startX = 0;
-            startY = 0;
-            endX = 0;
-            endY = 0;
+        let activePointerId = null;
+        let pointerStartX = 0;
+        let pointerStartY = 0;
+        let pointerStartTime = 0;
+
+        function onPointerDown(e) {
+            if (e.pointerType === 'mouse') return;
+            const featuredDiv = document.getElementById('jellyfeatured_div');
+            if (!featuredDiv || !featuredDiv.contains(e.target)) return;
+
+            activePointerId = e.pointerId;
+            try { e.target.setPointerCapture(activePointerId); } catch (er) {}
+
+            pointerStartX = e.clientX;
+            pointerStartY = e.clientY;
+            pointerStartTime = Date.now();
             isSwiping = false;
-            return;
+            pauseAutoSlide();
         }
-        
-        if (isSwiping) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const deltaX = startX - endX;
-            const deltaY = Math.abs(startY - endY);
 
-            if (Math.abs(deltaX) > minSwipeDistance && deltaY < maxVerticalSwipe) {
-                if (deltaX > 0) {
+        function onPointerMove(e) {
+            if (activePointerId !== e.pointerId) return;
+            const dx = e.clientX - pointerStartX;
+            const dy = e.clientY - pointerStartY;
+
+            if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
+                isSwiping = true;
+                try { e.preventDefault(); } catch (er) {}
+            }
+        }
+
+        function onPointerUp(e) {
+            if (activePointerId !== e.pointerId) return;
+            try { e.target.releasePointerCapture(activePointerId); } catch (er) {}
+
+            const dx = e.clientX - pointerStartX;
+            const dy = e.clientY - pointerStartY;
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+
+            if (absDx > minSwipeDistance && absDy < maxVerticalSwipe) {
+                // Left swipe -> next, Right swipe -> previous
+                if (dx < 0) {
                     nextSlide();
                 } else {
                     previousSlide();
                 }
+                lastSwipeTime = Date.now();
+                pauseAutoSlide();
             }
+
+            // reset
+            activePointerId = null;
+            isSwiping = false;
         }
-        
-        startX = 0;
-        startY = 0;
-        endX = 0;
-        endY = 0;
-        isSwiping = false;
+
+        rootEl.addEventListener('pointerdown', onPointerDown, { passive: true });
+        rootEl.addEventListener('pointermove', onPointerMove, { passive: false });
+        rootEl.addEventListener('pointerup', onPointerUp, { passive: true });
+        rootEl.addEventListener('pointercancel', onPointerUp, { passive: true });
     }
     
     function startAutoSlide() {
@@ -468,12 +462,19 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     currentSlide = 0;
 
                     carouselContainer.addEventListener('click', async (e) => {
+                        // Ignore clicks immediately after a swipe to avoid accidental navigation
+                        if (Date.now() - lastSwipeTime < 350) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return;
+                        }
+
                         let clickedSlide = e.target.closest('.featuredItem');
-                        
+
                         if (clickedSlide) {
                             const clickedIndex = parseInt(clickedSlide.getAttribute('data-index'));
                             const activeSlide = carouselContainer.querySelector('.featuredItem.active');
-                            
+
                             if (activeSlide !== clickedSlide) {
                                 goToSlide(clickedIndex, { instance: clickedSlide });
                                 pauseAutoSlide();
@@ -505,13 +506,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         }
                     });
 
-                    featuredDiv.addEventListener('touchstart', handleTouchStart, { passive: true });
-                    featuredDiv.addEventListener('touchmove', handleTouchMove, { passive: false });
-                    featuredDiv.addEventListener('touchend', handleTouchEnd, { passive: false });
-
-                    carouselContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
-                    carouselContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
-                    carouselContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
+                    // Use pointer-based swipe handlers for better mobile consistency
+                    try { initPointerSwipeHandlers(featuredDiv); } catch (e) {}
+                    try { initPointerSwipeHandlers(carouselContainer); } catch (e) {}
 
                     setTimeout(startAutoSlide, 2000);
 
