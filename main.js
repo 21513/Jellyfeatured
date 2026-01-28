@@ -404,20 +404,25 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     async function createFeaturedCarousel() {
-        if (document.getElementById('jellyfeatured_div')) return;
-        
+        // Prevent duplicate/concurrent injections
+        if (document.getElementById('jellyfeatured_div') || document.body.dataset.jellyfeaturedInserting === 'true') return;
+
         const pathname = window.location.pathname;
         if (!pathname.includes('home') && pathname !== '/' && pathname !== '/web/' && pathname !== '/web/index.html') {
             return;
         }
-        
+
         const targetContainer = document.querySelector('.homePage');
         if (!targetContainer) return;
-        
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlTemplate;
-        const featuredDiv = tempDiv.firstElementChild;
-            
+
+        // Mark that an insertion is in progress so parallel calls bail out
+        document.body.dataset.jellyfeaturedInserting = 'true';
+
+        try {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlTemplate;
+            const featuredDiv = tempDiv.firstElementChild;
+
             if (featuredDiv) {
                 const carouselContainer = featuredDiv.querySelector('#featured_items');
                 const dotsContainer = featuredDiv.querySelector('#featuredDots');
@@ -527,6 +532,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 
                 targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
             }
+        } finally {
+            try { delete document.body.dataset.jellyfeaturedInserting; } catch (e) { document.body.removeAttribute('data-jellyfeatured-inserting'); }
+        }
     }
 
     let initAttempts = 0;
