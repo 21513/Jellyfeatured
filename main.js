@@ -236,18 +236,33 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
                 if (carouselContainer.dataset.appendedForLast === 'true') return;
 
-                if (index === originalCount - 1) {
-                    for (let i = 0; i < originalCount; i++) {
-                        const src = Array.from(carouselContainer.querySelectorAll('.featuredItem')).find(s => parseInt(s.getAttribute('data-index')) === i);
-                        if (src) {
-                            const clone = src.cloneNode(true);
-                            clone.classList.remove('active', 'entering', 'exiting');
-                            clone.setAttribute('data-clone', 'true');
-                            carouselContainer.appendChild(clone);
+                    if (index === originalCount - 1) {
+                        for (let i = 0; i < originalCount; i++) {
+                            const src = Array.from(carouselContainer.querySelectorAll('.featuredItem')).find(s => parseInt(s.getAttribute('data-index')) === i);
+                            if (src) {
+                                const clone = src.cloneNode(true);
+                                clone.classList.remove('active', 'entering', 'exiting');
+                                clone.setAttribute('data-clone', 'true');
+
+                                // Ensure clones use the poster image (if available) instead of inheriting
+                                // the active slide's backdrop which may have been applied inline.
+                                try {
+                                    const posterUrl = clone.getAttribute('data-poster-url');
+                                    if (posterUrl) {
+                                        clone.style.background = `url("${posterUrl}")`;
+                                        clone.style.backgroundSize = 'cover';
+                                        clone.style.backgroundPosition = 'center';
+                                        clone.style.backgroundRepeat = 'no-repeat';
+                                    } else {
+                                        clone.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+                                    }
+                                } catch (e) {}
+
+                                carouselContainer.appendChild(clone);
+                            }
                         }
+                        carouselContainer.dataset.appendedForLast = 'true';
                     }
-                    carouselContainer.dataset.appendedForLast = 'true';
-                }
             } catch (e) {
                 // ignore
             }
@@ -475,6 +490,21 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                             const clone = origSlide.cloneNode(true);
                             clone.classList.remove('active', 'entering', 'exiting');
                             clone.setAttribute('data-clone', 'initial');
+
+                            // Ensure clones use the poster image (if available) instead of inheriting
+                            // the active slide's backdrop which may have been applied inline.
+                            try {
+                                const posterUrl = clone.getAttribute('data-poster-url');
+                                if (posterUrl) {
+                                    clone.style.background = `url("${posterUrl}")`;
+                                    clone.style.backgroundSize = 'cover';
+                                    clone.style.backgroundPosition = 'center';
+                                    clone.style.backgroundRepeat = 'no-repeat';
+                                } else {
+                                    clone.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+                                }
+                            } catch (e) {}
+
                             carouselContainer.appendChild(clone);
                         });
                         carouselContainer.dataset.initialCloned = 'true';
