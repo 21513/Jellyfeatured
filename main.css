@@ -1,5 +1,5 @@
 .featuredItem:hover {
-    transform: scale(1.02);
+    transform: scale(1.01);
     border: var(--borderWidthDouble) solid white;
     transition: 125ms ease-in-out;
 }

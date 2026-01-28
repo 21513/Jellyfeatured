@@ -12,6 +12,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     let endY = 0;
     let isSwiping = false;
     let lastSwipeTime = 0;
+    let lastDragTime = 0;
     const minSwipeDistance = 50;
     const maxVerticalSwipe = 100;
     
@@ -482,8 +483,9 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     currentSlide = 0;
 
                     carouselContainer.addEventListener('click', async (e) => {
-                        // Ignore clicks immediately after a swipe to avoid accidental navigation
-                        if (Date.now() - lastSwipeTime < 350) {
+                        // Ignore clicks immediately after a swipe or drag to avoid accidental navigation
+                        const now = Date.now();
+                        if (now - lastSwipeTime < 350 || now - lastDragTime < 350) {
                             e.preventDefault();
                             e.stopPropagation();
                             return;
@@ -529,6 +531,81 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     // Use pointer-based swipe handlers for better mobile consistency
                     try { initPointerSwipeHandlers(featuredDiv); } catch (e) {}
                     try { initPointerSwipeHandlers(carouselContainer); } catch (e) {}
+
+                    // Desktop: click-and-drag scrolling (mouse) with click-suppression after drag
+                    try {
+                        let isMouseDown = false;
+                        let mouseStartX = 0;
+                        let mouseScrollStart = 0;
+                        let isDraggingMouse = false;
+                        let desiredScrollLeft = null;
+                        let rafId = null;
+
+                        function applyScroll() {
+                            if (rafId) {
+                                rafId = requestAnimationFrame(() => {
+                                    if (desiredScrollLeft !== null) {
+                                        carouselContainer.scrollLeft = Math.round(desiredScrollLeft);
+                                        lastDragTime = Date.now();
+                                    }
+                                    rafId = null;
+                                });
+                            } else {
+                                rafId = requestAnimationFrame(() => {
+                                    if (desiredScrollLeft !== null) {
+                                        carouselContainer.scrollLeft = Math.round(desiredScrollLeft);
+                                        lastDragTime = Date.now();
+                                    }
+                                    rafId = null;
+                                });
+                            }
+                        }
+
+                        function onMouseDown(e) {
+                            if (e.button !== 0) return;
+                            const featuredDiv = document.getElementById('jellyfeatured_div');
+                            if (!featuredDiv || !featuredDiv.contains(e.target)) return;
+
+                            isMouseDown = true;
+                            mouseStartX = e.clientX;
+                            mouseScrollStart = carouselContainer.scrollLeft;
+                            isDraggingMouse = false;
+                            desiredScrollLeft = null;
+                            pauseAutoSlide();
+                            try { document.body.style.userSelect = 'none'; } catch (er) {}
+                            try { carouselContainer.style.cursor = 'grabbing'; } catch (er) {}
+                        }
+
+                        function onMouseMove(e) {
+                            if (!isMouseDown) return;
+                            const dx = e.clientX - mouseStartX;
+                            if (!isDraggingMouse && Math.abs(dx) > 5) {
+                                isDraggingMouse = true;
+                            }
+                            if (isDraggingMouse) {
+                                desiredScrollLeft = mouseScrollStart - dx;
+                                applyScroll();
+                                try { e.preventDefault(); } catch (er) {}
+                            }
+                        }
+
+                        function onMouseUp(e) {
+                            if (!isMouseDown) return;
+                            isMouseDown = false;
+                            // only record drag time if an actual drag occurred
+                            if (isDraggingMouse) {
+                                lastDragTime = Date.now();
+                            }
+                            isDraggingMouse = false;
+                            desiredScrollLeft = null;
+                            try { document.body.style.userSelect = ''; } catch (er) {}
+                            try { carouselContainer.style.cursor = ''; } catch (er) {}
+                        }
+
+                        carouselContainer.addEventListener('mousedown', onMouseDown, { passive: true });
+                        document.addEventListener('mousemove', onMouseMove, { passive: false });
+                        document.addEventListener('mouseup', onMouseUp, { passive: true });
+                    } catch (e) {}
 
                     setTimeout(startAutoSlide, 2000);
 
