@@ -146,8 +146,8 @@
     .slideRating { font-size: 0.7rem; padding: 3px 6px; }
     .featuredLogoContainer { display: none; }
 
-    #featured_items { column-gap: 0; }
-    .featuredItem { margin-right: var(--itemColumnGap); }
+    #featured_items { column-gap: 0; padding-bottom: 2em;}
+    .featuredItem { padding-right: var(--itemColumnGap); }
 }
 
 @media (max-width: 50em) {
