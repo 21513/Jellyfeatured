@@ -638,6 +638,57 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         }
     }
 
+    // Refresh handler: remove existing featured div and re-run initialization
+    function refreshFeatured() {
+        try {
+            const existing = document.getElementById('jellyfeatured_div');
+            if (existing) existing.remove();
+        } catch (e) {}
+
+        // clear insertion flag if set
+        try { delete document.body.dataset.jellyfeaturedInserting; } catch (e) { try { document.body.removeAttribute('data-jellyfeatured-inserting'); } catch (er) {} }
+
+        // schedule a recreate
+        setTimeout(() => {
+            try { createFeaturedCarousel(); } catch (e) {}
+        }, 100);
+    }
+
+    // Listen for manual refresh requests via localStorage (cross-window)
+    window.addEventListener('storage', (e) => {
+        if (!e) return;
+        if (e.key === 'jellyfeatured_refresh') {
+            try { refreshFeatured(); } catch (err) {}
+        }
+    });
+
+    // BroadcastChannel listener for immediate same-origin delivery (and polling fallback)
+    try {
+        try {
+            const bc = new BroadcastChannel('jellyfeatured');
+            bc.addEventListener('message', (ev) => {
+                try {
+                    if (ev && ev.data && ev.data.type === 'refresh') {
+                        refreshFeatured();
+                    }
+                } catch (e) {}
+            });
+        } catch (e) {}
+
+        // Poll localStorage as a fallback in case storage events are missed
+        let lastSeenRefresh = null;
+        try { lastSeenRefresh = localStorage.getItem('jellyfeatured_refresh'); } catch (e) { lastSeenRefresh = null; }
+        setInterval(() => {
+            try {
+                const v = localStorage.getItem('jellyfeatured_refresh');
+                if (v && v !== lastSeenRefresh) {
+                    lastSeenRefresh = v;
+                    refreshFeatured();
+                }
+            } catch (e) {}
+        }, 1000);
+    } catch (e) {}
+
     let initAttempts = 0;
     const maxInitAttempts = 10;
     

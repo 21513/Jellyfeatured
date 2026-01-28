@@ -170,6 +170,21 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         }
     }
 
+    /// <summary>
+    /// Public trigger to refresh recommendations on demand (called by controller).
+    /// </summary>
+    public async Task TriggerRefresh()
+    {
+        try
+        {
+            await RefreshRecommendationsAsync(_applicationPaths);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "TriggerRefresh failed");
+        }
+    }
+
     private async Task InitializePluginAsync(IApplicationPaths applicationPaths)
     {
         try

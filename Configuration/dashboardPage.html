@@ -15,6 +15,52 @@
                 <p class="settingsDescription">
                     There are currently no configurable settings for this plugin.
                 </p>
+                <div class="settingsActions" style="margin-top:16px;">
+                    <button id="jellyfeatured-refresh-btn" class="btn">Refresh featured items</button>
+                    <span id="jellyfeatured-refresh-status" style="margin-left:12px;color:#666;font-size:0.9rem;"></span>
+                </div>
+                <script>
+                    (function(){
+                        const btn = document.getElementById('jellyfeatured-refresh-btn');
+                        const status = document.getElementById('jellyfeatured-refresh-status');
+                        if (!btn) return;
+                        btn.addEventListener('click', async () => {
+                            try {
+                                status.textContent = 'Requesting refresh...';
+
+                                // First try server-side refresh endpoint
+                                try {
+                                    const resp = await fetch('/plugins/jellyfeatured/refresh', {
+                                        method: 'POST',
+                                        credentials: 'same-origin',
+                                        headers: { 'Content-Type': 'application/json' }
+                                    });
+
+                                    if (resp.ok) {
+                                        status.textContent = 'Refresh started on server';
+                                        setTimeout(() => { status.textContent = ''; }, 2500);
+                                        return;
+                                    }
+                                } catch (e) {
+                                    // fall back to localStorage + BroadcastChannel
+                                }
+
+                                const ts = Date.now().toString();
+                                localStorage.setItem('jellyfeatured_refresh', ts);
+                                try {
+                                    const bc = new BroadcastChannel('jellyfeatured');
+                                    bc.postMessage({ type: 'refresh', ts });
+                                } catch (e) {}
+
+                                status.textContent = 'Refresh requested (fallback)';
+                                setTimeout(() => { status.textContent = ''; }, 2500);
+                            } catch (e) {
+                                status.textContent = 'Unable to request refresh';
+                                setTimeout(() => { status.textContent = ''; }, 2500);
+                            }
+                        });
+                    })();
+                </script>
             </div>
         </div>
     </div>
