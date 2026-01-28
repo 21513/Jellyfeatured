@@ -1,4 +1,4 @@
-const recommendations = [{{RECOMMENDATIONS_DATA}}];
+const recommendations = JSON.parse(`{{RECOMMENDATIONS_DATA_JSON}}`);
 const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
 (function() {
@@ -123,35 +123,54 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         `;
 
         try {
-            const item = await searchForItem(recommendation.title, recommendation.year);
-            
+            const apiKey = getJellyfinApiKey();
+            const baseUrl = getJellyfinBaseUrl();
+            let item = null;
+
+            if (recommendation.id && apiKey) {
+                try {
+                    const url = `${baseUrl}/Items/${encodeURIComponent(recommendation.id)}?Fields=PrimaryImageAspectRatio,BackdropImageTags,ImageTags&ImageTypeLimit=1&EnableImageTypes=Primary,Backdrop,Logo&api_key=${apiKey}`;
+                    const resp = await fetch(url);
+                    if (resp.ok) item = await resp.json();
+                } catch (er) {
+                    // ignore
+                }
+            }
+
+            if (!item && apiKey) {
+                item = await searchForItem(recommendation.title, recommendation.year);
+            }
+
             if (item) {
-                const apiKey = getJellyfinApiKey();
-                const baseUrl = getJellyfinBaseUrl();
+                try {
+                    if (recommendation.id) slide.setAttribute('data-id', recommendation.id);
 
-                if (item.ImageTags && item.ImageTags.Primary) {
-                    const posterUrl = `${baseUrl}/Items/${item.Id}/Images/Primary?api_key=${apiKey}`;
-                    slide.setAttribute('data-poster-url', posterUrl);
-                }
-                
-                if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
-                    const backdropUrl = `${baseUrl}/Items/${item.Id}/Images/Backdrop?api_key=${apiKey}`;
-                    slide.setAttribute('data-backdrop-url', backdropUrl);
-                }
+                    if (item.ImageTags && item.ImageTags.Primary) {
+                        const posterUrl = `${baseUrl}/Items/${item.Id}/Images/Primary?api_key=${apiKey}`;
+                        slide.setAttribute('data-poster-url', posterUrl);
+                    }
 
-                const posterUrl = slide.getAttribute('data-poster-url');
-                if (posterUrl) {
-                    slide.style.background = `url("${posterUrl}")`;
-                    slide.style.backgroundSize = 'cover';
-                    slide.style.backgroundPosition = 'center';
-                    slide.style.backgroundRepeat = 'no-repeat';
-                }
-                
-                if (item.ImageTags && item.ImageTags.Logo) {
-                    const logoUrl = `${baseUrl}/Items/${item.Id}/Images/Logo?api_key=${apiKey}`;
-                    const logoImg = slide.querySelector('.featuredLogo');
-                    logoImg.src = logoUrl;
-                    logoImg.style.display = 'block';
+                    if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
+                        const backdropUrl = `${baseUrl}/Items/${item.Id}/Images/Backdrop?api_key=${apiKey}`;
+                        slide.setAttribute('data-backdrop-url', backdropUrl);
+                    }
+
+                    const posterUrl = slide.getAttribute('data-poster-url');
+                    if (posterUrl) {
+                        slide.style.background = `url("${posterUrl}")`;
+                        slide.style.backgroundSize = 'cover';
+                        slide.style.backgroundPosition = 'center';
+                        slide.style.backgroundRepeat = 'no-repeat';
+                    }
+
+                    if (item.ImageTags && item.ImageTags.Logo) {
+                        const logoUrl = `${baseUrl}/Items/${item.Id}/Images/Logo?api_key=${apiKey}`;
+                        const logoImg = slide.querySelector('.featuredLogo');
+                        logoImg.src = logoUrl;
+                        logoImg.style.display = 'block';
+                    }
+                } catch (e) {
+                    // ignore individual image assignment failures
                 }
             }
         } catch (e) {

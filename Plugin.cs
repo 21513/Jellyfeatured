@@ -272,15 +272,16 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
 
             var latestMovie = allItems
                 .OfType<Movie>()
-                .Where(m => m.PremiereDate.HasValue && HasRequiredImages(m))
+                .Where(m => m.PremiereDate.HasValue)
                 .OrderByDescending(m => m.PremiereDate)
-                .FirstOrDefault();
+                .FirstOrDefault(m => HasRequiredImages(m));
                 
             if (latestMovie != null)
             {
                 categoryItems["latestRelease"] = new RecommendationItem
                 {
                     Title = latestMovie.Name,
+                    Id = latestMovie.Id.ToString(),
                     Type = "Latest Release",
                     Year = latestMovie.PremiereDate?.Year.ToString() ?? "",
                     Rating = latestMovie.CommunityRating?.ToString("F1") ?? "N/A"
@@ -289,15 +290,15 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
 
             var recentAddedMovie = allItems
                 .OfType<Movie>()
-                .Where(m => HasRequiredImages(m))
                 .OrderByDescending(m => m.DateCreated)
-                .FirstOrDefault();
+                .FirstOrDefault(m => HasRequiredImages(m));
                 
             if (recentAddedMovie != null)
             {
                 categoryItems["recentlyAddedFilms"] = new RecommendationItem
                 {
                     Title = recentAddedMovie.Name,
+                    Id = recentAddedMovie.Id.ToString(),
                     Type = "Recently Added in Films",
                     Year = recentAddedMovie.PremiereDate?.Year.ToString() ?? "",
                     Rating = recentAddedMovie.CommunityRating?.ToString("F1") ?? "N/A"
@@ -306,15 +307,15 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             
             var recentAddedShow = allItems
                 .OfType<Series>()
-                .Where(s => HasRequiredImages(s))
                 .OrderByDescending(s => s.DateCreated)
-                .FirstOrDefault();
+                .FirstOrDefault(s => HasRequiredImages(s));
                 
             if (recentAddedShow != null)
             {
                 categoryItems["recentlyAddedSeries"] = new RecommendationItem
                 {
                     Title = recentAddedShow.Name,
+                    Id = recentAddedShow.Id.ToString(),
                     Type = "Recently Added in Series",
                     Year = recentAddedShow.PremiereDate?.Year.ToString() ?? "",
                     Rating = recentAddedShow.CommunityRating?.ToString("F1") ?? "N/A"
@@ -323,15 +324,16 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             
             var bestMovie = allItems
                 .OfType<Movie>()
-                .Where(m => m.CommunityRating.HasValue && m.CommunityRating > 0 && m.CommunityRating < 10.0 && HasRequiredImages(m))
+                .Where(m => m.CommunityRating.HasValue && m.CommunityRating > 0 && m.CommunityRating < 10.0)
                 .OrderByDescending(m => m.CommunityRating)
-                .FirstOrDefault();
+                .FirstOrDefault(m => HasRequiredImages(m));
                 
             if (bestMovie != null)
             {
                 categoryItems["bestRatedFilms"] = new RecommendationItem
                 {
                     Title = bestMovie.Name,
+                    Id = bestMovie.Id.ToString(),
                     Type = "Best Rated in Films",
                     Year = bestMovie.PremiereDate?.Year.ToString() ?? "",
                     Rating = bestMovie.CommunityRating?.ToString("F1") ?? "N/A"
@@ -340,15 +342,16 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             
             var bestShow = allItems
                 .OfType<Series>()
-                .Where(s => s.CommunityRating.HasValue && s.CommunityRating > 0 && s.CommunityRating < 10.0 && HasRequiredImages(s))
+                .Where(s => s.CommunityRating.HasValue && s.CommunityRating > 0 && s.CommunityRating < 10.0)
                 .OrderByDescending(s => s.CommunityRating)
-                .FirstOrDefault();
+                .FirstOrDefault(s => HasRequiredImages(s));
                 
             if (bestShow != null)
             {
                 categoryItems["bestRatedSeries"] = new RecommendationItem
                 {
                     Title = bestShow.Name,
+                    Id = bestShow.Id.ToString(),
                     Type = "Best Rated in Series",
                     Year = bestShow.PremiereDate?.Year.ToString() ?? "",
                     Rating = bestShow.CommunityRating?.ToString("F1") ?? "N/A"
@@ -376,6 +379,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                                 adminPickItems.Add(new RecommendationItem
                                 {
                                     Title = item.Name,
+                                        Id = item.Id.ToString(),
                                     Type = "Admin's Pick",
                                     Year = item.PremiereDate?.Year.ToString() ?? "",
                                     Rating = item.CommunityRating?.ToString("F1") ?? "N/A"
@@ -465,12 +469,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             var jsInject = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.js");
             var cssInject = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.css");
 
-            var recommendationsJs = string.Join(",\n        ", recommendations.Select(r => 
-                $"{{ title: '{EscapeJs(r.Title)}', type: '{EscapeJs(r.Type)}', year: '{EscapeJs(r.Year)}', rating: '{EscapeJs(r.Rating)}' }}"));
+            // Emit recommendations as JSON so the injected script can safely parse it.
+            var recommendationsJson = JsonSerializer.Serialize(recommendations, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
             var processedHtml = htmlInject.Replace("{{CSS_STYLES}}", cssInject);
             var scriptContent = jsInject
-                .Replace("{{RECOMMENDATIONS_DATA}}", recommendationsJs)
+                .Replace("{{RECOMMENDATIONS_DATA_JSON}}", recommendationsJson)
                 .Replace("{{HTML_TEMPLATE}}", EscapeJs(processedHtml));
             
             await File.WriteAllTextAsync(webPath, scriptContent);
@@ -609,4 +613,5 @@ public class RecommendationItem
     public string Type { get; set; } = "";
     public string Year { get; set; } = "";
     public string Rating { get; set; } = "";
+    public string Id { get; set; } = "";
 }
