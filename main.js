@@ -92,19 +92,24 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 const baseUrl = getJellyfinBaseUrl();
                 try {
                     const endpoint = `${baseUrl}/Items/${item.Id}/Images/Backdrop`;
-                    if (apiKey) {
-                        const resp = await fetch(endpoint, { headers: { 'X-Emby-Token': apiKey } });
+                    // Prefer using the api_key query parameter (avoids custom header issues in embedded webviews)
+                    const endpointWithKey = apiKey ? `${endpoint}?api_key=${encodeURIComponent(apiKey)}` : endpoint;
+                    try {
+                        const resp = await fetch(endpointWithKey);
                         if (resp.ok) {
                             const blob = await resp.blob();
                             return `url("${URL.createObjectURL(blob)}")`;
                         }
+                    } catch (e) {
+                        // fallthrough to return endpoint url for browser to load directly
                     }
 
-                    return `url("${endpoint}")`;
+                    return `url("${endpointWithKey}")`;
                 } catch (e) {
                     return `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
                 }
             }
+            return null;
         }).catch(() => {
             return `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
         });
@@ -114,18 +119,21 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     async function fetchImageForDisplay(itemId, imageType, apiKey, baseUrl) {
         try {
             const endpoint = `${baseUrl}/Items/${itemId}/Images/${imageType}`;
-            if (apiKey) {
-                try {
-                    const resp = await fetch(endpoint, { headers: { 'X-Emby-Token': apiKey } });
-                    if (resp.ok) {
-                        const blob = await resp.blob();
-                        return URL.createObjectURL(blob);
-                    }
-                } catch (e) {
-                    // Fallthrough to return endpoint
+            const endpointWithKey = apiKey ? `${endpoint}?api_key=${encodeURIComponent(apiKey)}` : endpoint;
+
+            // Try fetching the image via the api_key query parameter (many embedded webviews block custom headers)
+            try {
+                const resp = await fetch(endpointWithKey);
+                if (resp.ok) {
+                    const blob = await resp.blob();
+                    return URL.createObjectURL(blob);
                 }
+            } catch (e) {
+                // If fetch fails (CORS or other), fall back to returning the direct URL so the browser
+                // can attempt to load it normally (which may work if cookies or server token handling is allowed).
             }
-            return endpoint;
+
+            return endpointWithKey;
         } catch (e) {
             return null;
         }

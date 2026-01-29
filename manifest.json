@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/21513/Jellyfeatured/refs/heads/main/thumbnail.jpg",
         "versions": [
             {
+                "version": "0.0.3.4",
+                "changelog": "Fixed images not showing up on the Windows app",
+                "targetAbi": "10.11.4.0",
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.3.4/Jellyfeatured-v0.0.3.4.zip",
+                "checksum": "a9ba4231013b8180b0e0077ac09556d3",
+                "timestamp": "2026-01-29T13:38:38Z"
+            },
+            {
                 "version": "0.0.3.3",
                 "changelog": "Fixed images not showing up on the Windows app; Block swiping on mobile devices",
                 "targetAbi": "10.11.4.0",
