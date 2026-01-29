@@ -86,15 +86,49 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     }
     
     function getBackdropImageUrl(title, year) {
-        return searchForItem(title, year).then(item => {
+        return searchForItem(title, year).then(async item => {
             if (item && item.BackdropImageTags && item.BackdropImageTags.length > 0) {
                 const apiKey = getJellyfinApiKey();
                 const baseUrl = getJellyfinBaseUrl();
-                return `url("${baseUrl}/Items/${item.Id}/Images/Backdrop?api_key=${apiKey}")`;
+                try {
+                    const endpoint = `${baseUrl}/Items/${item.Id}/Images/Backdrop`;
+                    if (apiKey) {
+                        const resp = await fetch(endpoint, { headers: { 'X-Emby-Token': apiKey } });
+                        if (resp.ok) {
+                            const blob = await resp.blob();
+                            return `url("${URL.createObjectURL(blob)}")`;
+                        }
+                    }
+
+                    return `url("${endpoint}")`;
+                } catch (e) {
+                    return `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+                }
             }
         }).catch(() => {
             return `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
         });
+    }
+
+    // Helper: fetch an image using token header when available and return either an object URL or the direct endpoint URL
+    async function fetchImageForDisplay(itemId, imageType, apiKey, baseUrl) {
+        try {
+            const endpoint = `${baseUrl}/Items/${itemId}/Images/${imageType}`;
+            if (apiKey) {
+                try {
+                    const resp = await fetch(endpoint, { headers: { 'X-Emby-Token': apiKey } });
+                    if (resp.ok) {
+                        const blob = await resp.blob();
+                        return URL.createObjectURL(blob);
+                    }
+                } catch (e) {
+                    // Fallthrough to return endpoint
+                }
+            }
+            return endpoint;
+        } catch (e) {
+            return null;
+        }
     }
     
     async function createCarouselSlide(recommendation, index) {
@@ -146,13 +180,13 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     if (recommendation.id) slide.setAttribute('data-id', recommendation.id);
 
                     if (item.ImageTags && item.ImageTags.Primary) {
-                        const posterUrl = `${baseUrl}/Items/${item.Id}/Images/Primary?api_key=${apiKey}`;
-                        slide.setAttribute('data-poster-url', posterUrl);
+                        const posterImg = await fetchImageForDisplay(item.Id, 'Primary', apiKey, baseUrl);
+                        if (posterImg) slide.setAttribute('data-poster-url', posterImg);
                     }
 
                     if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
-                        const backdropUrl = `${baseUrl}/Items/${item.Id}/Images/Backdrop?api_key=${apiKey}`;
-                        slide.setAttribute('data-backdrop-url', backdropUrl);
+                        const backdropImg = await fetchImageForDisplay(item.Id, 'Backdrop', apiKey, baseUrl);
+                        if (backdropImg) slide.setAttribute('data-backdrop-url', backdropImg);
                     }
 
                     const posterUrl = slide.getAttribute('data-poster-url');
@@ -164,10 +198,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                     }
 
                     if (item.ImageTags && item.ImageTags.Logo) {
-                        const logoUrl = `${baseUrl}/Items/${item.Id}/Images/Logo?api_key=${apiKey}`;
+                        const logoImgSrc = await fetchImageForDisplay(item.Id, 'Logo', apiKey, baseUrl);
                         const logoImg = slide.querySelector('.featuredLogo');
-                        logoImg.src = logoUrl;
-                        logoImg.style.display = 'block';
+                        if (logoImgSrc) {
+                            logoImg.src = logoImgSrc;
+                            logoImg.style.display = 'block';
+                        }
                     }
                 } catch (e) {
                     // ignore individual image assignment failures
@@ -345,6 +381,11 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             activePointerId = e.pointerId;
             try { e.target.setPointerCapture(activePointerId); } catch (er) {}
 
+            // Prevent the browser from pan/scrolling while we detect a horizontal swipe
+            try { e.preventDefault(); } catch (er) {}
+            try { e.stopPropagation(); } catch (er) {}
+            try { featuredDiv.style.touchAction = 'none'; } catch (er) {}
+
             pointerStartX = e.clientX;
             pointerStartY = e.clientY;
             pointerStartTime = Date.now();
@@ -360,6 +401,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
                 isSwiping = true;
                 try { e.preventDefault(); } catch (er) {}
+                try { e.stopPropagation(); } catch (er) {}
             }
         }
 
@@ -386,12 +428,14 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             // reset
             activePointerId = null;
             isSwiping = false;
+            try { const featuredDiv = document.getElementById('jellyfeatured_div'); if (featuredDiv) featuredDiv.style.touchAction = ''; } catch (er) {}
         }
 
-        rootEl.addEventListener('pointerdown', onPointerDown, { passive: true });
+        // Use non-passive listeners so we can call preventDefault() to stop page scrolling
+        rootEl.addEventListener('pointerdown', onPointerDown, { passive: false });
         rootEl.addEventListener('pointermove', onPointerMove, { passive: false });
-        rootEl.addEventListener('pointerup', onPointerUp, { passive: true });
-        rootEl.addEventListener('pointercancel', onPointerUp, { passive: true });
+        rootEl.addEventListener('pointerup', onPointerUp, { passive: false });
+        rootEl.addEventListener('pointercancel', onPointerUp, { passive: false });
     }
     
     function startAutoSlide() {
