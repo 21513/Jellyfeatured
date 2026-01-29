@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/21513/Jellyfeatured/refs/heads/main/thumbnail.jpg",
         "versions": [
             {
+                "version": "0.0.3.3",
+                "changelog": "Fixed images not showing up on the Windows app; Block swiping on mobile devices",
+                "targetAbi": "10.11.4.0",
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.3.3/Jellyfeatured-v0.0.3.3.zip",
+                "checksum": "a8d7d909b8b9ea8ad7fd18047ce44df9",
+                "timestamp": "2026-01-28T13:23:27Z"
+            },
+            {
                 "version": "0.0.3.2",
                 "changelog": "Updated appearance; Fixed minor bugs; Improved scrolling on mobile devices; Fixed missing media items; Added scrolling on PC; Added dashboard button: refresh",
                 "targetAbi": "10.11.4.0",
