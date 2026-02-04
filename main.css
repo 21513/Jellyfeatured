@@ -147,7 +147,7 @@
     .featuredLogoContainer { display: none; }
 
     #featured_items { column-gap: 0; padding-bottom: 2em;}
-    .featuredItem { margin-right: calc(var(--itemColumnGap) * 0.5);}
+    .featuredItem { margin-right: 16px;}
 }
 
 @media (max-width: 50em) {
