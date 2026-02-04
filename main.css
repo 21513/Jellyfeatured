@@ -8,7 +8,7 @@
     position: relative;
     font-family: "Inter", sans-serif;
     height: 50vh;
-    touch-action: pan-y;
+    touch-action: manipulation;
     display: flex;
     overflow: visible;
     pointer-events: auto;
@@ -29,7 +29,6 @@
     padding-left: calc(var(--sidePadding) - .375em);
     padding-bottom: 1em;
     padding-top: 1em;
-    touch-action: pan-y;
 }
 
 #featured_items::-webkit-scrollbar { display: none; }
@@ -148,7 +147,7 @@
     .slideRating { font-size: 0.7rem; padding: 3px 6px; }
     .featuredLogoContainer { display: none; }
 
-    #featured_items { column-gap: 0; padding-bottom: 128px;}
+    #featured_items { column-gap: 0; padding-bottom: 128px; margin-bottom: 64px;}
     .featuredItem { margin-right: 8px;}
 }
 

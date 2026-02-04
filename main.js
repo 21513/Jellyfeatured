@@ -513,12 +513,6 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             activePointerId = e.pointerId;
             try { e.target.setPointerCapture(activePointerId); } catch (er) {}
 
-            // Prevent the browser from pan/scrolling and stop propagation to prevent Jellyfin navigation
-            try { e.preventDefault(); } catch (er) {}
-            try { e.stopPropagation(); } catch (er) {}
-            try { e.stopImmediatePropagation(); } catch (er) {}
-            try { featuredDiv.style.touchAction = 'none'; } catch (er) {}
-
             pointerStartX = e.clientX;
             pointerStartY = e.clientY;
             pointerStartTime = Date.now();
@@ -533,14 +527,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
             if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy)) {
                 isSwiping = true;
-                try { e.preventDefault(); } catch (er) {}
-                try { e.stopPropagation(); } catch (er) {}
-                try { e.stopImmediatePropagation(); } catch (er) {}
-            } else if (isSwiping) {
-                // Continue stopping propagation once horizontal swipe is detected
-                try { e.preventDefault(); } catch (er) {}
-                try { e.stopPropagation(); } catch (er) {}
-                try { e.stopImmediatePropagation(); } catch (er) {}
+                // Stop propagation to prevent Jellyfin's tab navigation from intercepting
+                e.stopPropagation();
             }
         }
 
@@ -562,21 +550,16 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 }
                 lastSwipeTime = Date.now();
                 pauseAutoSlide();
-                
-                // Stop propagation for completed swipe
-                try { e.preventDefault(); } catch (er) {}
-                try { e.stopPropagation(); } catch (er) {}
-                try { e.stopImmediatePropagation(); } catch (er) {}
+                // Stop propagation to prevent Jellyfin navigation
+                e.stopPropagation();
             } else if (isSwiping) {
-                // Even if swipe didn't meet threshold, stop propagation if we were tracking a swipe
-                try { e.stopPropagation(); } catch (er) {}
-                try { e.stopImmediatePropagation(); } catch (er) {}
+                // If horizontal movement was detected but didn't meet threshold, still stop propagation
+                e.stopPropagation();
             }
 
             // reset
             activePointerId = null;
             isSwiping = false;
-            try { const featuredDiv = document.getElementById('jellyfeatured_div'); if (featuredDiv) featuredDiv.style.touchAction = ''; } catch (er) {}
         }
 
         // Use non-passive listeners so we can call preventDefault() to stop page scrolling
