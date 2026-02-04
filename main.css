@@ -146,11 +146,8 @@
     .slideRating { font-size: 0.7rem; padding: 3px 6px; }
     .featuredLogoContainer { display: none; }
 
-     /* Use an explicit gap on small screens instead of relying on per-item padding,
-         which can collapse when font-size/em scales in some WebViews. */
-     #featured_items { column-gap: 0.75rem; padding-bottom: 2em; }
-     /* Remove right padding on items so the gap is controlled by column-gap */
-     .featuredItem { padding-right: 0; }
+    #featured_items { column-gap: 0; padding-bottom: 2em;}
+    .featuredItem { padding-right: calc(var(--itemColumnGap) * 10); }
 }
 
 @media (max-width: 50em) {
