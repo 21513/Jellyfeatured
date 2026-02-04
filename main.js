@@ -139,6 +139,106 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         }
     }
     
+    function createSkeletonSlide(index) {
+        const slide = document.createElement('div');
+        slide.className = 'featuredItem skeleton-loading';
+        slide.setAttribute('data-index', index);
+        slide.style.background = 'linear-gradient(135deg, #2a2a2a, #3a3a3a)';
+        slide.innerHTML = `
+            <div class="featuredContent">
+                <div class="featuredText">
+                    <div class="skeleton-title"></div>
+                    <div class="skeleton-subtitle"></div>
+                    <div class="skeleton-rating"></div>
+                </div>
+            </div>
+        `;
+        return slide;
+    }
+    
+    async function populateSlideWithData(slide, recommendation, index) {
+        slide.setAttribute('data-title', recommendation.title);
+        slide.setAttribute('data-year', recommendation.year || '');
+        slide.setAttribute('tabindex', '0');
+        slide.setAttribute('role', 'button');
+        slide.setAttribute('aria-label', `View ${recommendation.title}`);
+
+        slide.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+
+        slide.innerHTML = `
+            <div class="featuredContent">
+                <div class="featuredLogoContainer">
+                    <img class="featuredLogo" style="display: none;" alt="${recommendation.title} logo" />
+                </div>
+                <div class="featuredText">
+                    <div class="featuredTitle">${recommendation.title} ${recommendation.year ? '(' + recommendation.year + ')' : ''}</div>
+                    <div class="featuredSubtitle">${recommendation.type}</div>
+                    <div class="slideRating">⭐ ${recommendation.rating}</div>
+                </div>
+            </div>
+        `;
+
+        try {
+            const apiKey = getJellyfinApiKey();
+            const baseUrl = getJellyfinBaseUrl();
+            let item = null;
+
+            if (recommendation.id && apiKey) {
+                try {
+                    const url = `${baseUrl}/Items/${encodeURIComponent(recommendation.id)}?Fields=PrimaryImageAspectRatio,BackdropImageTags,ImageTags&ImageTypeLimit=1&EnableImageTypes=Primary,Backdrop,Logo&api_key=${apiKey}`;
+                    const resp = await fetch(url);
+                    if (resp.ok) item = await resp.json();
+                } catch (er) {
+                    // ignore
+                }
+            }
+
+            if (!item && apiKey) {
+                item = await searchForItem(recommendation.title, recommendation.year);
+            }
+
+            if (item) {
+                try {
+                    if (recommendation.id) slide.setAttribute('data-id', recommendation.id);
+
+                    if (item.ImageTags && item.ImageTags.Primary) {
+                        const posterImg = await fetchImageForDisplay(item.Id, 'Primary', apiKey, baseUrl);
+                        if (posterImg) slide.setAttribute('data-poster-url', posterImg);
+                    }
+
+                    if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
+                        const backdropImg = await fetchImageForDisplay(item.Id, 'Backdrop', apiKey, baseUrl);
+                        if (backdropImg) slide.setAttribute('data-backdrop-url', backdropImg);
+                    }
+
+                    const posterUrl = slide.getAttribute('data-poster-url');
+                    if (posterUrl) {
+                        slide.style.background = `url("${posterUrl}")`;
+                        slide.style.backgroundSize = 'cover';
+                        slide.style.backgroundPosition = 'center';
+                        slide.style.backgroundRepeat = 'no-repeat';
+                    }
+
+                    if (item.ImageTags && item.ImageTags.Logo) {
+                        const logoImgSrc = await fetchImageForDisplay(item.Id, 'Logo', apiKey, baseUrl);
+                        const logoImg = slide.querySelector('.featuredLogo');
+                        if (logoImgSrc) {
+                            logoImg.src = logoImgSrc;
+                            logoImg.style.display = 'block';
+                        }
+                    }
+                } catch (e) {
+                    // ignore individual image assignment failures
+                }
+            }
+        } catch (e) {
+            // Failed to fetch item details
+        }
+        
+        // Remove skeleton class after data is loaded
+        slide.classList.remove('skeleton-loading');
+    }
+    
     async function createCarouselSlide(recommendation, index) {
         const slide = document.createElement('div');
         slide.className = 'featuredItem';
@@ -537,54 +637,86 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                         loadingSlide.remove();
                     }
                     
-                    const slidePromises = [];
+                    // First pass: Create and inject skeleton slides immediately
+                    const skeletonSlides = [];
                     for (let i = 0; i < recommendations.length; i++) {
-                        const rec = recommendations[i];
-                        slidePromises.push(createCarouselSlide(rec, i));
-                    }
-
-                    const slides = await Promise.all(slidePromises);
-
-                    slides.forEach((slide, index) => {
-                        carouselContainer.appendChild(slide);
-
-                        if (index === 0) {
-                            slide.classList.add('active');
-                            const backdropUrl = slide.getAttribute('data-backdrop-url');
-                            if (backdropUrl) {
-                                slide.style.background = `url("${backdropUrl}")`;
-                                slide.style.backgroundSize = 'cover';
-                                slide.style.backgroundPosition = 'center';
-                            }
+                        const skeleton = createSkeletonSlide(i);
+                        carouselContainer.appendChild(skeleton);
+                        skeletonSlides.push(skeleton);
+                        
+                        if (i === 0) {
+                            skeleton.classList.add('active');
                         }
-                    });
-
+                    }
+                    
+                    // Clone skeleton slides for infinite scroll effect
                     if (!carouselContainer.dataset.initialCloned) {
-                        slides.forEach((origSlide) => {
+                        skeletonSlides.forEach((origSlide) => {
                             const clone = origSlide.cloneNode(true);
                             clone.classList.remove('active', 'entering', 'exiting');
                             clone.setAttribute('data-clone', 'initial');
-
-                            // Ensure clones use the poster image (if available) instead of inheriting
-                            // the active slide's backdrop which may have been applied inline.
-                            try {
-                                const posterUrl = clone.getAttribute('data-poster-url');
-                                if (posterUrl) {
-                                    clone.style.background = `url("${posterUrl}")`;
-                                    clone.style.backgroundSize = 'cover';
-                                    clone.style.backgroundPosition = 'center';
-                                    clone.style.backgroundRepeat = 'no-repeat';
-                                } else {
-                                    clone.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
-                                }
-                            } catch (e) {}
-
                             carouselContainer.appendChild(clone);
                         });
                         carouselContainer.dataset.initialCloned = 'true';
                     }
-
+                    
                     currentSlide = 0;
+                    
+                    // Second pass: Populate slides with actual data asynchronously
+                    const populatePromises = [];
+                    for (let i = 0; i < recommendations.length; i++) {
+                        const rec = recommendations[i];
+                        const slide = skeletonSlides[i];
+                        populatePromises.push(populateSlideWithData(slide, rec, i));
+                    }
+                    
+                    // Wait for all data to be populated
+                    await Promise.all(populatePromises);
+                    
+                    // Update the first slide with backdrop if available
+                    const firstSlide = carouselContainer.querySelector('.featuredItem.active');
+                    if (firstSlide) {
+                        const backdropUrl = firstSlide.getAttribute('data-backdrop-url');
+                        if (backdropUrl) {
+                            firstSlide.style.background = `url("${backdropUrl}")`;
+                            firstSlide.style.backgroundSize = 'cover';
+                            firstSlide.style.backgroundPosition = 'center';
+                        }
+                    }
+                    
+                    // Update clones with actual data after original slides are populated
+                    const clones = carouselContainer.querySelectorAll('[data-clone="initial"]');
+                    clones.forEach((clone, idx) => {
+                        const originalSlide = skeletonSlides[idx];
+                        if (originalSlide) {
+                            // Copy attributes and styles
+                            clone.setAttribute('data-title', originalSlide.getAttribute('data-title'));
+                            clone.setAttribute('data-year', originalSlide.getAttribute('data-year'));
+                            clone.setAttribute('data-id', originalSlide.getAttribute('data-id') || '');
+                            clone.setAttribute('tabindex', '0');
+                            clone.setAttribute('role', 'button');
+                            clone.setAttribute('aria-label', originalSlide.getAttribute('aria-label'));
+                            
+                            const posterUrl = originalSlide.getAttribute('data-poster-url');
+                            const backdropUrl = originalSlide.getAttribute('data-backdrop-url');
+                            if (posterUrl) clone.setAttribute('data-poster-url', posterUrl);
+                            if (backdropUrl) clone.setAttribute('data-backdrop-url', backdropUrl);
+                            
+                            // Apply poster background
+                            if (posterUrl) {
+                                clone.style.background = `url("${posterUrl}")`;
+                                clone.style.backgroundSize = 'cover';
+                                clone.style.backgroundPosition = 'center';
+                                clone.style.backgroundRepeat = 'no-repeat';
+                            } else {
+                                clone.style.background = `linear-gradient(135deg, var(--darkerGradientPoint, #111827), var(--lighterGradientPoint, #1d2635))`;
+                            }
+                            
+                            // Copy innerHTML
+                            clone.innerHTML = originalSlide.innerHTML;
+                            clone.classList.remove('skeleton-loading');
+                        }
+                    });
 
                     carouselContainer.addEventListener('click', async (e) => {
                         // Ignore clicks immediately after a swipe or drag to avoid accidental navigation
