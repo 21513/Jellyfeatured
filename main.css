@@ -29,6 +29,7 @@
     padding-left: calc(var(--sidePadding) - .375em);
     padding-bottom: 1em;
     padding-top: 1em;
+    touch-action: pan-y;
 }
 
 #featured_items::-webkit-scrollbar { display: none; }
@@ -54,7 +55,7 @@
                 box-shadow 0.3s ease-out;
 }
 
-.featuredItem.active { aspect-ratio: 16 / 9; min-width: 0; }
+.featuredItem.active { aspect-ratio: 16 / 9; min-width: 0; max-width: 95vw; }
 
 .featuredItem::after {
     content: "";

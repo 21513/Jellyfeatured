@@ -350,12 +350,16 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 const computed = getComputedStyle(carouselContainer);
                 const paddingLeft = parseFloat(computed.paddingLeft) || 0;
 
+                // Calculate the center offset to center the active item
+                const containerCenter = containerRect.width / 2;
+                const slideCenter = slideRect.width / 2;
                 const delta = slideRect.left - containerRect.left;
-                const targetLeft = Math.max(0, Math.round(carouselContainer.scrollLeft + delta - paddingLeft));
+                const centerOffset = containerCenter - slideCenter;
+                const targetLeft = Math.max(0, Math.round(carouselContainer.scrollLeft + delta - centerOffset));
 
                 carouselContainer.scrollTo({ left: targetLeft, behavior: 'smooth' });
             } catch (e) {
-                try { targetSlide.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' }); } catch (er) {}
+                try { targetSlide.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch (er) {}
             }
         }
 
@@ -389,9 +393,10 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
             activePointerId = e.pointerId;
             try { e.target.setPointerCapture(activePointerId); } catch (er) {}
 
-            // Prevent the browser from pan/scrolling while we detect a horizontal swipe
+            // Prevent the browser from pan/scrolling and stop propagation to prevent Jellyfin navigation
             try { e.preventDefault(); } catch (er) {}
             try { e.stopPropagation(); } catch (er) {}
+            try { e.stopImmediatePropagation(); } catch (er) {}
             try { featuredDiv.style.touchAction = 'none'; } catch (er) {}
 
             pointerStartX = e.clientX;
@@ -410,6 +415,12 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 isSwiping = true;
                 try { e.preventDefault(); } catch (er) {}
                 try { e.stopPropagation(); } catch (er) {}
+                try { e.stopImmediatePropagation(); } catch (er) {}
+            } else if (isSwiping) {
+                // Continue stopping propagation once horizontal swipe is detected
+                try { e.preventDefault(); } catch (er) {}
+                try { e.stopPropagation(); } catch (er) {}
+                try { e.stopImmediatePropagation(); } catch (er) {}
             }
         }
 
@@ -431,6 +442,15 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 }
                 lastSwipeTime = Date.now();
                 pauseAutoSlide();
+                
+                // Stop propagation for completed swipe
+                try { e.preventDefault(); } catch (er) {}
+                try { e.stopPropagation(); } catch (er) {}
+                try { e.stopImmediatePropagation(); } catch (er) {}
+            } else if (isSwiping) {
+                // Even if swipe didn't meet threshold, stop propagation if we were tracking a swipe
+                try { e.stopPropagation(); } catch (er) {}
+                try { e.stopImmediatePropagation(); } catch (er) {}
             }
 
             // reset
