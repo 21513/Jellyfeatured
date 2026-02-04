@@ -10,11 +10,11 @@
         "versions": [
             {
                 "version": "0.0.3.8",
-                "changelog": "Fixed gaps for mobile devices",
+                "changelog": "(Actually) fixed gaps for mobile devices; Improved performance on mobile devices; Fixed margins on mobile devices; Blocked accidental swipes to the favorites tab on mobile devices",
                 "targetAbi": "10.11.4.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.3.8/Jellyfeatured-v0.0.3.8.zip",
-                "checksum": "9695b4b4658fc290c8e1b87534538c7b",
-                "timestamp": "2026-02-04T19:58:15Z"
+                "checksum": "2ebf125bbf4e64d3b5c66be8aecde695",
+                "timestamp": "2026-02-04T20:14:42Z"
             },
             {
                 "version": "0.0.3.7",
