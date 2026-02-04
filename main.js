@@ -118,8 +118,28 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     // Helper: fetch an image using token header when available and return either an object URL or the direct endpoint URL
     async function fetchImageForDisplay(itemId, imageType, apiKey, baseUrl) {
         try {
-            const endpoint = `${baseUrl}/Items/${itemId}/Images/${imageType}`;
-            const endpointWithKey = apiKey ? `${endpoint}?api_key=${encodeURIComponent(apiKey)}` : endpoint;
+            let endpoint = `${baseUrl}/Items/${itemId}/Images/${imageType}`;
+            
+            // Add quality constraints to speed up loading
+            const params = new URLSearchParams();
+            if (apiKey) params.append('api_key', apiKey);
+            
+            if (imageType === 'Backdrop') {
+                // Limit backdrops to 1080p (1920x1080)
+                params.append('maxWidth', '1920');
+                params.append('maxHeight', '1080');
+                params.append('quality', '85');
+            } else if (imageType === 'Primary') {
+                // Limit posters to max 1500px height
+                params.append('maxHeight', '1500');
+                params.append('quality', '85');
+            } else if (imageType === 'Logo') {
+                // Limit logos to reasonable size
+                params.append('maxHeight', '300');
+                params.append('quality', '90');
+            }
+            
+            const endpointWithKey = `${endpoint}?${params.toString()}`;
 
             // Try fetching the image via the api_key query parameter (many embedded webviews block custom headers)
             try {
