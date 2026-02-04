@@ -11,6 +11,7 @@
     touch-action: pan-y;
     display: flex;
     overflow: visible;
+    pointer-events: auto;
 }
 
 #featured_items {
@@ -146,8 +147,8 @@
     .slideRating { font-size: 0.7rem; padding: 3px 6px; }
     .featuredLogoContainer { display: none; }
 
-    #featured_items { column-gap: 0; padding-bottom: 2em;}
-    .featuredItem { margin-right: 16px;}
+    #featured_items { column-gap: 0; padding-bottom: 128px;}
+    .featuredItem { margin-right: 8px;}
 }
 
 @media (max-width: 50em) {
