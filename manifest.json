@@ -13,8 +13,8 @@
                 "changelog": "Fixed gaps for mobile devices",
                 "targetAbi": "10.11.4.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.3.6/Jellyfeatured-v0.0.3.6.zip",
-                "checksum": "c4612a2072dba666ca20b8ed3405983f",
-                "timestamp": "2026-02-04T19:33:39Z"
+                "checksum": "3fbf539abfc5331b69fffd05a4894181",
+                "timestamp": "2026-02-04T19:45:45Z"
             },
             {
                 "version": "0.0.3.5",
