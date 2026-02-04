@@ -500,25 +500,8 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
         document.body.dataset.jellyfeaturedInserting = 'true';
 
         try {
-            // Add a blocking overlay so users can't interact with the page
-            // while the featured carousel is being created and injected.
-            try {
-                const blocker = document.createElement('div');
-                blocker.id = 'jellyfeatured_blocker';
-                blocker.setAttribute('aria-hidden', 'true');
-                blocker.setAttribute('role', 'presentation');
-                Object.assign(blocker.style, {
-                    position: 'fixed',
-                    inset: '0',
-                    zIndex: '2147483646',
-                    background: 'transparent',
-                    cursor: 'wait',
-                    touchAction: 'none'
-                });
-                document.body.appendChild(blocker);
-            } catch (e) {
-                // ignore overlay failures
-            }
+            // Do not add a full-page blocking overlay; allow users to interact
+            // with the page while the featured carousel loads in the background.
 
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = htmlTemplate;
@@ -727,15 +710,10 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 
                 targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
 
-                // Remove the blocking overlay now that the featured content is inserted
-                try {
-                    const bl = document.getElementById('jellyfeatured_blocker');
-                    if (bl) bl.remove();
-                } catch (e) {}
+                // No full-page overlay used; nothing to remove here.
             }
         } finally {
             try { delete document.body.dataset.jellyfeaturedInserting; } catch (e) { document.body.removeAttribute('data-jellyfeatured-inserting'); }
-            try { const bl = document.getElementById('jellyfeatured_blocker'); if (bl) bl.remove(); } catch (e) {}
         }
     }
 
