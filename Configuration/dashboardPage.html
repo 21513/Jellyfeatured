@@ -27,6 +27,27 @@
                     </div>
 
                     <div class="inputContainer" style="margin-top:24px;">
+                        <label class="inputLabel">Admin's Pick</label>
+                        <div class="fieldDescription" style="margin-bottom:8px;">
+                            Search and select a movie or series to feature. Clear the field to remove the pick.
+                        </div>
+                        <div style="position:relative;max-width:420px;">
+                            <input id="jellyfeatured-pick-search"
+                                   type="text" placeholder="Search title..."
+                                   class="emby-input" style="width:100%;" autocomplete="off" />
+                            <ul id="jellyfeatured-pick-dropdown" style="
+                                list-style:none;margin:0;padding:0;
+                                position:absolute;left:0;right:0;z-index:100;
+                                display:none;
+                                background:var(--cardBackground,#1f1f1f);
+                                border:1px solid var(--dividerColor,#333);
+                                border-radius:0 0 4px 4px;
+                                max-height:220px;overflow-y:auto;
+                            "></ul>
+                        </div>
+                    </div>
+
+                    <div class="inputContainer" style="margin-top:24px;">
                         <label class="inputLabel">Featured item order</label>
                         <div class="fieldDescription" style="margin-bottom:8px;">
                             Drag to reorder. Uncheck to hide a category.
@@ -35,14 +56,14 @@
                             list-style:none; margin:0; padding:0;
                             max-width:420px;
                         "></ul>
+                        <button id="jellyfeatured-refresh-btn" type="button" class="emby-button" style="margin-top:12px;">
+                            Refresh featured items
+                        </button>
                     </div>
 
                     <div class="settingsActions" style="margin-top:16px; display:flex; align-items:center; gap:12px;">
                         <button type="submit" class="raised button-submit emby-button">
                             <span>Save</span>
-                        </button>
-                        <button id="jellyfeatured-refresh-btn" type="button" class="emby-button">
-                            Refresh featured items
                         </button>
                         <span id="jellyfeatured-status" style="color:var(--textColorSecondary,#aaa);font-size:0.9rem;"></span>
                     </div>
@@ -65,6 +86,82 @@
                         const categoryList = document.getElementById('jellyfeatured-category-list');
                         const refreshBtn = document.getElementById('jellyfeatured-refresh-btn');
                         const status = document.getElementById('jellyfeatured-status');
+                        const pickSearch = document.getElementById('jellyfeatured-pick-search');
+                        const pickDropdown = document.getElementById('jellyfeatured-pick-dropdown');
+
+                        // ── Admin's Pick (single item) ────────────────────────────────────────
+                        // adminPick: { id, title, year } or null
+                        let adminPick = null;
+
+                        function setAdminPick(pick) {
+                            adminPick = pick;
+                            pickSearch.value = pick ? pick.title + (pick.year ? ' (' + pick.year + ')' : '') : '';
+                            pickSearch.dataset.locked = pick ? 'true' : '';
+                        }
+
+                        function apiUrl(path, params) {
+                            const base = ApiClient.serverAddress();
+                            const token = ApiClient.accessToken();
+                            const qs = new URLSearchParams(params || {});
+                            if (token) qs.set('api_key', token);
+                            return base + '/' + path + '?' + qs.toString();
+                        }
+
+                        let searchDebounce = null;
+                        pickSearch.addEventListener('input', () => {
+                            // If user edits the field, clear the locked pick
+                            if (pickSearch.dataset.locked) {
+                                adminPick = null;
+                                pickSearch.dataset.locked = '';
+                            }
+                            clearTimeout(searchDebounce);
+                            const q = pickSearch.value.trim();
+                            if (q.length < 2) { pickDropdown.style.display = 'none'; return; }
+                            searchDebounce = setTimeout(async () => {
+                                try {
+                                    const url = apiUrl('Items', {
+                                        searchTerm: q,
+                                        IncludeItemTypes: 'Movie,Series',
+                                        Recursive: true,
+                                        Limit: 8,
+                                        Fields: 'PremiereDate'
+                                    });
+                                    const resp = await fetch(url, { credentials: 'same-origin' });
+                                    const data = await resp.json();
+                                    const items = (data && data.Items) || [];
+
+                                    pickDropdown.innerHTML = '';
+                                    if (items.length === 0) { pickDropdown.style.display = 'none'; return; }
+
+                                    items.forEach(item => {
+                                        const year = item.PremiereDate ? new Date(item.PremiereDate).getFullYear() : '';
+                                        const li = document.createElement('li');
+                                        li.style.cssText = 'padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--dividerColor,#333);';
+                                        li.textContent = item.Name + (year ? ' (' + year + ')' : '') + ' — ' + item.Type;
+                                        li.addEventListener('mouseenter', () => { li.style.background = 'var(--focusColor,rgba(255,255,255,.1))'; });
+                                        li.addEventListener('mouseleave', () => { li.style.background = ''; });
+                                        li.addEventListener('mousedown', (e) => {
+                                            e.preventDefault();
+                                            setAdminPick({ id: item.Id, title: item.Name, year: String(year) });
+                                            pickDropdown.style.display = 'none';
+                                        });
+                                        pickDropdown.appendChild(li);
+                                    });
+                                    pickDropdown.style.display = 'block';
+                                } catch (e) {
+                                    pickDropdown.style.display = 'none';
+                                }
+                            }, 250);
+                        });
+
+                        // Clear pick when field is emptied
+                        pickSearch.addEventListener('change', () => {
+                            if (pickSearch.value.trim() === '') setAdminPick(null);
+                        });
+
+                        pickSearch.addEventListener('blur', () => {
+                            setTimeout(() => { pickDropdown.style.display = 'none'; }, 150);
+                        });
 
                         function showStatus(msg, durationMs) {
                             status.textContent = msg;
@@ -165,13 +262,27 @@
 
                         // ── Load config ───────────────────────────────────────────────────────
                         ApiClient.getPluginConfiguration(PLUGIN_ID)
-                            .then(config => {
+                            .then(async config => {
                                 intervalInput.value = (config && config.AutoSlideIntervalSeconds > 0)
                                     ? config.AutoSlideIntervalSeconds : 6;
                                 const savedOrder = (config && config.CategoryOrder && config.CategoryOrder.length > 0)
                                     ? config.CategoryOrder
                                     : ALL_CATEGORIES.map(c => c.key);
                                 buildCategoryList(savedOrder);
+
+                                // Load admin pick metadata
+                                adminPick = null;
+                                const ids = (config && config.AdminPickIds) || [];
+                                if (ids.length > 0) {
+                                    try {
+                                        const resp = await fetch(apiUrl('Items/' + ids[0]), { credentials: 'same-origin' });
+                                        const item = await resp.json();
+                                        const year = item.PremiereDate ? String(new Date(item.PremiereDate).getFullYear()) : '';
+                                        setAdminPick({ id: item.Id, title: item.Name, year });
+                                    } catch (e) {
+                                        setAdminPick({ id: ids[0], title: ids[0], year: '' });
+                                    }
+                                }
                             })
                             .catch(() => {
                                 intervalInput.value = 6;
@@ -190,6 +301,8 @@
                                 const config = await ApiClient.getPluginConfiguration(PLUGIN_ID);
                                 config.AutoSlideIntervalSeconds = seconds;
                                 config.CategoryOrder = getSelectedCategoryOrder();
+                                config.AdminPickIds = adminPick ? [adminPick.id] : [];
+                                config.EnableAdminPicks = !!adminPick;
                                 await ApiClient.updatePluginConfiguration(PLUGIN_ID, config);
                                 showStatus('Settings saved.', 2500);
                             } catch (err) {
