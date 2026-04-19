@@ -593,7 +593,7 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
                 if (!isUserInteracting) {
                     nextSlide();
                 }
-            }, 6000);
+            }, +'{{AUTO_SLIDE_INTERVAL_MS}}');
         }
     }
     

@@ -14,6 +14,12 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Default is 24 hours (daily refresh).
     /// </summary>
     public int RefreshIntervalHours { get; set; } = 24;
+
+    /// <summary>
+    /// Gets or sets how long each featured item is shown before the carousel
+    /// advances automatically (in seconds). Default is 6 seconds.
+    /// </summary>
+    public int AutoSlideIntervalSeconds { get; set; } = 6;
     
     /// <summary>
     /// Gets or sets the list of media item IDs for admin picks.

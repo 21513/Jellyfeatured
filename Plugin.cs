@@ -484,9 +484,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
             );
 
+            var autoSlideMs = (Configuration.AutoSlideIntervalSeconds > 0
+                ? Configuration.AutoSlideIntervalSeconds
+                : 6) * 1000;
+
             var processedHtml = htmlInject.Replace("{{CSS_STYLES}}", cssInject);
             return jsInject
                 .Replace("{{RECOMMENDATIONS_DATA_JSON}}", recommendationsJson)
+                .Replace("{{AUTO_SLIDE_INTERVAL_MS}}", autoSlideMs.ToString())
                 .Replace("{{HTML_TEMPLATE}}", EscapeJs(processedHtml));
         }
         catch (Exception ex)

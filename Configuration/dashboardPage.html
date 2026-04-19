@@ -11,53 +11,94 @@
                 <div class="sectionTitleContainer flex align-items-center">
                     <h2 class="sectionTitle">Jellyfeatured</h2>
                 </div>
-                
-                <p class="settingsDescription">
-                    There are currently no configurable settings for this plugin.
-                </p>
-                <div class="settingsActions" style="margin-top:16px;">
-                    <button id="jellyfeatured-refresh-btn" class="btn">Refresh featured items</button>
-                    <span id="jellyfeatured-refresh-status" style="margin-left:12px;color:#666;font-size:0.9rem;"></span>
-                </div>
+
+                <form id="jellyfeatured-config-form">
+                    <div class="inputContainer">
+                        <label class="inputLabel" for="jellyfeatured-autoslide-interval">
+                            Auto-advance interval (seconds)
+                        </label>
+                        <input id="jellyfeatured-autoslide-interval"
+                               type="number" min="1" max="60" step="1"
+                               class="emby-input"
+                               style="width:100px;" />
+                        <div class="fieldDescription">
+                            How long each featured item is shown before the carousel advances automatically.
+                        </div>
+                    </div>
+
+                    <div class="settingsActions" style="margin-top:16px; display:flex; align-items:center; gap:12px;">
+                        <button type="submit" class="raised button-submit emby-button">
+                            <span>Save</span>
+                        </button>
+                        <button id="jellyfeatured-refresh-btn" type="button" class="emby-button">
+                            Refresh featured items
+                        </button>
+                        <span id="jellyfeatured-status" style="color:var(--textColorSecondary,#aaa);font-size:0.9rem;"></span>
+                    </div>
+                </form>
                 <script>
-                    (function(){
-                        const btn = document.getElementById('jellyfeatured-refresh-btn');
-                        const status = document.getElementById('jellyfeatured-refresh-status');
-                        if (!btn) return;
-                        btn.addEventListener('click', async () => {
-                            try {
-                                status.textContent = 'Requesting refresh...';
+                    (function () {
+                        const PLUGIN_ID = '639b5171-918b-4b24-82e4-d35c10be63a4';
 
-                                // First try server-side refresh endpoint
-                                try {
-                                    const resp = await fetch('/plugins/jellyfeatured/refresh', {
-                                        method: 'POST',
-                                        credentials: 'same-origin',
-                                        headers: { 'Content-Type': 'application/json' }
-                                    });
+                        const form = document.getElementById('jellyfeatured-config-form');
+                        const intervalInput = document.getElementById('jellyfeatured-autoslide-interval');
+                        const refreshBtn = document.getElementById('jellyfeatured-refresh-btn');
+                        const status = document.getElementById('jellyfeatured-status');
 
-                                    if (resp.ok) {
-                                        status.textContent = 'Refresh started on server';
-                                        setTimeout(() => { status.textContent = ''; }, 2500);
-                                        return;
-                                    }
-                                } catch (e) {
-                                    // fall back to localStorage + BroadcastChannel
-                                }
+                        function showStatus(msg, durationMs) {
+                            status.textContent = msg;
+                            if (durationMs) setTimeout(() => { status.textContent = ''; }, durationMs);
+                        }
 
-                                const ts = Date.now().toString();
-                                localStorage.setItem('jellyfeatured_refresh', ts);
-                                try {
-                                    const bc = new BroadcastChannel('jellyfeatured');
-                                    bc.postMessage({ type: 'refresh', ts });
-                                } catch (e) {}
+                        // Load current config
+                        ApiClient.getPluginConfiguration(PLUGIN_ID)
+                            .then(config => {
+                                intervalInput.value = (config && config.AutoSlideIntervalSeconds > 0)
+                                    ? config.AutoSlideIntervalSeconds
+                                    : 6;
+                            })
+                            .catch(() => { intervalInput.value = 6; });
 
-                                status.textContent = 'Refresh requested (fallback)';
-                                setTimeout(() => { status.textContent = ''; }, 2500);
-                            } catch (e) {
-                                status.textContent = 'Unable to request refresh';
-                                setTimeout(() => { status.textContent = ''; }, 2500);
+                        // Save config on form submit
+                        form.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const seconds = parseInt(intervalInput.value, 10);
+                            if (isNaN(seconds) || seconds < 1) {
+                                showStatus('Please enter a valid number of seconds (minimum 1).', 3000);
+                                return;
                             }
+                            try {
+                                const config = await ApiClient.getPluginConfiguration(PLUGIN_ID);
+                                config.AutoSlideIntervalSeconds = seconds;
+                                await ApiClient.updatePluginConfiguration(PLUGIN_ID, config);
+                                showStatus('Settings saved.', 2500);
+                            } catch (err) {
+                                showStatus('Failed to save settings.', 3000);
+                            }
+                        });
+
+                        // Refresh featured items
+                        refreshBtn.addEventListener('click', async () => {
+                            try {
+                                showStatus('Requesting refresh...');
+                                const resp = await fetch('/plugins/jellyfeatured/refresh', {
+                                    method: 'POST',
+                                    credentials: 'same-origin',
+                                    headers: { 'Content-Type': 'application/json' }
+                                });
+                                if (resp.ok) {
+                                    showStatus('Refresh started on server.', 2500);
+                                    return;
+                                }
+                            } catch (e) { /* fall through to localStorage fallback */ }
+
+                            const ts = Date.now().toString();
+                            localStorage.setItem('jellyfeatured_refresh', ts);
+                            try {
+                                const bc = new BroadcastChannel('jellyfeatured');
+                                bc.postMessage({ type: 'refresh', ts });
+                            } catch (e) {}
+                            showStatus('Refresh requested (fallback).', 2500);
                         });
                     })();
                 </script>
