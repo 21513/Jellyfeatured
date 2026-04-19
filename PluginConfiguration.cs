@@ -20,6 +20,15 @@ public class PluginConfiguration : BasePluginConfiguration
     /// advances automatically (in seconds). Default is 6 seconds.
     /// </summary>
     public int AutoSlideIntervalSeconds { get; set; } = 6;
+
+    /// <summary>
+    /// Gets or sets the display order of carousel categories.
+    /// Only categories listed here will appear, in the specified order.
+    /// Valid keys: featuredPick, latestRelease, recentlyAddedFilms, recentlyAddedSeries,
+    /// bestRatedFilms, bestRatedSeries.
+    /// If empty, the default order is used.
+    /// </summary>
+    public List<string> CategoryOrder { get; set; } = new List<string>();
     
     /// <summary>
     /// Gets or sets the list of media item IDs for admin picks.

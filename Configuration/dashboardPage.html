@@ -26,6 +26,17 @@
                         </div>
                     </div>
 
+                    <div class="inputContainer" style="margin-top:24px;">
+                        <label class="inputLabel">Featured item order</label>
+                        <div class="fieldDescription" style="margin-bottom:8px;">
+                            Drag to reorder. Uncheck to hide a category.
+                        </div>
+                        <ul id="jellyfeatured-category-list" style="
+                            list-style:none; margin:0; padding:0;
+                            max-width:420px;
+                        "></ul>
+                    </div>
+
                     <div class="settingsActions" style="margin-top:16px; display:flex; align-items:center; gap:12px;">
                         <button type="submit" class="raised button-submit emby-button">
                             <span>Save</span>
@@ -40,8 +51,18 @@
                     (function () {
                         const PLUGIN_ID = '639b5171-918b-4b24-82e4-d35c10be63a4';
 
+                        const ALL_CATEGORIES = [
+                            { key: 'featuredPick',         label: "Admin's Pick" },
+                            { key: 'latestRelease',        label: 'Latest Release' },
+                            { key: 'recentlyAddedFilms',   label: 'Recently Added in Films' },
+                            { key: 'recentlyAddedSeries',  label: 'Recently Added in Series' },
+                            { key: 'bestRatedFilms',       label: 'Best Rated in Films' },
+                            { key: 'bestRatedSeries',      label: 'Best Rated in Series' },
+                        ];
+
                         const form = document.getElementById('jellyfeatured-config-form');
                         const intervalInput = document.getElementById('jellyfeatured-autoslide-interval');
+                        const categoryList = document.getElementById('jellyfeatured-category-list');
                         const refreshBtn = document.getElementById('jellyfeatured-refresh-btn');
                         const status = document.getElementById('jellyfeatured-status');
 
@@ -50,16 +71,114 @@
                             if (durationMs) setTimeout(() => { status.textContent = ''; }, durationMs);
                         }
 
-                        // Load current config
+                        // ── Drag-and-drop category list ───────────────────────────────────────
+                        let dragSrc = null;
+
+                        function buildCategoryList(orderedKeys) {
+                            categoryList.innerHTML = '';
+
+                            // Ordered (enabled) items first, then any not in the saved order (disabled).
+                            const enabledKeys = orderedKeys.filter(k => ALL_CATEGORIES.some(c => c.key === k));
+                            const disabledKeys = ALL_CATEGORIES.map(c => c.key).filter(k => !enabledKeys.includes(k));
+                            const displayOrder = [...enabledKeys, ...disabledKeys];
+
+                            displayOrder.forEach(key => {
+                                const cat = ALL_CATEGORIES.find(c => c.key === key);
+                                if (!cat) return;
+                                const enabled = enabledKeys.includes(key);
+
+                                const li = document.createElement('li');
+                                li.dataset.key = key;
+                                li.draggable = true;
+                                li.style.cssText = [
+                                    'display:flex', 'align-items:center', 'gap:10px',
+                                    'padding:8px 10px', 'margin-bottom:4px',
+                                    'background:var(--cardBackground,rgba(255,255,255,.06))',
+                                    'border-radius:4px', 'cursor:grab',
+                                    'border:1px solid transparent'
+                                ].join(';');
+
+                                const handle = document.createElement('span');
+                                handle.textContent = '☰';
+                                handle.style.cssText = 'opacity:.5;font-size:1.1em;cursor:grab;';
+
+                                const checkbox = document.createElement('input');
+                                checkbox.type = 'checkbox';
+                                checkbox.id = 'cat-' + key;
+                                checkbox.checked = enabled;
+                                checkbox.style.margin = '0';
+
+                                const labelEl = document.createElement('label');
+                                labelEl.htmlFor = 'cat-' + key;
+                                labelEl.textContent = cat.label;
+                                labelEl.style.cssText = 'cursor:pointer;flex:1;margin:0;';
+
+                                li.appendChild(handle);
+                                li.appendChild(checkbox);
+                                li.appendChild(labelEl);
+
+                                // Drag events
+                                li.addEventListener('dragstart', e => {
+                                    dragSrc = li;
+                                    e.dataTransfer.effectAllowed = 'move';
+                                    li.style.opacity = '0.4';
+                                });
+                                li.addEventListener('dragend', () => {
+                                    dragSrc = null;
+                                    li.style.opacity = '';
+                                    categoryList.querySelectorAll('li').forEach(el => {
+                                        el.style.border = '1px solid transparent';
+                                    });
+                                });
+                                li.addEventListener('dragover', e => {
+                                    e.preventDefault();
+                                    e.dataTransfer.dropEffect = 'move';
+                                    if (li !== dragSrc) li.style.border = '1px solid var(--accent,#00a4dc)';
+                                });
+                                li.addEventListener('dragleave', () => {
+                                    li.style.border = '1px solid transparent';
+                                });
+                                li.addEventListener('drop', e => {
+                                    e.preventDefault();
+                                    li.style.border = '1px solid transparent';
+                                    if (dragSrc && dragSrc !== li) {
+                                        const items = [...categoryList.querySelectorAll('li')];
+                                        const srcIdx = items.indexOf(dragSrc);
+                                        const dstIdx = items.indexOf(li);
+                                        if (srcIdx < dstIdx) {
+                                            categoryList.insertBefore(dragSrc, li.nextSibling);
+                                        } else {
+                                            categoryList.insertBefore(dragSrc, li);
+                                        }
+                                    }
+                                });
+
+                                categoryList.appendChild(li);
+                            });
+                        }
+
+                        function getSelectedCategoryOrder() {
+                            return [...categoryList.querySelectorAll('li')]
+                                .filter(li => li.querySelector('input[type=checkbox]').checked)
+                                .map(li => li.dataset.key);
+                        }
+
+                        // ── Load config ───────────────────────────────────────────────────────
                         ApiClient.getPluginConfiguration(PLUGIN_ID)
                             .then(config => {
                                 intervalInput.value = (config && config.AutoSlideIntervalSeconds > 0)
-                                    ? config.AutoSlideIntervalSeconds
-                                    : 6;
+                                    ? config.AutoSlideIntervalSeconds : 6;
+                                const savedOrder = (config && config.CategoryOrder && config.CategoryOrder.length > 0)
+                                    ? config.CategoryOrder
+                                    : ALL_CATEGORIES.map(c => c.key);
+                                buildCategoryList(savedOrder);
                             })
-                            .catch(() => { intervalInput.value = 6; });
+                            .catch(() => {
+                                intervalInput.value = 6;
+                                buildCategoryList(ALL_CATEGORIES.map(c => c.key));
+                            });
 
-                        // Save config on form submit
+                        // ── Save config ───────────────────────────────────────────────────────
                         form.addEventListener('submit', async (e) => {
                             e.preventDefault();
                             const seconds = parseInt(intervalInput.value, 10);
@@ -70,6 +189,7 @@
                             try {
                                 const config = await ApiClient.getPluginConfiguration(PLUGIN_ID);
                                 config.AutoSlideIntervalSeconds = seconds;
+                                config.CategoryOrder = getSelectedCategoryOrder();
                                 await ApiClient.updatePluginConfiguration(PLUGIN_ID, config);
                                 showStatus('Settings saved.', 2500);
                             } catch (err) {
@@ -77,7 +197,7 @@
                             }
                         });
 
-                        // Refresh featured items
+                        // ── Refresh featured items ────────────────────────────────────────────
                         refreshBtn.addEventListener('click', async () => {
                             try {
                                 showStatus('Requesting refresh...');
@@ -90,7 +210,7 @@
                                     showStatus('Refresh started on server.', 2500);
                                     return;
                                 }
-                            } catch (e) { /* fall through to localStorage fallback */ }
+                            } catch (e) { /* fall through */ }
 
                             const ts = Date.now().toString();
                             localStorage.setItem('jellyfeatured_refresh', ts);

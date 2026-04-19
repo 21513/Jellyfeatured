@@ -226,7 +226,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         _logger.LogInformation("Current configuration being used: RefreshInterval={Hours}h, AdminPicksEnabled={AdminPicks}, AdminPickIds=[{AdminIds}]", 
             config.RefreshIntervalHours, config.EnableAdminPicks, string.Join(", ", config.AdminPickIds));
 
-        var fixedCategoryOrder = new List<string>
+        var defaultCategoryOrder = new List<string>
         {
             "featuredPick",
             "latestRelease", 
@@ -235,6 +235,10 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             "bestRatedFilms",
             "bestRatedSeries"
         };
+
+        var fixedCategoryOrder = (config.CategoryOrder != null && config.CategoryOrder.Count > 0)
+            ? config.CategoryOrder
+            : defaultCategoryOrder;
         
         var categoryMapping = new Dictionary<string, string>
         {
