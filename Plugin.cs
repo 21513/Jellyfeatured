@@ -25,6 +25,8 @@ namespace Jellyfeatured;
 public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
 {
     private readonly ILibraryManager _libraryManager;
+    private readonly IUserDataManager _userDataManager;
+    private readonly IUserManager _userManager;
     private readonly ILogger<Plugin> _logger;
     private readonly string _recommendationsPath;
     private readonly IApplicationPaths _applicationPaths;
@@ -39,12 +41,16 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     /// <param name="applicationPaths">Instance of the <see cref="IApplicationPaths"/> interface.</param>
     /// <param name="xmlSerializer">Instance of the <see cref="IXmlSerializer"/> interface.</param>
     /// <param name="libraryManager">Instance of the <see cref="ILibraryManager"/> interface.</param>
+    /// <param name="userDataManager">Instance of the <see cref="IUserDataManager"/> interface.</param>
+    /// <param name="userManager">Instance of the <see cref="IUserManager"/> interface.</param>
     /// <param name="logger">Instance of the <see cref="ILogger{Plugin}"/> interface.</param>
-    public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILibraryManager libraryManager, ILogger<Plugin> logger)
+    public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILibraryManager libraryManager, IUserDataManager userDataManager, IUserManager userManager, ILogger<Plugin> logger)
         : base(applicationPaths, xmlSerializer)
     {
         Instance = this;
         _libraryManager = libraryManager;
+        _userDataManager = userDataManager;
+        _userManager = userManager;
         _logger = logger;
         _applicationPaths = applicationPaths;
         _recommendationsPath = Path.Combine(applicationPaths.DataPath, "jellyfeatured-recommendations.json");
@@ -247,7 +253,9 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             { "recentlyAddedFilms", "Recently Added in Films" },
             { "recentlyAddedSeries", "Recently Added in Series" },
             { "bestRatedFilms", "Best Rated in Films" },
-            { "bestRatedSeries", "Best Rated in Series" }
+            { "bestRatedSeries", "Best Rated in Series" },
+            { "trending", "Trending" },
+            { "randomPick", "Random Pick" }
         };
         
         try
@@ -356,7 +364,112 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             
             _logger.LogInformation("Admin picks check - EnableAdminPicks: {Enabled}, AdminPickIds count: {Count}", 
                 config.EnableAdminPicks, config.AdminPickIds?.Count ?? 0);
-                
+
+            // Trending: most-played item in the last 7 days across all users.
+            // Falls back to most-played all-time if nothing was played recently,
+            // then to most recently played ever so the slot is never empty.
+            try
+            {
+                var users = _userManager.Users.ToList();
+                if (users.Count > 0)
+                {
+                    var trendingCutoff = DateTime.UtcNow.AddDays(-7);
+
+                    var scored = allItems
+                        .Where(HasRequiredImages)
+                        .Select(item =>
+                        {
+                            var recentPlays = 0;
+                            var totalPlays = 0;
+                            DateTime? lastPlayed = null;
+                            foreach (var user in users)
+                            {
+                                try
+                                {
+                                    var ud = _userDataManager.GetUserData(user, item);
+                                    if (ud == null) continue;
+                                    totalPlays += ud.PlayCount;
+                                    if (ud.LastPlayedDate.HasValue)
+                                    {
+                                        if (ud.LastPlayedDate.Value >= trendingCutoff)
+                                            recentPlays += ud.PlayCount;
+                                        if (lastPlayed == null || ud.LastPlayedDate.Value > lastPlayed)
+                                            lastPlayed = ud.LastPlayedDate;
+                                    }
+                                }
+                                catch { }
+                            }
+                            return (Item: item, RecentPlays: recentPlays, TotalPlays: totalPlays, LastPlayed: lastPlayed);
+                        })
+                        .ToList();
+
+                    // Tier 1: played in the last 7 days
+                    var trendingItem = scored
+                        .Where(x => x.RecentPlays > 0)
+                        .OrderByDescending(x => x.RecentPlays)
+                        .ThenByDescending(x => x.LastPlayed)
+                        .Select(x => x.Item)
+                        .FirstOrDefault();
+
+                    // Tier 2: played at least once, ever
+                    trendingItem ??= scored
+                        .Where(x => x.TotalPlays > 0)
+                        .OrderByDescending(x => x.TotalPlays)
+                        .ThenByDescending(x => x.LastPlayed)
+                        .Select(x => x.Item)
+                        .FirstOrDefault();
+
+                    // Tier 3: most recently touched (e.g. added to favourites, partially watched)
+                    trendingItem ??= scored
+                        .Where(x => x.LastPlayed.HasValue)
+                        .OrderByDescending(x => x.LastPlayed)
+                        .Select(x => x.Item)
+                        .FirstOrDefault();
+
+                    if (trendingItem != null)
+                    {
+                        categoryItems["trending"] = new RecommendationItem
+                        {
+                            Title = trendingItem.Name,
+                            Id = trendingItem.Id.ToString(),
+                            Type = "Trending",
+                            Year = trendingItem.PremiereDate?.Year.ToString() ?? "",
+                            Rating = trendingItem.CommunityRating?.ToString("F1") ?? "N/A"
+                        };
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Trending: no play history found for any item");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to determine trending item");
+            }
+
+            // Random Pick: a randomly selected item from all qualified items
+            try
+            {
+                var randomCandidates = allItems.Where(HasRequiredImages).ToList();
+                if (randomCandidates.Count > 0)
+                {
+                    var randomItem = randomCandidates[new Random().Next(randomCandidates.Count)];
+                    categoryItems["randomPick"] = new RecommendationItem
+                    {
+                        Title = randomItem.Name,
+                        Id = randomItem.Id.ToString(),
+                        Type = "Random Pick",
+                        Year = randomItem.PremiereDate?.Year.ToString() ?? "",
+                        Rating = randomItem.CommunityRating?.ToString("F1") ?? "N/A"
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to pick random item");
+            }
+
             if (config.EnableAdminPicks && config.AdminPickIds?.Count > 0)
             {
                 var adminPickItems = new List<RecommendationItem>();

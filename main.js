@@ -834,28 +834,6 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
                         let mouseStartX = 0;
                         let mouseScrollStart = 0;
                         let isDraggingMouse = false;
-                        let desiredScrollLeft = null;
-                        let rafId = null;
-
-                        function applyScroll() {
-                            if (rafId) {
-                                rafId = requestAnimationFrame(() => {
-                                    if (desiredScrollLeft !== null) {
-                                        carouselContainer.scrollLeft = Math.round(desiredScrollLeft);
-                                        lastDragTime = Date.now();
-                                    }
-                                    rafId = null;
-                                });
-                            } else {
-                                rafId = requestAnimationFrame(() => {
-                                    if (desiredScrollLeft !== null) {
-                                        carouselContainer.scrollLeft = Math.round(desiredScrollLeft);
-                                        lastDragTime = Date.now();
-                                    }
-                                    rafId = null;
-                                });
-                            }
-                        }
 
                         function onMouseDown(e) {
                             if (e.button !== 0) return;
@@ -866,10 +844,10 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
                             mouseStartX = e.clientX;
                             mouseScrollStart = carouselContainer.scrollLeft;
                             isDraggingMouse = false;
-                            desiredScrollLeft = null;
                             pauseAutoSlide();
                             try { document.body.style.userSelect = 'none'; } catch (er) {}
                             try { carouselContainer.style.cursor = 'grabbing'; } catch (er) {}
+                            try { carouselContainer.style.scrollBehavior = 'auto'; } catch (er) {}
                         }
 
                         function onMouseMove(e) {
@@ -879,8 +857,8 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
                                 isDraggingMouse = true;
                             }
                             if (isDraggingMouse) {
-                                desiredScrollLeft = mouseScrollStart - dx;
-                                applyScroll();
+                                carouselContainer.scrollLeft = mouseScrollStart - dx;
+                                lastDragTime = Date.now();
                                 try { e.preventDefault(); } catch (er) {}
                             }
                         }
@@ -888,14 +866,13 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
                         function onMouseUp(e) {
                             if (!isMouseDown) return;
                             isMouseDown = false;
-                            // only record drag time if an actual drag occurred
                             if (isDraggingMouse) {
                                 lastDragTime = Date.now();
                             }
                             isDraggingMouse = false;
-                            desiredScrollLeft = null;
                             try { document.body.style.userSelect = ''; } catch (er) {}
                             try { carouselContainer.style.cursor = ''; } catch (er) {}
+                            try { carouselContainer.style.scrollBehavior = ''; } catch (er) {}
                         }
 
                         carouselContainer.addEventListener('mousedown', onMouseDown, { passive: true });

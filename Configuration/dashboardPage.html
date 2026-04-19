@@ -56,8 +56,9 @@
                             list-style:none; margin:0; padding:0;
                             max-width:420px;
                         "></ul>
-                        <button id="jellyfeatured-refresh-btn" type="button" class="emby-button" style="margin-top:12px;">
-                            Refresh featured items
+                        <button id="jellyfeatured-refresh-btn" type="button" class="raised emby-button" style="margin-top:12px;">
+                            <span class="material-icons" style="vertical-align:middle;margin-right:6px;font-size:1.1em;">refresh</span>
+                            <span>Refresh featured items</span>
                         </button>
                     </div>
 
@@ -79,6 +80,8 @@
                             { key: 'recentlyAddedSeries',  label: 'Recently Added in Series' },
                             { key: 'bestRatedFilms',       label: 'Best Rated in Films' },
                             { key: 'bestRatedSeries',      label: 'Best Rated in Series' },
+                            { key: 'trending',             label: 'Trending' },
+                            { key: 'randomPick',           label: 'Random Pick' },
                         ];
 
                         const form = document.getElementById('jellyfeatured-config-form');
