@@ -10,11 +10,11 @@
         "versions": [
             {
                 "version": "0.0.4.0",
-                "changelog": "Fixed accidental swipes to favorites tab on mobile devices",
+                "changelog": "Updated for Jellyfin v10.11.8",
                 "targetAbi": "10.11.8.0",
-                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.3.9/Jellyfeatured-v0.0.3.9.zip",
-                "checksum": "5594502e582173c4ec1b95262d2c300e",
-                "timestamp": "2026-02-04T20:44:27Z"
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.4.0/Jellyfeatured-v0.0.4.0.zip",
+                "checksum": "25c3caa7f75306af58e151935bff1753",
+                "timestamp": "2026-04-19T10:26:28Z"
             },
             {
                 "version": "0.0.3.9",

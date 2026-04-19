@@ -36,11 +36,11 @@ Features that will be added in the future:
 - Refresh interval settings
 
 ## Requirements
-- Jellyfin Server v10.11.4 or higher
+- Jellyfin Server v10.11.8
 - Modern web browser with JavaScript enabled
 
 ## Installation
-This plugin is made for Jellyfin `v10.11.4`
+This plugin is made for Jellyfin `v10.11.8`
 
 1. Add the following link to your plugin repository list in the Jellyfin dashboard:
     ```
