@@ -3,6 +3,21 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
 console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendations.length);
 
+// Inject a CSS rule synchronously so the browser reserves carousel space the
+// instant Jellyfin adds any child to .homePage — before the first paint.
+// This prevents layout shift entirely: the gap exists from the first render,
+// and our placeholder div just fills it in when the MutationObserver fires.
+(function() {
+    const s = document.createElement('style');
+    s.id = 'jellyfeatured-reserve';
+    s.textContent =
+        // When the first child of .homePage is NOT our div, push it down to
+        // make room. Once our div is prepended it becomes :first-child and
+        // this rule no longer applies to the section below it.
+        '.homePage > :first-child:not(#jellyfeatured_div) { margin-top: 50vh !important; }';
+    (document.head || document.documentElement).appendChild(s);
+})();
+
 (function() {
     let currentSlide = 0;
     let autoSlideInterval;
@@ -608,15 +623,37 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
         const searchUrl = `${window.location.origin}/web/index.html#!/search.html?query=${searchQuery}`;
         window.location.href = searchUrl;
     }
-    
-    async function createFeaturedCarousel() {
-        // Prevent duplicate/concurrent injections
-        if (document.getElementById('jellyfeatured_div')) {
-            console.log('[Jellyfeatured] createFeaturedCarousel: already inserted, skipping');
-            return;
+
+    // Synchronously inserts the carousel shell with skeleton slides into the page.
+    // Called the moment .homePage appears in the DOM so vertical space is reserved
+    // before Jellyfin populates its own home sections — eliminating layout shift.
+    function insertPlaceholderNow(targetContainer) {
+        if (document.getElementById('jellyfeatured_div')) return;
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlTemplate;
+        const featuredDiv = tempDiv.firstElementChild;
+        if (!featuredDiv) return;
+
+        const carouselContainer = featuredDiv.querySelector('#featured_items');
+        if (carouselContainer) {
+            const count = recommendations.length > 0 ? recommendations.length : 5;
+            for (let i = 0; i < count; i++) {
+                const skeleton = createSkeletonSlide(i);
+                if (i === 0) skeleton.classList.add('active');
+                carouselContainer.appendChild(skeleton);
+            }
         }
+
+        targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
+
+        // CSS reserve rule is no longer needed — our div is now :first-child.
+        document.getElementById('jellyfeatured-reserve')?.remove();
+    }
+
+    async function createFeaturedCarousel() {
+        // Skip if async population is already running.
         if (document.body.dataset.jellyfeaturedInserting === 'true') {
-            console.log('[Jellyfeatured] createFeaturedCarousel: insertion already in progress, skipping');
             return;
         }
 
@@ -633,42 +670,48 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
             console.log('[Jellyfeatured] createFeaturedCarousel: .homePage container not found in DOM');
             return;
         }
-        console.log('[Jellyfeatured] createFeaturedCarousel: .homePage found, inserting carousel');
 
-        // Mark that an insertion is in progress so parallel calls bail out
+        // Insert placeholder now if not already done (e.g. called directly without MutationObserver).
+        if (!document.getElementById('jellyfeatured_div')) {
+            insertPlaceholderNow(targetContainer);
+        }
+
+        const featuredDiv = document.getElementById('jellyfeatured_div');
+        if (!featuredDiv) return;
+
         document.body.dataset.jellyfeaturedInserting = 'true';
 
         try {
-            // Do not add a full-page blocking overlay; allow users to interact
-            // with the page while the featured carousel loads in the background.
-
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = htmlTemplate;
-            const featuredDiv = tempDiv.firstElementChild;
-
-            if (featuredDiv) {
                 const carouselContainer = featuredDiv.querySelector('#featured_items');
                 const dotsContainer = featuredDiv.querySelector('#featuredDots');
                 
-                console.log('[Jellyfeatured] featuredDiv parsed, recommendations.length =', recommendations.length, '| carouselContainer =', !!carouselContainer);
+                console.log('[Jellyfeatured] featuredDiv found, recommendations.length =', recommendations.length, '| carouselContainer =', !!carouselContainer);
                 if (carouselContainer && recommendations.length > 0) {
-                    const loadingSlide = carouselContainer.querySelector('.loadingSlide');
-                    if (loadingSlide) {
-                        loadingSlide.remove();
-                    }
-                    
-                    // First pass: Create and inject skeleton slides immediately
-                    const skeletonSlides = [];
-                    for (let i = 0; i < recommendations.length; i++) {
-                        const skeleton = createSkeletonSlide(i);
-                        carouselContainer.appendChild(skeleton);
-                        skeletonSlides.push(skeleton);
-                        
-                        if (i === 0) {
-                            skeleton.classList.add('active');
+                    // Remove any loadingSlide left over from the placeholder.
+                    carouselContainer.querySelector('.loadingSlide')?.remove();
+
+                    // Collect existing skeleton slides inserted by insertPlaceholderNow.
+                    // If the count doesn't match (placeholder used a default), rebuild.
+                    let skeletonSlides = Array.from(
+                        carouselContainer.querySelectorAll('.featuredItem:not([data-clone])')
+                    ).sort((a, b) => parseInt(a.dataset.index) - parseInt(b.dataset.index));
+
+                    if (skeletonSlides.length !== recommendations.length) {
+                        carouselContainer.querySelectorAll('.featuredItem').forEach(s => s.remove());
+                        skeletonSlides = [];
+                        for (let i = 0; i < recommendations.length; i++) {
+                            const skeleton = createSkeletonSlide(i);
+                            if (i === 0) skeleton.classList.add('active');
+                            carouselContainer.appendChild(skeleton);
+                            skeletonSlides.push(skeleton);
                         }
                     }
-                    
+
+                    // Remove any clones from the placeholder pass and re-clone cleanly.
+                    carouselContainer.querySelectorAll('[data-clone]').forEach(c => c.remove());
+                    delete carouselContainer.dataset.initialCloned;
+                    delete carouselContainer.dataset.appendedForLast;
+
                     // Clone skeleton slides for infinite scroll effect
                     if (!carouselContainer.dataset.initialCloned) {
                         skeletonSlides.forEach((origSlide) => {
@@ -679,17 +722,14 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
                         });
                         carouselContainer.dataset.initialCloned = 'true';
                     }
-                    
+
                     currentSlide = 0;
-                    
-                    // Second pass: Populate slides with actual data asynchronously
-                    const populatePromises = [];
-                    for (let i = 0; i < recommendations.length; i++) {
-                        const rec = recommendations[i];
-                        const slide = skeletonSlides[i];
-                        populatePromises.push(populateSlideWithData(slide, rec, i));
-                    }
-                    
+
+                    // Populate slides with actual data asynchronously
+                    const populatePromises = skeletonSlides.map((slide, i) =>
+                        populateSlideWithData(slide, recommendations[i], i)
+                    );
+
                     // Wait for all data to be populated
                     await Promise.all(populatePromises);
                     
@@ -879,11 +919,6 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
                         </div>
                     `;
                 }
-                
-                targetContainer.insertBefore(featuredDiv, targetContainer.firstChild);
-
-                // No full-page overlay used; nothing to remove here.
-            }
         } finally {
             try { delete document.body.dataset.jellyfeaturedInserting; } catch (e) { document.body.removeAttribute('data-jellyfeatured-inserting'); }
         }
@@ -948,8 +983,10 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
         const alreadyInserted = !!document.getElementById('jellyfeatured_div');
         console.log(`[Jellyfeatured] tryInitialize attempt ${initAttempts}: .homePage=${!!targetContainer}, alreadyInserted=${alreadyInserted}`);
         if (targetContainer && !alreadyInserted) {
+            // Insert placeholder synchronously right now — no delay.
+            insertPlaceholderNow(targetContainer);
             createFeaturedCarousel();
-        } else if (initAttempts < maxInitAttempts) {
+        } else if (!alreadyInserted && initAttempts < maxInitAttempts) {
             initAttempts++;
             setTimeout(tryInitialize, 500);
         } else {
@@ -964,6 +1001,14 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
     }
 
     const observer = new MutationObserver(() => {
+        // Insert the placeholder synchronously the instant .homePage appears in
+        // the DOM — before Jellyfin renders its own home sections — so the
+        // carousel's vertical space is reserved and no layout shift occurs.
+        const targetContainer = document.querySelector('.homePage');
+        if (targetContainer && !document.getElementById('jellyfeatured_div')) {
+            insertPlaceholderNow(targetContainer);
+        }
+        // Async data population can be scheduled normally.
         setTimeout(() => createFeaturedCarousel(), 500);
     });
     if (document.body) observer.observe(document.body, { childList: true, subtree: true });
