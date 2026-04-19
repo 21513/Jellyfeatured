@@ -1,6 +1,8 @@
 const recommendations = JSON.parse(`{{RECOMMENDATIONS_DATA_JSON}}`);
 const htmlTemplate = `{{HTML_TEMPLATE}}`;
 
+console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendations.length);
+
 (function() {
     let currentSlide = 0;
     let autoSlideInterval;
@@ -19,9 +21,11 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     function getJellyfinApiKey() {
         try {
             if (window.ApiClient && window.ApiClient.accessToken) {
-                return window.ApiClient.accessToken();
+                const token = window.ApiClient.accessToken();
+                console.log('[Jellyfeatured] ApiClient.accessToken() =>', token ? '(token present)' : '(null/empty)');
+                return token;
             }
-            
+            console.log('[Jellyfeatured] window.ApiClient not available or no accessToken method, falling back to localStorage');
             const authData = localStorage.getItem('jellyfin_credentials');
             if (authData) {
                 const parsed = JSON.parse(authData);
@@ -609,15 +613,29 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     async function createFeaturedCarousel() {
         // Prevent duplicate/concurrent injections
-        if (document.getElementById('jellyfeatured_div') || document.body.dataset.jellyfeaturedInserting === 'true') return;
+        if (document.getElementById('jellyfeatured_div')) {
+            console.log('[Jellyfeatured] createFeaturedCarousel: already inserted, skipping');
+            return;
+        }
+        if (document.body.dataset.jellyfeaturedInserting === 'true') {
+            console.log('[Jellyfeatured] createFeaturedCarousel: insertion already in progress, skipping');
+            return;
+        }
 
         const pathname = window.location.pathname;
+        const hash = window.location.hash;
+        console.log('[Jellyfeatured] createFeaturedCarousel: pathname =', pathname, '| hash =', hash);
         if (!pathname.includes('home') && pathname !== '/' && pathname !== '/web/' && pathname !== '/web/index.html') {
+            console.log('[Jellyfeatured] createFeaturedCarousel: pathname did not match home routes, skipping');
             return;
         }
 
         const targetContainer = document.querySelector('.homePage');
-        if (!targetContainer) return;
+        if (!targetContainer) {
+            console.log('[Jellyfeatured] createFeaturedCarousel: .homePage container not found in DOM');
+            return;
+        }
+        console.log('[Jellyfeatured] createFeaturedCarousel: .homePage found, inserting carousel');
 
         // Mark that an insertion is in progress so parallel calls bail out
         document.body.dataset.jellyfeaturedInserting = 'true';
@@ -634,6 +652,7 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
                 const carouselContainer = featuredDiv.querySelector('#featured_items');
                 const dotsContainer = featuredDiv.querySelector('#featuredDots');
                 
+                console.log('[Jellyfeatured] featuredDiv parsed, recommendations.length =', recommendations.length, '| carouselContainer =', !!carouselContainer);
                 if (carouselContainer && recommendations.length > 0) {
                     const loadingSlide = carouselContainer.querySelector('.loadingSlide');
                     if (loadingSlide) {
@@ -928,11 +947,15 @@ const htmlTemplate = `{{HTML_TEMPLATE}}`;
     
     function tryInitialize() {
         const targetContainer = document.querySelector('.homePage');
-        if (targetContainer && !document.getElementById('jellyfeatured_div')) {
+        const alreadyInserted = !!document.getElementById('jellyfeatured_div');
+        console.log(`[Jellyfeatured] tryInitialize attempt ${initAttempts}: .homePage=${!!targetContainer}, alreadyInserted=${alreadyInserted}`);
+        if (targetContainer && !alreadyInserted) {
             createFeaturedCarousel();
         } else if (initAttempts < maxInitAttempts) {
             initAttempts++;
             setTimeout(tryInitialize, 500);
+        } else {
+            console.log('[Jellyfeatured] tryInitialize: max attempts reached without finding .homePage');
         }
     }
     

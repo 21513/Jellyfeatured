@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Jellyfeatured.Controllers
 {
     [ApiController]
-    [Route("plugins/jellyfeatured")]
+    [Route("Plugins/Jellyfeatured")]
     public class RefreshController : ControllerBase
     {
         [HttpPost("refresh")]
@@ -25,6 +25,28 @@ namespace Jellyfeatured.Controllers
             {
                 return StatusCode(500, new { error = ex.Message });
             }
+        }
+
+        /// <summary>
+        /// Serves the carousel inject script with recommendations baked in.
+        /// Referenced by the script tag that the middleware injects into index.html.
+        /// </summary>
+        [HttpGet("Script")]
+        [Produces("application/javascript")]
+        public async Task<IActionResult> GetScript()
+        {
+            if (Plugin.Instance == null)
+            {
+                return NotFound();
+            }
+
+            var script = await Plugin.Instance.GetInjectScriptAsync();
+            if (string.IsNullOrEmpty(script))
+            {
+                return NotFound();
+            }
+
+            return Content(script, "application/javascript");
         }
     }
 }

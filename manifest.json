@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/21513/Jellyfeatured/refs/heads/main/thumbnail.jpg",
         "versions": [
             {
+                "version": "0.0.4.0",
+                "changelog": "Fixed accidental swipes to favorites tab on mobile devices",
+                "targetAbi": "10.11.8.0",
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.3.9/Jellyfeatured-v0.0.3.9.zip",
+                "checksum": "5594502e582173c4ec1b95262d2c300e",
+                "timestamp": "2026-02-04T20:44:27Z"
+            },
+            {
                 "version": "0.0.3.9",
                 "changelog": "Fixed accidental swipes to favorites tab on mobile devices",
                 "targetAbi": "10.11.4.0",

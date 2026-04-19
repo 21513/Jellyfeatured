@@ -156,12 +156,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             await SaveRecommendationsAsync(recommendations);
             _logger.LogInformation("Saved recommendations to {Path}", _recommendationsPath);
             
-            await CreateWebScriptAsync(applicationPaths, recommendations);
-            _logger.LogInformation("Created web script for recommendations");
-            
-            await InjectIntoIndexHtmlAsync(applicationPaths);
-            _logger.LogInformation("Injected recommendations into home page");
-            
             _logger.LogInformation("Recommendations refresh completed successfully!");
         }
         catch (Exception ex)
@@ -198,8 +192,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             var recommendations = await GenerateRecommendationsAsync();
 
             await SaveRecommendationsAsync(recommendations);
-            await CreateWebScriptAsync(applicationPaths, recommendations);
-            await InjectIntoIndexHtmlAsync(applicationPaths);
             
             _logger.LogInformation("Jellyfeatured plugin initialization completed successfully");
         }
@@ -458,30 +450,49 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         }
     }
     
-    private async Task CreateWebScriptAsync(IApplicationPaths applicationPaths, List<RecommendationItem> recommendations)
+    /// <summary>
+    /// Builds the carousel inject script from embedded resources and the saved
+    /// recommendations JSON.  Called by the GET /Plugins/Jellyfeatured/Script
+    /// controller endpoint so no files need to be written to the web directory.
+    /// </summary>
+    public async Task<string> GetInjectScriptAsync()
     {
         try
         {
-            var webPath = Path.Combine(applicationPaths.WebPath, "jellyfeatured-inject.js");
+            List<RecommendationItem> recommendations;
+
+            if (File.Exists(_recommendationsPath))
+            {
+                var json = await File.ReadAllTextAsync(_recommendationsPath);
+                recommendations = JsonSerializer.Deserialize<List<RecommendationItem>>(
+                    json,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                ) ?? new List<RecommendationItem>();
+            }
+            else
+            {
+                recommendations = new List<RecommendationItem>();
+            }
+
             var assembly = Assembly.GetExecutingAssembly();
-
             var htmlInject = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.html");
-            var jsInject = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.js");
-            var cssInject = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.css");
+            var jsInject   = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.js");
+            var cssInject  = await LoadEmbeddedResourceAsync(assembly, "Jellyfeatured.main.css");
 
-            // Emit recommendations as JSON so the injected script can safely parse it.
-            var recommendationsJson = JsonSerializer.Serialize(recommendations, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            var recommendationsJson = JsonSerializer.Serialize(
+                recommendations,
+                new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
+            );
 
             var processedHtml = htmlInject.Replace("{{CSS_STYLES}}", cssInject);
-            var scriptContent = jsInject
+            return jsInject
                 .Replace("{{RECOMMENDATIONS_DATA_JSON}}", recommendationsJson)
                 .Replace("{{HTML_TEMPLATE}}", EscapeJs(processedHtml));
-            
-            await File.WriteAllTextAsync(webPath, scriptContent);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create web script");
+            _logger.LogError(ex, "GetInjectScriptAsync failed");
+            return string.Empty;
         }
     }
     
@@ -500,32 +511,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             {
                 return "";
             }
-        }
-    }
-    
-    private async Task InjectIntoIndexHtmlAsync(IApplicationPaths applicationPaths)
-    {
-        try
-        {
-            var indexPath = Path.Combine(applicationPaths.WebPath, "index.html");
-            if (File.Exists(indexPath))
-            {
-                var indexContent = await File.ReadAllTextAsync(indexPath);
-                var scriptTag = "<script src=\"/web/jellyfeatured-inject.js\"></script>";
-                
-                if (!indexContent.Contains("jellyfeatured-inject.js"))
-                {
-                    if (!indexContent.Contains("jellyfeatured-inject.js"))
-                    {
-                        indexContent = indexContent.Replace("</head>", scriptTag + "\n</head>");
-                        await File.WriteAllTextAsync(indexPath, indexContent);
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to inject web script");
         }
     }
     
@@ -555,9 +540,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         try
         {
             var recommendations = await GenerateRecommendationsAsync();
-            
             await SaveRecommendationsAsync(recommendations);
-            await CreateWebScriptAsync(applicationPaths, recommendations);
         }
         catch (Exception ex)
         {
