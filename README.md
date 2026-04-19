@@ -58,6 +58,4 @@ This plugin is made for Jellyfin `v10.11.8`
 
 ## Configuration
 
-Access the configuration page through **Dashboard > Jellyfeatured**. Currently, there are no configurable settings for this plugin. Settings will be added in the future.
-
-All categories are enabled by default and are hard-coded. For future versions I want to add more customizability.
+Access the configuration page through **Dashboard > Jellyfeatured**. You can enable or disable categories, or change the order they appear in. You can also add a custom admin pick by searching for the title you want to feature.
