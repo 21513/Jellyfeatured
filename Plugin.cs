@@ -448,10 +448,27 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 _logger.LogWarning(ex, "Failed to determine trending item");
             }
 
-            // Random Pick: a randomly selected item from all qualified items
+            // Random Pick: a randomly selected item from all qualified items, excluding the admin's pick and trending item
             try
             {
-                var randomCandidates = allItems.Where(HasRequiredImages).ToList();
+                var adminPickGuids = new HashSet<Guid>(
+                    (config.EnableAdminPicks ? config.AdminPickIds : null)
+                        ?.Select(id => Guid.TryParse(id, out var g) ? g : Guid.Empty)
+                        .Where(g => g != Guid.Empty)
+                    ?? Enumerable.Empty<Guid>()
+                );
+
+                if (categoryItems.TryGetValue("trending", out var trendingRec)
+                    && Guid.TryParse(trendingRec.Id, out var trendingGuid))
+                {
+                    adminPickGuids.Add(trendingGuid);
+                }
+
+                var randomCandidates = allItems
+                    .Where(HasRequiredImages)
+                    .Where(item => !adminPickGuids.Contains(item.Id))
+                    .ToList();
+
                 if (randomCandidates.Count > 0)
                 {
                     var randomItem = randomCandidates[new Random().Next(randomCandidates.Count)];
