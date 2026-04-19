@@ -474,16 +474,14 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
                 const computed = getComputedStyle(carouselContainer);
                 const paddingLeft = parseFloat(computed.paddingLeft) || 0;
 
-                // Calculate the center offset to center the active item
-                const containerCenter = containerRect.width / 2;
-                const slideCenter = slideRect.width / 2;
+                // Scroll so the active item's left edge aligns with the container's
+                // padding-left — the same position the first item occupies on startup.
                 const delta = slideRect.left - containerRect.left;
-                const centerOffset = containerCenter - slideCenter;
-                const targetLeft = Math.max(0, Math.round(carouselContainer.scrollLeft + delta - centerOffset));
+                const targetLeft = Math.max(0, Math.round(carouselContainer.scrollLeft + delta - paddingLeft));
 
                 carouselContainer.scrollTo({ left: targetLeft, behavior: 'smooth' });
             } catch (e) {
-                try { targetSlide.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } catch (er) {}
+                try { targetSlide.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' }); } catch (er) {}
             }
         }
 
