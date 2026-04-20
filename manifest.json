@@ -13,8 +13,8 @@
                 "changelog": "Removed admins pick",
                 "targetAbi": "10.11.8.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.4.6/Jellyfeatured-v0.0.4.6.zip",
-                "checksum": "28b75ba20b8ee800427541f3573a0321",
-                "timestamp": "2026-04-20T10:59:39Z"
+                "checksum": "87cdc64d5bde482f88a91d0d14a91997",
+                "timestamp": "2026-04-20T15:13:40Z"
             },
             {
                 "version": "0.0.4.4",
