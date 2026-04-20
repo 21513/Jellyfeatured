@@ -9,7 +9,7 @@
 
 Adds a featured section to your Jellyfin home page with automatic recommendations. Modify or reorder categories to fit your preferences.
 
-![Jellyfeatured on desktop](jellyfeatured-desktop.png)
+![Jellyfeatured on desktop](/media/jellyfeatured-0.0.4.4-desktop.png)
 
 Works on both desktop and mobile devices. Does not work on the Android TV client or clients that don't support web injections.
 
