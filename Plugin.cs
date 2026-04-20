@@ -376,9 +376,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 };
             }
             
-            _logger.LogInformation("Admin picks check - EnableAdminPicks: {Enabled}, AdminPickIds count: {Count}", 
-                config.EnableAdminPicks, config.AdminPickIds?.Count ?? 0);
-
             // Trending: most-played item in the last 7 days across all users.
             // Falls back to most-played all-time if nothing was played recently,
             // then to most recently played ever so the slot is never empty.
