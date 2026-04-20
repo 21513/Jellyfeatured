@@ -72,8 +72,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
     private void OnConfigurationChanged(object? sender, BasePluginConfiguration e)
     {
         var config = (PluginConfiguration)e;
-        _logger.LogInformation("🔧 Configuration change detected! Refresh interval: {Hours}h, Admin picks enabled: {Enabled}, Manual refresh timestamp: {ManualRefresh}", 
-            config.RefreshIntervalHours, config.EnableAdminPicks, config.LastManualRefresh);
+        _logger.LogInformation("🔧 Configuration change detected! Refresh interval: {Hours}h, Manual refresh timestamp: {ManualRefresh}", 
+            config.RefreshIntervalHours, config.LastManualRefresh);
 
         if (ValidateConfiguration(config))
         {
@@ -126,13 +126,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 config.RefreshIntervalHours = 24;
                 configChanged = true;
                 _logger.LogInformation("Set default RefreshIntervalHours to 24");
-            }
-
-            if (config.AdminPickIds == null)
-            {
-                config.AdminPickIds = new List<string>();
-                configChanged = true;
-                _logger.LogInformation("Set default empty AdminPickIds");
             }
 
             if (config.FeaturedItemIds == null)
@@ -199,8 +192,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             _logger.LogInformation("Initializing Jellyfeatured plugin...");
 
             var config = Configuration;
-            _logger.LogInformation("Initial configuration: RefreshInterval={Hours}h, AdminPicks={AdminPicks}", 
-                config.RefreshIntervalHours, config.EnableAdminPicks);
+            _logger.LogInformation("Initial configuration: RefreshInterval={Hours}h", 
+                config.RefreshIntervalHours);
 
             // Silently clean up any files written by the old file-based injection.
             // This is a no-op if there is nothing to clean, so running it on every
@@ -252,12 +245,11 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         
         var config = Configuration;
         
-        _logger.LogInformation("Current configuration being used: RefreshInterval={Hours}h, AdminPicksEnabled={AdminPicks}, AdminPickIds=[{AdminIds}]", 
-            config.RefreshIntervalHours, config.EnableAdminPicks, string.Join(", ", config.AdminPickIds));
+        _logger.LogInformation("Current configuration being used: RefreshInterval={Hours}h", 
+            config.RefreshIntervalHours);
 
         var defaultCategoryOrder = new List<string>
         {
-            "featuredPick",
             "latestRelease", 
             "recentlyAddedFilms",
             "recentlyAddedSeries",
@@ -271,7 +263,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         
         var categoryMapping = new Dictionary<string, string>
         {
-            { "featuredPick", "Admin's Pick" },
             { "latestRelease", "Latest Release" },
             { "recentlyAddedFilms", "Recently Added in Films" },
             { "recentlyAddedSeries", "Recently Added in Series" },
@@ -386,9 +377,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 };
             }
             
-            _logger.LogInformation("Admin picks check - EnableAdminPicks: {Enabled}, AdminPickIds count: {Count}", 
-                config.EnableAdminPicks, config.AdminPickIds?.Count ?? 0);
-
             // Trending: most-played item in the last 7 days across all users.
             // Falls back to most-played all-time if nothing was played recently,
             // then to most recently played ever so the slot is never empty.
@@ -472,25 +460,20 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 _logger.LogWarning(ex, "Failed to determine trending item");
             }
 
-            // Random Pick: a randomly selected item from all qualified items, excluding the admin's pick and trending item
+            // Random Pick: a randomly selected item from all qualified items, excluding the trending item
             try
             {
-                var adminPickGuids = new HashSet<Guid>(
-                    (config.EnableAdminPicks ? config.AdminPickIds : null)
-                        ?.Select(id => Guid.TryParse(id, out var g) ? g : Guid.Empty)
-                        .Where(g => g != Guid.Empty)
-                    ?? Enumerable.Empty<Guid>()
-                );
+                var excludeGuids = new HashSet<Guid>();
 
                 if (categoryItems.TryGetValue("trending", out var trendingRec)
                     && Guid.TryParse(trendingRec.Id, out var trendingGuid))
                 {
-                    adminPickGuids.Add(trendingGuid);
+                    excludeGuids.Add(trendingGuid);
                 }
 
                 var randomCandidates = allItems
                     .Where(HasRequiredImages)
-                    .Where(item => !adminPickGuids.Contains(item.Id))
+                    .Where(item => !excludeGuids.Contains(item.Id))
                     .ToList();
 
                 if (randomCandidates.Count > 0)
@@ -509,61 +492,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to pick random item");
-            }
-
-            if (config.EnableAdminPicks && config.AdminPickIds?.Count > 0)
-            {
-                var adminPickItems = new List<RecommendationItem>();
-                
-                foreach (var itemId in config.AdminPickIds)
-                {
-                    try
-                    {
-                        _logger.LogInformation("Processing admin pick item ID: {ItemId}", itemId);
-                        if (Guid.TryParse(itemId, out var guid))
-                        {
-                            var item = _libraryManager.GetItemById(guid);
-                            if (item != null && HasRequiredImages(item))
-                            {
-                                _logger.LogInformation("Found admin pick item: {Name}", item.Name);
-                                adminPickItems.Add(new RecommendationItem
-                                {
-                                    Title = item.Name,
-                                        Id = item.Id.ToString(),
-                                    Type = "Admin's Pick",
-                                    Year = item.PremiereDate?.Year.ToString() ?? "",
-                                    Rating = item.CommunityRating?.ToString("F1") ?? "N/A"
-                                });
-                            }
-                            else if (item != null)
-                            {
-                                _logger.LogWarning("Admin pick item '{Name}' excluded - missing poster or backdrop", item.Name);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("Admin pick item not found for ID: {ItemId}", itemId);
-                            }
-                        }
-                        else
-                        {
-                            _logger.LogWarning("Invalid GUID format for admin pick ID: {ItemId}", itemId);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Failed to load admin pick item with ID: {ItemId}", itemId);
-                    }
-                }
-
-                if (adminPickItems.Count > 0)
-                {
-                    categoryItems["featuredPick"] = adminPickItems.First();
-                    _logger.LogInformation("Added {Count} admin pick items to featuredPick category", adminPickItems.Count);
-                }
-                else
-                {
-                    _logger.LogWarning("No valid admin pick items found despite having AdminPickIds configured");
-                }
             }
 
             // Build Custom List items (each FeaturedItemId becomes a "Featured" slide)
@@ -613,7 +541,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
 
             foreach (var categoryVariable in fixedCategoryOrder)
             {
-                if (categoryVariable == "featuredPick" && (!config.EnableAdminPicks || !categoryItems.ContainsKey("featuredPick")))
+                if (categoryVariable == "featuredPick")
                 {
                     continue;
                 }
