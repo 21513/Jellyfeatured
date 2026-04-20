@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/21513/Jellyfeatured/refs/heads/main/thumbnail.jpg",
         "versions": [
             {
+                "version": "0.0.4.4",
+                "changelog": "Added custom list in the configuration page; Removed maintenance section from the configuration page",
+                "targetAbi": "10.11.8.0",
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.4.4/Jellyfeatured-v0.0.4.4.zip",
+                "checksum": "f46defb747af3b6cbac5c2240175b0c4",
+                "timestamp": "2026-04-20T08:53:38Z"
+            },
+            {
                 "version": "0.0.4.3",
                 "changelog": "Fixed minor bugs",
                 "targetAbi": "10.11.8.0",
