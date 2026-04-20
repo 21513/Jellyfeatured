@@ -28,6 +28,20 @@ namespace Jellyfeatured.Controllers
         }
 
         /// <summary>
+        /// Deletes legacy files written by the old file-based injection and cleans
+        /// up any old script tags from index.html.
+        /// </summary>
+        [HttpPost("CleanupLegacy")]
+        public async Task<IActionResult> CleanupLegacy()
+        {
+            if (Plugin.Instance == null)
+                return NotFound("Plugin instance not available");
+
+            var (deleted, modified, errors) = await Plugin.Instance.CleanupLegacyFilesAsync();
+            return Ok(new { deleted, modified, errors });
+        }
+
+        /// <summary>
         /// Serves the carousel inject script with recommendations baked in.
         /// Referenced by the script tag that the middleware injects into index.html.
         /// </summary>

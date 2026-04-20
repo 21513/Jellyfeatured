@@ -69,6 +69,19 @@
                         <span id="jellyfeatured-status" style="color:var(--textColorSecondary,#aaa);font-size:0.9rem;"></span>
                     </div>
                 </form>
+
+                <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--dividerColor,#333);">
+                    <h3 class="sectionTitle" style="font-size:1rem;margin-bottom:4px;">Maintenance</h3>
+                    <p style="color:var(--textColorSecondary,#aaa);font-size:0.85rem;margin:0 0 12px;">
+                        Removes leftover files from previous versions of this plugin.
+                    </p>
+                    <button id="jellyfeatured-cleanup-btn" type="button" class="raised emby-button">
+                        <span class="material-icons" style="vertical-align:middle;margin-right:6px;font-size:1.1em;">cleaning_services</span>
+                        <span>Clean up legacy files</span>
+                    </button>
+                    <div id="jellyfeatured-cleanup-status" style="margin-top:8px;color:var(--textColorSecondary,#aaa);font-size:0.85rem;"></div>
+                </div>
+
                 <script>
                     (function () {
                         const PLUGIN_ID = '639b5171-918b-4b24-82e4-d35c10be63a4';
@@ -335,6 +348,36 @@
                                 bc.postMessage({ type: 'refresh', ts });
                             } catch (e) {}
                             showStatus('Refresh requested (fallback).', 2500);
+                        });
+
+                        // ── Cleanup legacy files ──────────────────────────────────────────────
+                        const cleanupBtn = document.getElementById('jellyfeatured-cleanup-btn');
+                        const cleanupStatus = document.getElementById('jellyfeatured-cleanup-status');
+
+                        cleanupBtn.addEventListener('click', async () => {
+                            cleanupBtn.disabled = true;
+                            cleanupStatus.textContent = 'Scanning...';
+                            try {
+                                const resp = await fetch('/plugins/jellyfeatured/cleanuplegacy', {
+                                    method: 'POST',
+                                    credentials: 'same-origin',
+                                    headers: { 'Content-Type': 'application/json' }
+                                });
+                                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                                const data = await resp.json();
+                                const parts = [];
+                                if (data.deleted && data.deleted.length > 0)
+                                    parts.push('Deleted: ' + data.deleted.map(f => f.split(/[\\/]/).pop()).join(', '));
+                                if (data.modified && data.modified.length > 0)
+                                    parts.push('Cleaned index.html in: ' + data.modified.map(f => f.split(/[\\/]/).slice(-3).join('/')).join(', '));
+                                if (data.errors && data.errors.length > 0)
+                                    parts.push('Errors: ' + data.errors.join('; '));
+                                cleanupStatus.textContent = parts.length > 0 ? parts.join(' | ') : 'Nothing to clean up.';
+                            } catch (err) {
+                                cleanupStatus.textContent = 'Cleanup failed: ' + err.message;
+                            } finally {
+                                cleanupBtn.disabled = false;
+                            }
                         });
                     })();
                 </script>

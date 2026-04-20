@@ -194,6 +194,22 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             var config = Configuration;
             _logger.LogInformation("Initial configuration: RefreshInterval={Hours}h, AdminPicks={AdminPicks}", 
                 config.RefreshIntervalHours, config.EnableAdminPicks);
+
+            // Silently clean up any files written by the old file-based injection.
+            // This is a no-op if there is nothing to clean, so running it on every
+            // startup is safe. It also means legacy files are removed automatically
+            // after an upgrade even if the user never visits the settings page.
+            try
+            {
+                var (deleted, modified, _) = await CleanupLegacyFilesAsync().ConfigureAwait(false);
+                if (deleted.Count > 0 || modified.Count > 0)
+                    _logger.LogInformation("Startup cleanup: deleted [{Deleted}], modified [{Modified}]",
+                        string.Join(", ", deleted), string.Join(", ", modified));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Startup cleanup encountered an error (non-fatal)");
+            }
             
             var recommendations = await GenerateRecommendationsAsync();
 
@@ -693,6 +709,110 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         GC.SuppressFinalize(this);
     }
     
+    /// <summary>
+    /// Deletes legacy files written by the old file-based injection approach and
+    /// removes any old &lt;script&gt; tags from index.html so the current
+    /// middleware injection works cleanly.
+    /// </summary>
+    public async Task<(List<string> Deleted, List<string> Modified, List<string> Errors)> CleanupLegacyFilesAsync()
+    {
+        var deleted  = new List<string>();
+        var modified = new List<string>();
+        var errors   = new List<string>();
+
+        // Build a list of candidate web directories to search.
+        var candidates = new List<string>();
+
+        var programDir = _applicationPaths.ProgramSystemPath;
+        if (!string.IsNullOrEmpty(programDir))
+        {
+            // Windows standard: {ProgramSystemPath}\jellyfin-web
+            candidates.Add(Path.Combine(programDir, "jellyfin-web"));
+            var parent = Path.GetDirectoryName(programDir);
+            if (!string.IsNullOrEmpty(parent))
+                candidates.Add(Path.Combine(parent, "jellyfin-web"));
+        }
+
+        // Neighbour of the data directory
+        var dataDir = _applicationPaths.DataPath;
+        if (!string.IsNullOrEmpty(dataDir))
+        {
+            var dataParent = Path.GetDirectoryName(dataDir);
+            if (!string.IsNullOrEmpty(dataParent))
+                candidates.Add(Path.Combine(dataParent, "jellyfin-web"));
+        }
+
+        // Linux standard install paths
+        candidates.Add("/usr/share/jellyfin/web");
+        candidates.Add("/usr/lib/jellyfin/web");
+        candidates.Add("/opt/jellyfin/web");
+
+        // Old script tag patterns the previous version injected
+        var oldScriptPatterns = new[]
+        {
+            "<script src=\"/jellyfeatured.js\"></script>",
+            "<script src='/jellyfeatured.js'></script>",
+            "<script src=\"jellyfeatured.js\"></script>",
+            "<script src='jellyfeatured.js'></script>",
+            "<script src=\"/web/jellyfeatured.js\"></script>",
+            "<script src='/web/jellyfeatured.js'></script>",
+        };
+
+        foreach (var dir in candidates.Distinct())
+        {
+            if (!Directory.Exists(dir)) continue;
+            _logger.LogInformation("Cleanup: scanning {Dir}", dir);
+
+            // Delete any top-level file whose name contains "jellyfeatured" (e.g. jellyfeatured.js)
+            try
+            {
+                foreach (var file in Directory.GetFiles(dir, "*jellyfeatured*", SearchOption.TopDirectoryOnly))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                        deleted.Add(file);
+                        _logger.LogInformation("Cleanup: deleted {File}", file);
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add($"Could not delete {Path.GetFileName(file)}: {ex.Message}");
+                        _logger.LogWarning(ex, "Cleanup: failed to delete {File}", file);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Could not scan {dir}: {ex.Message}");
+            }
+
+            // Remove old script tag from index.html
+            var indexPath = Path.Combine(dir, "index.html");
+            if (!File.Exists(indexPath)) continue;
+            try
+            {
+                var content = await File.ReadAllTextAsync(indexPath).ConfigureAwait(false);
+                var original = content;
+                foreach (var pattern in oldScriptPatterns)
+                    content = content.Replace(pattern, string.Empty, StringComparison.OrdinalIgnoreCase);
+
+                if (!string.Equals(content, original, StringComparison.Ordinal))
+                {
+                    await File.WriteAllTextAsync(indexPath, content).ConfigureAwait(false);
+                    modified.Add(indexPath);
+                    _logger.LogInformation("Cleanup: removed legacy script tag from {File}", indexPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Could not modify index.html in {dir}: {ex.Message}");
+                _logger.LogWarning(ex, "Cleanup: failed to modify {File}", indexPath);
+            }
+        }
+
+        return (deleted, modified, errors);
+    }
+
     protected virtual void Dispose(bool disposing)
     {
         if (!_disposed)

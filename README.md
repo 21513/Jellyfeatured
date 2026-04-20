@@ -29,11 +29,11 @@ I need your help testing on more clients! Please open an issue if you find any b
 - ElegantFin Theme Support
 
 Features that will be added in the future:
-- Customizable category order
-- Additional categories
-- Randomized featured items
 - Auto-refresh
-- Refresh interval settings
+- ~~Customizable category order~~
+- ~~Additional categories~~
+- ~~Randomized featured items~~
+- ~~Refresh interval settings~~
 
 ## Requirements
 - Jellyfin Server v10.11.8
