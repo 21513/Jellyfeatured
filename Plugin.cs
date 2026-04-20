@@ -134,6 +134,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 configChanged = true;
                 _logger.LogInformation("Set default empty AdminPickIds");
             }
+
+            if (config.FeaturedItemIds == null)
+            {
+                config.FeaturedItemIds = new List<string>();
+                configChanged = true;
+                _logger.LogInformation("Set default empty FeaturedItemIds");
+            }
             
             if (configChanged)
             {
@@ -271,7 +278,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             { "bestRatedFilms", "Best Rated in Films" },
             { "bestRatedSeries", "Best Rated in Series" },
             { "trending", "Trending" },
-            { "randomPick", "Random Pick" }
+            { "randomPick", "Random Pick" },
+            { "customList", "Custom List" }
         };
         
         try
@@ -558,10 +566,95 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
                 }
             }
 
+            // Build Custom List items (each FeaturedItemId becomes a "Featured" slide)
+            var customListItems = new List<RecommendationItem>();
+            if (config.FeaturedItemIds?.Count > 0)
+            {
+                foreach (var itemId in config.FeaturedItemIds)
+                {
+                    try
+                    {
+                        if (Guid.TryParse(itemId, out var guid))
+                        {
+                            var item = _libraryManager.GetItemById(guid);
+                            if (item != null && HasRequiredImages(item))
+                            {
+                                customListItems.Add(new RecommendationItem
+                                {
+                                    Title = item.Name,
+                                    Id = item.Id.ToString(),
+                                    Type = "Featured",
+                                    Year = item.PremiereDate?.Year.ToString() ?? "",
+                                    Rating = item.CommunityRating?.ToString("F1") ?? "N/A"
+                                });
+                                _logger.LogInformation("Added custom list item: {Name}", item.Name);
+                            }
+                            else if (item != null)
+                            {
+                                _logger.LogWarning("Custom list item '{Name}' excluded - missing poster or backdrop", item.Name);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Custom list item not found for ID: {ItemId}", itemId);
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Invalid GUID format for custom list item ID: {ItemId}", itemId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to load custom list item with ID: {ItemId}", itemId);
+                    }
+                }
+                _logger.LogInformation("Built {Count} custom list items", customListItems.Count);
+            }
+
             foreach (var categoryVariable in fixedCategoryOrder)
             {
                 if (categoryVariable == "featuredPick" && (!config.EnableAdminPicks || !categoryItems.ContainsKey("featuredPick")))
                 {
+                    continue;
+                }
+
+                if (categoryVariable == "customList")
+                {
+                    if (customListItems.Count > 0)
+                    {
+                        recommendations.AddRange(customListItems);
+                        _logger.LogInformation("Added {Count} custom list items to recommendations", customListItems.Count);
+                    }
+                    continue;
+                }
+
+                if (categoryVariable.StartsWith("featured_", StringComparison.OrdinalIgnoreCase))
+                {
+                    var featuredItemId = categoryVariable.Substring("featured_".Length);
+                    if (Guid.TryParse(featuredItemId, out var featuredGuid))
+                    {
+                        var featuredItem = _libraryManager.GetItemById(featuredGuid);
+                        if (featuredItem != null && HasRequiredImages(featuredItem))
+                        {
+                            recommendations.Add(new RecommendationItem
+                            {
+                                Title = featuredItem.Name,
+                                Id = featuredItem.Id.ToString(),
+                                Type = "Featured",
+                                Year = featuredItem.PremiereDate?.Year.ToString() ?? "",
+                                Rating = featuredItem.CommunityRating?.ToString("F1") ?? "N/A"
+                            });
+                            _logger.LogInformation("Added featured item '{Name}' to recommendations", featuredItem.Name);
+                        }
+                        else if (featuredItem != null)
+                        {
+                            _logger.LogWarning("Featured item '{Name}' excluded - missing poster or backdrop", featuredItem.Name);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Featured item not found for ID: {ItemId}", featuredItemId);
+                        }
+                    }
                     continue;
                 }
                 

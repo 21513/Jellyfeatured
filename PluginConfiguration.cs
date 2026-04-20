@@ -41,6 +41,12 @@ public class PluginConfiguration : BasePluginConfiguration
     /// When true, the Admin's Pick section will appear in the carousel with the specified media items.
     /// </summary>
     public bool EnableAdminPicks { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets the list of media item IDs for the Custom List.
+    /// Each item will be displayed as "Featured" in the carousel when the customList category is enabled.
+    /// </summary>
+    public List<string> FeaturedItemIds { get; set; } = new List<string>();
     
     /// <summary>
     /// Gets or sets the timestamp of the last manual refresh request.

@@ -48,6 +48,28 @@
                     </div>
 
                     <div class="inputContainer" style="margin-top:24px;">
+                        <label class="inputLabel">Custom List</label>
+                        <div class="fieldDescription" style="margin-bottom:8px;">
+                            Search and add movies or series. Each item appears individually in the order list below
+                            where it can be enabled, disabled, or reordered independently.
+                        </div>
+                        <div style="position:relative;max-width:420px;">
+                            <input id="jellyfeatured-featured-search"
+                                   type="text" placeholder="Search to add..."
+                                   class="emby-input" style="width:100%;" autocomplete="off" />
+                            <ul id="jellyfeatured-featured-dropdown" style="
+                                list-style:none;margin:0;padding:0;
+                                position:absolute;left:0;right:0;z-index:100;
+                                display:none;
+                                background:var(--cardBackground,#1f1f1f);
+                                border:1px solid var(--dividerColor,#333);
+                                border-radius:0 0 4px 4px;
+                                max-height:220px;overflow-y:auto;
+                            "></ul>
+                        </div>
+                    </div>
+
+                    <div class="inputContainer" style="margin-top:24px;">
                         <label class="inputLabel">Featured item order</label>
                         <div class="fieldDescription" style="margin-bottom:8px;">
                             Drag to reorder. Uncheck to hide a category.
@@ -70,17 +92,6 @@
                     </div>
                 </form>
 
-                <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--dividerColor,#333);">
-                    <h3 class="sectionTitle" style="font-size:1rem;margin-bottom:4px;">Maintenance</h3>
-                    <p style="color:var(--textColorSecondary,#aaa);font-size:0.85rem;margin:0 0 12px;">
-                        Removes leftover files from previous versions of this plugin.
-                    </p>
-                    <button id="jellyfeatured-cleanup-btn" type="button" class="raised emby-button">
-                        <span class="material-icons" style="vertical-align:middle;margin-right:6px;font-size:1.1em;">cleaning_services</span>
-                        <span>Clean up legacy files</span>
-                    </button>
-                    <div id="jellyfeatured-cleanup-status" style="margin-top:8px;color:var(--textColorSecondary,#aaa);font-size:0.85rem;"></div>
-                </div>
 
                 <script>
                     (function () {
@@ -108,6 +119,64 @@
                         // ── Admin's Pick (single item) ────────────────────────────────────────
                         // adminPick: { id, title, year } or null
                         let adminPick = null;
+
+                        // ── Custom List (Featured items — multiple) ───────────────────────────
+                        // featuredItems: [{id, title, year}]
+                        let featuredItems = [];
+
+                        const featuredSearchEl = document.getElementById('jellyfeatured-featured-search');
+                        const featuredDropdownEl = document.getElementById('jellyfeatured-featured-dropdown');
+                        let featuredSearchDebounce = null;
+
+                        featuredSearchEl.addEventListener('input', () => {
+                            clearTimeout(featuredSearchDebounce);
+                            const q = featuredSearchEl.value.trim();
+                            if (q.length < 2) { featuredDropdownEl.style.display = 'none'; return; }
+                            featuredSearchDebounce = setTimeout(async () => {
+                                try {
+                                    const url = apiUrl('Items', {
+                                        searchTerm: q,
+                                        IncludeItemTypes: 'Movie,Series',
+                                        Recursive: true,
+                                        Limit: 8,
+                                        Fields: 'PremiereDate'
+                                    });
+                                    const resp = await fetch(url, { credentials: 'same-origin' });
+                                    const data = await resp.json();
+                                    const items = (data && data.Items) || [];
+
+                                    featuredDropdownEl.innerHTML = '';
+                                    if (items.length === 0) { featuredDropdownEl.style.display = 'none'; return; }
+
+                                    items.forEach(item => {
+                                        const year = item.PremiereDate ? new Date(item.PremiereDate).getFullYear() : '';
+                                        const li = document.createElement('li');
+                                        li.style.cssText = 'padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--dividerColor,#333);';
+                                        li.textContent = item.Name + (year ? ' (' + year + ')' : '') + ' — ' + item.Type;
+                                        li.addEventListener('mouseenter', () => { li.style.background = 'var(--focusColor,rgba(255,255,255,.1))'; });
+                                        li.addEventListener('mouseleave', () => { li.style.background = ''; });
+                                        li.addEventListener('mousedown', (e) => {
+                                            e.preventDefault();
+                                            if (!featuredItems.some(i => i.id === item.Id)) {
+                                                featuredItems.push({ id: item.Id, title: item.Name, year: String(year) });
+                                                const currentOrder = getSelectedCategoryOrder();
+                                                buildCategoryList([...currentOrder, 'featured_' + item.Id]);
+                                            }
+                                            featuredSearchEl.value = '';
+                                            featuredDropdownEl.style.display = 'none';
+                                        });
+                                        featuredDropdownEl.appendChild(li);
+                                    });
+                                    featuredDropdownEl.style.display = 'block';
+                                } catch (e) {
+                                    featuredDropdownEl.style.display = 'none';
+                                }
+                            }, 250);
+                        });
+
+                        featuredSearchEl.addEventListener('blur', () => {
+                            setTimeout(() => { featuredDropdownEl.style.display = 'none'; }, 150);
+                        });
 
                         function setAdminPick(pick) {
                             adminPick = pick;
@@ -190,15 +259,43 @@
                         function buildCategoryList(orderedKeys) {
                             categoryList.innerHTML = '';
 
-                            // Ordered (enabled) items first, then any not in the saved order (disabled).
-                            const enabledKeys = orderedKeys.filter(k => ALL_CATEGORIES.some(c => c.key === k));
-                            const disabledKeys = ALL_CATEGORIES.map(c => c.key).filter(k => !enabledKeys.includes(k));
-                            const displayOrder = [...enabledKeys, ...disabledKeys];
+                            // Static categories
+                            const enabledStaticKeys = orderedKeys.filter(k => ALL_CATEGORIES.some(c => c.key === k));
+                            const disabledStaticKeys = ALL_CATEGORIES.map(c => c.key).filter(k => !enabledStaticKeys.includes(k));
 
-                            displayOrder.forEach(key => {
-                                const cat = ALL_CATEGORIES.find(c => c.key === key);
-                                if (!cat) return;
-                                const enabled = enabledKeys.includes(key);
+                            // Featured items
+                            const enabledFeaturedIds = orderedKeys
+                                .filter(k => k.startsWith('featured_'))
+                                .map(k => k.slice('featured_'.length))
+                                .filter(id => featuredItems.some(f => f.id === id));
+                            const disabledFeaturedIds = featuredItems.map(f => f.id).filter(id => !enabledFeaturedIds.includes(id));
+
+                            // Build display order: ordered valid keys first, then disabled static, then disabled featured
+                            const displayKeys = [
+                                ...orderedKeys.filter(k =>
+                                    ALL_CATEGORIES.some(c => c.key === k) ||
+                                    (k.startsWith('featured_') && featuredItems.some(f => f.id === k.slice('featured_'.length)))
+                                ),
+                                ...disabledStaticKeys,
+                                ...disabledFeaturedIds.map(id => 'featured_' + id)
+                            ];
+
+                            displayKeys.forEach(key => {
+                                const isFeatured = key.startsWith('featured_');
+                                let label, enabled;
+
+                                if (isFeatured) {
+                                    const id = key.slice('featured_'.length);
+                                    const feat = featuredItems.find(f => f.id === id);
+                                    if (!feat) return;
+                                    label = 'Featured: ' + feat.title + (feat.year ? ' (' + feat.year + ')' : '');
+                                    enabled = enabledFeaturedIds.includes(id);
+                                } else {
+                                    const cat = ALL_CATEGORIES.find(c => c.key === key);
+                                    if (!cat) return;
+                                    label = cat.label;
+                                    enabled = enabledStaticKeys.includes(key);
+                                }
 
                                 const li = document.createElement('li');
                                 li.dataset.key = key;
@@ -206,7 +303,9 @@
                                 li.style.cssText = [
                                     'display:flex', 'align-items:center', 'gap:10px',
                                     'padding:8px 10px', 'margin-bottom:4px',
-                                    'background:var(--cardBackground,rgba(255,255,255,.06))',
+                                    isFeatured
+                                        ? 'background:var(--cardBackground,rgba(0,164,220,.08))'
+                                        : 'background:var(--cardBackground,rgba(255,255,255,.06))',
                                     'border-radius:4px', 'cursor:grab',
                                     'border:1px solid transparent'
                                 ].join(';');
@@ -223,12 +322,27 @@
 
                                 const labelEl = document.createElement('label');
                                 labelEl.htmlFor = 'cat-' + key;
-                                labelEl.textContent = cat.label;
+                                labelEl.textContent = label;
                                 labelEl.style.cssText = 'cursor:pointer;flex:1;margin:0;';
 
                                 li.appendChild(handle);
                                 li.appendChild(checkbox);
                                 li.appendChild(labelEl);
+
+                                if (isFeatured) {
+                                    const id = key.slice('featured_'.length);
+                                    const removeBtn = document.createElement('button');
+                                    removeBtn.type = 'button';
+                                    removeBtn.textContent = '✕';
+                                    removeBtn.title = 'Remove from list';
+                                    removeBtn.style.cssText = 'background:none;border:none;color:var(--textColorSecondary,#aaa);cursor:pointer;font-size:0.9rem;padding:0 4px;line-height:1;flex-shrink:0;';
+                                    removeBtn.addEventListener('click', (e) => {
+                                        e.stopPropagation();
+                                        featuredItems = featuredItems.filter(f => f.id !== id);
+                                        buildCategoryList(getSelectedCategoryOrder().filter(k => k !== key));
+                                    });
+                                    li.appendChild(removeBtn);
+                                }
 
                                 // Drag events
                                 li.addEventListener('dragstart', e => {
@@ -284,7 +398,6 @@
                                 const savedOrder = (config && config.CategoryOrder && config.CategoryOrder.length > 0)
                                     ? config.CategoryOrder
                                     : ALL_CATEGORIES.map(c => c.key);
-                                buildCategoryList(savedOrder);
 
                                 // Load admin pick metadata
                                 adminPick = null;
@@ -299,6 +412,21 @@
                                         setAdminPick({ id: ids[0], title: ids[0], year: '' });
                                     }
                                 }
+
+                                // Load custom list (Featured) items into registry BEFORE building the order list
+                                featuredItems = [];
+                                const featuredIds = (config && config.FeaturedItemIds) || [];
+                                for (const fid of featuredIds) {
+                                    try {
+                                        const resp = await fetch(apiUrl('Items/' + fid), { credentials: 'same-origin' });
+                                        const item = await resp.json();
+                                        const year = item.PremiereDate ? String(new Date(item.PremiereDate).getFullYear()) : '';
+                                        featuredItems.push({ id: item.Id, title: item.Name, year });
+                                    } catch (e) {
+                                        featuredItems.push({ id: fid, title: fid, year: '' });
+                                    }
+                                }
+                                buildCategoryList(savedOrder);
                             })
                             .catch(() => {
                                 intervalInput.value = 6;
@@ -319,6 +447,10 @@
                                 config.CategoryOrder = getSelectedCategoryOrder();
                                 config.AdminPickIds = adminPick ? [adminPick.id] : [];
                                 config.EnableAdminPicks = !!adminPick;
+                                config.FeaturedItemIds = [...categoryList.querySelectorAll('li')]
+                                    .map(li => li.dataset.key)
+                                    .filter(k => k.startsWith('featured_'))
+                                    .map(k => k.slice('featured_'.length));
                                 await ApiClient.updatePluginConfiguration(PLUGIN_ID, config);
                                 showStatus('Settings saved.', 2500);
                             } catch (err) {
@@ -350,35 +482,6 @@
                             showStatus('Refresh requested (fallback).', 2500);
                         });
 
-                        // ── Cleanup legacy files ──────────────────────────────────────────────
-                        const cleanupBtn = document.getElementById('jellyfeatured-cleanup-btn');
-                        const cleanupStatus = document.getElementById('jellyfeatured-cleanup-status');
-
-                        cleanupBtn.addEventListener('click', async () => {
-                            cleanupBtn.disabled = true;
-                            cleanupStatus.textContent = 'Scanning...';
-                            try {
-                                const resp = await fetch('/plugins/jellyfeatured/cleanuplegacy', {
-                                    method: 'POST',
-                                    credentials: 'same-origin',
-                                    headers: { 'Content-Type': 'application/json' }
-                                });
-                                if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                                const data = await resp.json();
-                                const parts = [];
-                                if (data.deleted && data.deleted.length > 0)
-                                    parts.push('Deleted: ' + data.deleted.map(f => f.split(/[\\/]/).pop()).join(', '));
-                                if (data.modified && data.modified.length > 0)
-                                    parts.push('Cleaned index.html in: ' + data.modified.map(f => f.split(/[\\/]/).slice(-3).join('/')).join(', '));
-                                if (data.errors && data.errors.length > 0)
-                                    parts.push('Errors: ' + data.errors.join('; '));
-                                cleanupStatus.textContent = parts.length > 0 ? parts.join(' | ') : 'Nothing to clean up.';
-                            } catch (err) {
-                                cleanupStatus.textContent = 'Cleanup failed: ' + err.message;
-                            } finally {
-                                cleanupBtn.disabled = false;
-                            }
-                        });
                     })();
                 </script>
             </div>
