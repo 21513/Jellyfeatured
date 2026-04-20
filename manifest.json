@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/21513/Jellyfeatured/refs/heads/main/thumbnail.jpg",
         "versions": [
             {
+                "version": "0.0.4.5",
+                "changelog": "Removed admin's pick; Fixed mobile featured div overlapping 'My Media' section",
+                "targetAbi": "10.11.8.0",
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.4.5/Jellyfeatured-v0.0.4.5.zip",
+                "checksum": "28b75ba20b8ee800427541f3573a0321",
+                "timestamp": "2026-04-20T10:59:39Z"
+            },
+            {
                 "version": "0.0.4.4",
                 "changelog": "Added custom list in the configuration page; Removed maintenance section from the configuration page",
                 "targetAbi": "10.11.8.0",
