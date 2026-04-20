@@ -660,7 +660,14 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
         const pathname = window.location.pathname;
         const hash = window.location.hash;
         console.log('[Jellyfeatured] createFeaturedCarousel: pathname =', pathname, '| hash =', hash);
-        if (!pathname.includes('home') && pathname !== '/' && pathname !== '/web/' && pathname !== '/web/index.html') {
+        // Match any path that looks like a Jellyfin home route, regardless of
+        // what base path the server is mounted under (e.g. /jellyfin/web/).
+        const isHomePath =
+            pathname.includes('home') ||
+            pathname === '/' ||
+            /(?:^|\/)web\/?$/.test(pathname) ||
+            /(?:^|\/)web\/index\.html$/.test(pathname);
+        if (!isHomePath) {
             console.log('[Jellyfeatured] createFeaturedCarousel: pathname did not match home routes, skipping');
             return;
         }

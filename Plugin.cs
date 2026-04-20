@@ -746,8 +746,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         candidates.Add("/usr/share/jellyfin/web");
         candidates.Add("/usr/lib/jellyfin/web");
         candidates.Add("/opt/jellyfin/web");
+        // Docker (linuxserver/jellyfin and official image)
+        candidates.Add("/jellyfin/jellyfin-web");
+        candidates.Add("/app/jellyfin/web");
+        candidates.Add("/config/www");
 
         // Old script tag patterns the previous version injected
+        // Covers both jellyfeatured.js and jellyfeatured-inject.js variants
         var oldScriptPatterns = new[]
         {
             "<script src=\"/jellyfeatured.js\"></script>",
@@ -756,6 +761,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
             "<script src='jellyfeatured.js'></script>",
             "<script src=\"/web/jellyfeatured.js\"></script>",
             "<script src='/web/jellyfeatured.js'></script>",
+            "<script src=\"/jellyfeatured-inject.js\"></script>",
+            "<script src='/jellyfeatured-inject.js'></script>",
+            "<script src=\"jellyfeatured-inject.js\"></script>",
+            "<script src='jellyfeatured-inject.js'></script>",
+            "<script src=\"/web/jellyfeatured-inject.js\"></script>",
+            "<script src='/web/jellyfeatured-inject.js'></script>",
         };
 
         foreach (var dir in candidates.Distinct())
