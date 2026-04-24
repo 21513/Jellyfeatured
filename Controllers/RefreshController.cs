@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Jellyfeatured.Controllers
@@ -44,7 +45,10 @@ namespace Jellyfeatured.Controllers
         /// <summary>
         /// Serves the carousel inject script with recommendations baked in.
         /// Referenced by the script tag that the middleware injects into index.html.
+        /// Must be anonymous — the browser loads this as a plain &lt;script src&gt; tag
+        /// before the user authenticates, so no auth header is present.
         /// </summary>
+        [AllowAnonymous]
         [HttpGet("Script")]
         [Produces("application/javascript")]
         public async Task<IActionResult> GetScript()

@@ -959,6 +959,280 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
         }, 1000);
     } catch (e) {}
 
+    // ── Player overlay ────────────────────────────────────────────────────────
+    let _overlayOsdObserver = null;
+    // Set to true when the user stops playback so the MutationObserver's
+    // repeated calls to initPlayerOverlay() don't re-inject the overlay.
+    // Reset to false only when a new player navigation is detected.
+    let _playerOverlaySuppressed = false;
+
+    function isPlayerUrl() {
+        const hash = location.hash || '';
+        return hash.includes('/video') || hash.includes('playback');
+    }
+
+    function initPlayerOverlay() {
+        if (_playerOverlaySuppressed) return;
+        // Hard URL guard: never inject unless the browser is actually on a player route.
+        // This stops the MutationObserver from re-injecting during home-page restoration
+        // when the OSD element may still linger briefly in the DOM after stopping.
+        if (!isPlayerUrl()) return;
+        const osdPage =
+            document.querySelector('[data-type="video-osd"]') ||
+            document.getElementById('videoOsdPage');
+        if (!osdPage) return;
+        if (document.getElementById('jellyfeatured-player-overlay')) return;
+
+        // Read the user-configured skip length in ms.
+        // Jellyfin stores these in localStorage (key = 'skipForwardLength' / 'skipBackLength').
+        // userSettings.skipForwardLength() reads from the same key with a default of 30000.
+        function getConfiguredSkipMs(direction) {
+            try {
+                if (window.userSettings && typeof window.userSettings.skipForwardLength === 'function') {
+                    return direction === 'forward'
+                        ? window.userSettings.skipForwardLength()
+                        : window.userSettings.skipBackLength();
+                }
+            } catch (e) {}
+            try {
+                const key = direction === 'forward' ? 'skipForwardLength' : 'skipBackLength';
+                const val = localStorage.getItem(key);
+                if (val) {
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed) && parsed > 0) return parsed;
+                }
+            } catch (e) {}
+            return direction === 'forward' ? 30000 : 10000;
+        }
+
+        // Skip using the best available method.
+        function clickSkipButton(direction) {
+            console.log('[Jellyfeatured] clickSkipButton:', direction);
+
+            // 1 — playbackManager.fastForward() / rewind()
+            //     These already read userSettings and convert to ticks internally.
+            try {
+                if (window.playbackManager) {
+                    if (direction === 'forward') {
+                        window.playbackManager.fastForward();
+                    } else {
+                        window.playbackManager.rewind();
+                    }
+                    console.log('[Jellyfeatured] skip via playbackManager');
+                    return;
+                }
+            } catch (e) {}
+
+            // 2 — playbackManager.seekRelative() — manual ticks calculation
+            //     1 ms = 10 000 ticks
+            try {
+                if (window.playbackManager && typeof window.playbackManager.seekRelative === 'function') {
+                    const skipMs  = getConfiguredSkipMs(direction);
+                    const skipTicks = (direction === 'forward' ? 1 : -1) * skipMs * 10000;
+                    window.playbackManager.seekRelative(skipTicks);
+                    console.log('[Jellyfeatured] skip via seekRelative, ticks:', skipTicks);
+                    return;
+                }
+            } catch (e) {}
+
+            // 3 — Keyboard events: J = rewind, L = fast-forward (Jellyfin built-in shortcuts).
+            //     Dispatched on document so Jellyfin's top-level keydown listener picks them up.
+            try {
+                const key     = direction === 'forward' ? 'l' : 'j';
+                const code    = direction === 'forward' ? 'KeyL' : 'KeyJ';
+                const keyCode = direction === 'forward' ? 76 : 74;
+                const opts = { key, code, keyCode, which: keyCode, bubbles: true, cancelable: true, composed: true };
+                document.dispatchEvent(new KeyboardEvent('keydown', opts));
+                document.dispatchEvent(new KeyboardEvent('keyup',   opts));
+                console.log('[Jellyfeatured] skip via keyboard event:', key);
+                return;
+            } catch (e) {}
+
+            // 4 — Direct video.currentTime manipulation (last resort, no server reporting).
+            try {
+                const video = document.querySelector('video');
+                if (video && isFinite(video.currentTime) && video.duration > 0) {
+                    const skipMs   = getConfiguredSkipMs(direction);
+                    const skipSecs = (direction === 'forward' ? 1 : -1) * (skipMs / 1000);
+                    video.currentTime = Math.max(0, Math.min(video.duration, video.currentTime + skipSecs));
+                    console.log('[Jellyfeatured] skip via video.currentTime, delta:', skipSecs);
+                }
+            } catch (e) {}
+        }
+
+        function setPlaybackRate(rate) {
+            try {
+                if (window.playbackManager) {
+                    const player = window.playbackManager.getCurrentPlayer();
+                    if (player && player.setPlaybackRate) {
+                        player.setPlaybackRate(rate);
+                        return;
+                    }
+                }
+            } catch (e) {}
+            // Fallback: set directly on the video element
+            try {
+                const video = document.querySelector('video');
+                if (video) video.playbackRate = rate;
+            } catch (e) {}
+        }
+
+        // Speed indicator — shown centred on screen while 2x is active
+        let _speedIndicatorTimer = null;
+        const speedIndicator = document.createElement('div');
+        speedIndicator.id = 'jellyfeatured-speed-indicator';
+        speedIndicator.style.cssText = [
+            'position: fixed',
+            'top: 50%',
+            'left: 50%',
+            'transform: translate(-50%, -50%)',
+            'background: rgba(0,0,0,0.55)',
+            'color: #fff',
+            'font-size: 2.2rem',
+            'font-weight: 700',
+            'font-family: sans-serif',
+            'padding: .35em .75em',
+            'border-radius: .5em',
+            'z-index: 10000',
+            'pointer-events: none',
+            'opacity: 0',
+            'transition: opacity 0.15s ease'
+        ].join('; ');
+        speedIndicator.textContent = '2×';
+
+        function showSpeedIndicator() {
+            if (!document.body.contains(speedIndicator)) document.body.appendChild(speedIndicator);
+            if (_speedIndicatorTimer) clearTimeout(_speedIndicatorTimer);
+            // Force reflow so transition plays from 0 even on repeat shows
+            speedIndicator.style.opacity = '0';
+            void speedIndicator.offsetWidth;
+            speedIndicator.style.opacity = '1';
+        }
+
+        function hideSpeedIndicator() {
+            speedIndicator.style.opacity = '0';
+        }
+
+        function makeSidePanel(side) {
+            const panel = document.createElement('div');
+            panel.className = 'jellyfeatured-player-overlay';
+            panel.style.cssText = [
+                'position: fixed',
+                side === 'left' ? 'left: 0' : 'right: 0',
+                'top: 50%',
+                'transform: translateY(-50%)',
+                'width: 30%',
+                'height: 50%',
+                'background: rgba(255, 255, 0, 0.15)',
+                'border: 3px dotted yellow',
+                'box-sizing: border-box',
+                'z-index: 9999',
+                'cursor: pointer',
+                // Must be explicit — panels inherit pointer-events: none from container
+                'pointer-events: auto',
+                'user-select: none',
+                '-webkit-user-select: none'
+            ].join('; ');
+
+            // Block ALL events from reaching the video/OSD beneath
+            const blockEvents = ['click', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'contextmenu'];
+            blockEvents.forEach(type => {
+                panel.addEventListener(type, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                }, { capture: true });
+            });
+
+            // Double-click: seek forward/back
+            panel.addEventListener('dblclick', (e) => {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                const direction = side === 'left' ? 'back' : 'forward';
+                console.log(`[Jellyfeatured] dblclick on ${side} panel → ${direction}`);
+                clickSkipButton(direction);
+            }, { capture: true });
+
+            // Hold: 2x speed while pressed, restore on release
+            let holdTimer = null;
+            function onHoldStart(e) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                holdTimer = setTimeout(() => {
+                    holdTimer = null;
+                    setPlaybackRate(2);
+                    showSpeedIndicator();
+                    console.log('[Jellyfeatured] Hold start: 2x speed');
+                }, 300);
+            }
+            function onHoldEnd(e) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                if (holdTimer !== null) {
+                    clearTimeout(holdTimer);
+                    holdTimer = null;
+                } else {
+                    // Was held — restore speed
+                    setPlaybackRate(1);
+                    hideSpeedIndicator();
+                    console.log('[Jellyfeatured] Hold end: restored 1x speed');
+                }
+            }
+            panel.addEventListener('pointerdown', onHoldStart, { capture: true });
+            panel.addEventListener('pointerup',   onHoldEnd,   { capture: true });
+            panel.addEventListener('pointercancel', onHoldEnd, { capture: true });
+
+            return panel;
+        }
+
+        // Container is transparent to pointer events; panels explicitly opt back in.
+        const overlay = document.createElement('div');
+        overlay.id = 'jellyfeatured-player-overlay';
+        overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9999; pointer-events: none;';
+        overlay.appendChild(makeSidePanel('left'));
+        overlay.appendChild(makeSidePanel('right'));
+        document.body.appendChild(overlay);
+        console.log('[Jellyfeatured] Player overlay injected');
+
+        // Remove overlay the moment the OSD page leaves the DOM
+        if (_overlayOsdObserver) _overlayOsdObserver.disconnect();
+        _overlayOsdObserver = new MutationObserver(() => {
+            const stillPresent =
+                document.querySelector('[data-type="video-osd"]') ||
+                document.getElementById('videoOsdPage');
+            if (!stillPresent) {
+                removePlayerOverlay();
+                _overlayOsdObserver.disconnect();
+                _overlayOsdObserver = null;
+            }
+        });
+        _overlayOsdObserver.observe(document.body, { childList: true, subtree: true });
+
+        // Also listen to Jellyfin's Events system if available (fires before DOM removal)
+        try {
+            const Events = window.Events || (window.require && window.require('events'));
+            if (Events && window.playbackManager) {
+                Events.on(window.playbackManager, 'playbackstop', function onStop() {
+                    removePlayerOverlay();
+                    Events.off(window.playbackManager, 'playbackstop', onStop);
+                });
+            }
+        } catch (e) {}
+    }
+
+    function removePlayerOverlay() {
+        _playerOverlaySuppressed = true;
+        const el = document.getElementById('jellyfeatured-player-overlay');
+        if (el) el.remove();
+        const indicator = document.getElementById('jellyfeatured-speed-indicator');
+        if (indicator) indicator.remove();
+        if (_overlayOsdObserver) {
+            _overlayOsdObserver.disconnect();
+            _overlayOsdObserver = null;
+        }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     let initAttempts = 0;
     const maxInitAttempts = 10;
     
@@ -994,6 +1268,9 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
         }
         // Async data population can be scheduled normally.
         setTimeout(() => createFeaturedCarousel(), 500);
+        // Player overlay — only attempt if not suppressed (suppression is cleared
+        // by the URL-change watcher when a genuine player navigation occurs).
+        setTimeout(() => initPlayerOverlay(), 100);
     });
     if (document.body) observer.observe(document.body, { childList: true, subtree: true });
 
@@ -1003,6 +1280,18 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
             lastUrl = location.href;
             initAttempts = 0;
             setTimeout(() => tryInitialize(), 200);
+            if (isPlayerUrl()) {
+                // Navigating TO the player: clear suppression so the overlay can inject.
+                removePlayerOverlay();
+                _playerOverlaySuppressed = false;
+                setTimeout(() => initPlayerOverlay(), 300);
+            } else {
+                // Navigating AWAY from the player: remove overlay and keep suppressed.
+                // Suppression is NOT cleared here; it is only cleared above when a
+                // genuine player navigation is detected. This prevents the
+                // MutationObserver from re-injecting during home-page restoration.
+                removePlayerOverlay();
+            }
         }
     }, 1000);
 })();
