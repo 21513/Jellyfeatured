@@ -49,6 +49,21 @@ namespace Jellyfeatured.Controllers
         /// before the user authenticates, so no auth header is present.
         /// </summary>
         [AllowAnonymous]
+        [HttpGet("fast-forward.svg")]
+        [Produces("image/svg+xml")]
+        public async Task<IActionResult> GetFastForwardSvg()
+        {
+            if (Plugin.Instance == null)
+                return NotFound();
+
+            var svg = await Plugin.Instance.GetEmbeddedSvgAsync("Jellyfeatured.fast-forward.svg");
+            if (string.IsNullOrEmpty(svg))
+                return NotFound();
+
+            return Content(svg, "image/svg+xml");
+        }
+
+        [AllowAnonymous]
         [HttpGet("Script")]
         [Produces("application/javascript")]
         public async Task<IActionResult> GetScript()
