@@ -672,6 +672,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IDisposable
         }
     }
     
+    public async Task<string> GetEmbeddedSvgAsync(string resourceName)
+    {
+        var assembly = GetType().Assembly;
+        return await LoadEmbeddedResourceAsync(assembly, resourceName);
+    }
+
     private async Task<string> LoadEmbeddedResourceAsync(Assembly assembly, string resourceName)
     {
         using (var stream = assembly.GetManifestResourceStream(resourceName))

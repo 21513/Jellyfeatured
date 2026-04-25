@@ -18,6 +18,18 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
     (document.head || document.documentElement).appendChild(s);
 })();
 
+// Inject the full plugin CSS (from main.css, baked into htmlTemplate) into <head>
+// once at startup so styles are available on every page — including the player.
+(function() {
+    if (document.getElementById('jellyfeatured-styles')) return;
+    const match = htmlTemplate.match(/<style>([\s\S]*?)<\/style>/);
+    if (!match) return;
+    const s = document.createElement('style');
+    s.id = 'jellyfeatured-styles';
+    s.textContent = match[1];
+    (document.head || document.documentElement).appendChild(s);
+})();
+
 (function() {
     let currentSlide = 0;
     let autoSlideInterval;
@@ -1081,24 +1093,12 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
         let _speedIndicatorTimer = null;
         const speedIndicator = document.createElement('div');
         speedIndicator.id = 'jellyfeatured-speed-indicator';
-        speedIndicator.style.cssText = [
-            'position: fixed',
-            'top: 50%',
-            'left: 50%',
-            'transform: translate(-50%, -50%)',
-            'background: rgba(0,0,0,0.55)',
-            'color: #fff',
-            'font-size: 2.2rem',
-            'font-weight: 700',
-            'font-family: sans-serif',
-            'padding: .35em .75em',
-            'border-radius: .5em',
-            'z-index: 10000',
-            'pointer-events: none',
-            'opacity: 0',
-            'transition: opacity 0.15s ease'
-        ].join('; ');
-        speedIndicator.textContent = '2×';
+        speedIndicator.classList.add('jellyfeaturedSpeedIndicator');
+        speedIndicator.textContent = '2x';
+        const speedIcon = document.createElement('img');
+        speedIcon.src = '/Plugins/Jellyfeatured/fast-forward.svg';
+        speedIcon.alt = '';
+        speedIndicator.appendChild(speedIcon);
 
         function showSpeedIndicator() {
             if (!document.body.contains(speedIndicator)) document.body.appendChild(speedIndicator);
@@ -1115,24 +1115,7 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
 
         function makeSidePanel(side) {
             const panel = document.createElement('div');
-            panel.className = 'jellyfeatured-player-overlay';
-            panel.style.cssText = [
-                'position: fixed',
-                side === 'left' ? 'left: 0' : 'right: 0',
-                'top: 50%',
-                'transform: translateY(-50%)',
-                'width: 30%',
-                'height: 50%',
-                'background: rgba(255, 255, 0, 0.15)',
-                'border: 3px dotted yellow',
-                'box-sizing: border-box',
-                'z-index: 9999',
-                'cursor: pointer',
-                // Must be explicit — panels inherit pointer-events: none from container
-                'pointer-events: auto',
-                'user-select: none',
-                '-webkit-user-select: none'
-            ].join('; ');
+            panel.className = 'jellyfeaturedPlayerPanel ' + side;
 
             // Block ALL events from reaching the video/OSD beneath
             const blockEvents = ['click', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'contextmenu'];
@@ -1188,7 +1171,6 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
         // Container is transparent to pointer events; panels explicitly opt back in.
         const overlay = document.createElement('div');
         overlay.id = 'jellyfeatured-player-overlay';
-        overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9999; pointer-events: none;';
         overlay.appendChild(makeSidePanel('left'));
         overlay.appendChild(makeSidePanel('right'));
         document.body.appendChild(overlay);
