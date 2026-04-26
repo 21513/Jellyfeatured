@@ -19,7 +19,7 @@ Clients tested:
 - Desktop web browsers (Chrome, Edge, Firefox)
 - Mobile web browsers (Chrome, Firefox)
 
-![Jellyfeatured on mobile and desktop](jellyfeatured-combined.png)
+![Jellyfeatured on mobile and desktop](/media/jellyfeatured-0.0.1.0-combined.png)
 
 I need your help testing on more clients! Please open an issue if you find any bugs or compatibility problems.
 

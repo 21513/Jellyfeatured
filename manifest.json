@@ -9,6 +9,14 @@
         "imageUrl": "https://raw.githubusercontent.com/21513/Jellyfeatured/refs/heads/main/thumbnail.jpg",
         "versions": [
             {
+                "version": "0.0.5.0",
+                "changelog": "Added video playback controls like double tap to skip and press and hold for 2x speed.",
+                "targetAbi": "10.11.8.0",
+                "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.5.0/Jellyfeatured-v0.0.5.0.zip",
+                "checksum": "b59ebb5767c4a83edb27f968fcc58d15",
+                "timestamp": "2026-04-26T15:26:22Z"
+            },
+            {
                 "version": "0.0.4.6",
                 "changelog": "Removed admins pick",
                 "targetAbi": "10.11.8.0",
