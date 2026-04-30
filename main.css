@@ -241,11 +241,9 @@
 .jellyfeaturedPlayerPanel.left  { left:  0; }
 .jellyfeaturedPlayerPanel.right { right: 0; }
 
-.jellyfeaturedSpeedIndicator {
+.jellyfeaturedSpeedIndicator,
+.jellyfeaturedSkipIndicator {
     position: fixed;
-    top: 10%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     background: #101010;
     display: flex;
     align-items: center;
@@ -263,6 +261,15 @@
     transition: opacity 0.15s ease;
     gap: 0.5rem;
 }
+
+.jellyfeaturedSpeedIndicator {
+    top: 10%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.jellyfeaturedSkipIndicator.left  { top: 50%; left:  5%; transform: translateY(-50%); }
+.jellyfeaturedSkipIndicator.right { top: 50%; right: 5%; transform: translateY(-50%); }
 
 .skeleton-title {
     height: 24px;

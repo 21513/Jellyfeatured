@@ -1020,6 +1020,7 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
         // Skip using the best available method.
         function clickSkipButton(direction) {
             console.log('[Jellyfeatured] clickSkipButton:', direction);
+            showSkipIndicator(direction);
 
             // 1 — playbackManager.fastForward() / rewind()
             //     These already read userSettings and convert to ticks internally.
@@ -1171,6 +1172,38 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
         speedIcon.src = '/Plugins/Jellyfeatured/fast-forward.svg';
         speedIcon.alt = '';
         speedIndicator.appendChild(speedIcon);
+
+        // Skip indicators — shown on the left/right edge when skipping
+        const skipIndicatorBack = document.createElement('div');
+        skipIndicatorBack.id = 'jellyfeatured-skip-indicator-back';
+        skipIndicatorBack.classList.add('jellyfeaturedSkipIndicator', 'left');
+
+        const skipIndicatorForward = document.createElement('div');
+        skipIndicatorForward.id = 'jellyfeatured-skip-indicator-forward';
+        skipIndicatorForward.classList.add('jellyfeaturedSkipIndicator', 'right');
+
+        let _skipBackTimer = null;
+        let _skipForwardTimer = null;
+
+        function showSkipIndicator(direction) {
+            const skipMs = getConfiguredSkipMs(direction);
+            const skipSec = Math.round(skipMs / 1000);
+            const indicator = direction === 'forward' ? skipIndicatorForward : skipIndicatorBack;
+            const timerRef = direction === 'forward' ? _skipForwardTimer : _skipBackTimer;
+            const prefix = direction === 'forward' ? '+' : '\u2212';
+            indicator.textContent = `${prefix}${skipSec}s`;
+            if (!document.body.contains(indicator)) document.body.appendChild(indicator);
+            if (direction === 'forward') {
+                if (_skipForwardTimer) clearTimeout(_skipForwardTimer);
+            } else {
+                if (_skipBackTimer) clearTimeout(_skipBackTimer);
+            }
+            indicator.style.opacity = '0';
+            void indicator.offsetWidth;
+            indicator.style.opacity = '1';
+            const hide = setTimeout(() => { indicator.style.opacity = '0'; }, 800);
+            if (direction === 'forward') { _skipForwardTimer = hide; } else { _skipBackTimer = hide; }
+        }
 
         function showSpeedIndicator() {
             if (!document.body.contains(speedIndicator)) document.body.appendChild(speedIndicator);
