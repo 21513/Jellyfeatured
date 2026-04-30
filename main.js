@@ -1234,7 +1234,7 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
             const hide = setTimeout(() => {
                 indicator.style.opacity = '0';
                 if (direction === 'forward') { _skipForwardAccum = 0; } else { _skipBackAccum = 0; }
-            }, 800);
+            }, 1600);
             if (direction === 'forward') { _skipForwardTimer = hide; } else { _skipBackTimer = hide; }
         }
 
