@@ -229,7 +229,7 @@
     top: 50%;
     transform: translateY(-50%);
     width: 30%;
-    height: 50%;
+    height: 40%;
     box-sizing: border-box;
     z-index: 9999;
     cursor: pointer;
