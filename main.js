@@ -1089,6 +1089,30 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
             } catch (e) {}
         }
 
+        function showPlayerControls(clientX, clientY) {
+            console.log('[Jellyfeatured] showPlayerControls');
+            // Dispatch a synthetic click on the video element at the tap position.
+            // Jellyfin listens to clicks on the video/OSD to toggle control visibility.
+            try {
+                const video = document.querySelector('video');
+                if (video) {
+                    const rect = video.getBoundingClientRect();
+                    // Use the actual tap position if within the video, otherwise centre it
+                    const x = (clientX >= rect.left && clientX <= rect.right) ? clientX : (rect.left + rect.right) / 2;
+                    const y = (clientY >= rect.top  && clientY <= rect.bottom) ? clientY : (rect.top  + rect.bottom) / 2;
+                    const opts = {
+                        bubbles: true, cancelable: true, composed: true,
+                        clientX: x, clientY: y,
+                        screenX: x, screenY: y,
+                        view: window,
+                    };
+                    video.dispatchEvent(new MouseEvent('click', opts));
+                    console.log('[Jellyfeatured] showPlayerControls via video click');
+                    return;
+                }
+            } catch (e) {}
+        }
+
         function togglePlayPause() {
             console.log('[Jellyfeatured] togglePlayPause');
 
@@ -1188,10 +1212,16 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
             let holdTimer = null;
             let lastTapTime = 0;
             let isDoubleTap = false;
+            let lastPointerType = 'mouse';
+            let lastPointerClientX = 0;
+            let lastPointerClientY = 0;
             function onHoldStart(e) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
                 isDoubleTap = false;
+                lastPointerType = e.pointerType;
+                lastPointerClientX = e.clientX;
+                lastPointerClientY = e.clientY;
 
                 // Double-tap detection for touch/pen (mobile)
                 if (e.pointerType !== 'mouse') {
@@ -1226,10 +1256,15 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
                     return;
                 }
                 if (holdTimer !== null) {
-                    // Quick tap — toggle play/pause
                     clearTimeout(holdTimer);
                     holdTimer = null;
-                    togglePlayPause();
+                    if (lastPointerType !== 'mouse') {
+                        // Mobile/touch single tap — show player controls (native OSD behaviour)
+                        showPlayerControls(lastPointerClientX, lastPointerClientY);
+                    } else {
+                        // Desktop single click — toggle play/pause
+                        togglePlayPause();
+                    }
                 } else {
                     // Was held — restore speed
                     setPlaybackRate(1);
