@@ -1203,7 +1203,7 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
             const skipMs = getConfiguredSkipMs(direction);
             const skipSec = Math.round(skipMs / 1000);
             const indicator = direction === 'forward' ? skipIndicatorForward : skipIndicatorBack;
-            const prefix = direction === 'forward' ? '+' : '\u2212';
+            const prefix = direction === 'forward' ? '+' : '-';
 
             // Accumulate while the indicator is still visible
             if (direction === 'forward') {
@@ -1214,7 +1214,7 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
             const total = direction === 'forward' ? _skipForwardAccum : _skipBackAccum;
 
             const label = indicator.querySelector('span');
-            if (label) { label.textContent = `${prefix}${total}s`; } else { indicator.textContent = `${prefix}${total}s`; }
+            if (label) { label.textContent = `${prefix}${total}s`; } else { indicator.textContent = `${prefix}${total}`; }
             if (!document.body.contains(indicator)) document.body.appendChild(indicator);
 
             // Clear existing hide timer and restart it

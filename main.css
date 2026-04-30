@@ -294,8 +294,8 @@
     50% { transform: translateX(0.5rem); }
     100%   { transform: translateX(0); }
 }
-.jellyfeaturedSkipIndicator.left  img { animation: jellyfeaturedIconBounceLeft  250ms ease-in-out; }
-.jellyfeaturedSkipIndicator.right img { animation: jellyfeaturedIconBounceRight 250ms ease-in-out; }
+.jellyfeaturedSkipIndicator.left  img { animation: jellyfeaturedIconBounceLeft  400ms ease-in-out; }
+.jellyfeaturedSkipIndicator.right img { animation: jellyfeaturedIconBounceRight 400ms ease-in-out; }
 
 .skeleton-title {
     height: 24px;
