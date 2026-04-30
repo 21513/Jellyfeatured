@@ -13,8 +13,8 @@
                 "changelog": "Updated styling for skip indicator; Added animations; Updated text for skip indicator",
                 "targetAbi": "10.11.8.0",
                 "sourceUrl": "https://github.com/21513/Jellyfeatured/releases/download/v0.0.5.2/Jellyfeatured-v0.0.5.2.zip",
-                "checksum": "0eeaa56fb18e934ea9aa0014dc57317f",
-                "timestamp": "2026-04-30T09:31:36Z"
+                "checksum": "1cfa612d00e79dc92ef2d7633adb3ad7",
+                "timestamp": "2026-04-30T10:23:01Z"
             },
             {
                 "version": "0.0.5.1",
