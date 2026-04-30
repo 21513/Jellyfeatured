@@ -1214,7 +1214,7 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
             const total = direction === 'forward' ? _skipForwardAccum : _skipBackAccum;
 
             const label = indicator.querySelector('span');
-            if (label) { label.textContent = `${prefix}${total}s`; } else { indicator.textContent = `${prefix}${total}`; }
+            if (label) { label.textContent = `${prefix}${total}`; } else { indicator.textContent = `${prefix}${total}`; }
             if (!document.body.contains(indicator)) document.body.appendChild(indicator);
 
             // Clear existing hide timer and restart it
