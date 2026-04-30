@@ -1138,9 +1138,31 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
 
             // Hold: 2x speed while pressed, restore on release
             let holdTimer = null;
+            let lastTapTime = 0;
+            let isDoubleTap = false;
             function onHoldStart(e) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
+                isDoubleTap = false;
+
+                // Double-tap detection for touch/pen (mobile)
+                if (e.pointerType !== 'mouse') {
+                    const now = Date.now();
+                    if (now - lastTapTime < 350) {
+                        lastTapTime = 0;
+                        isDoubleTap = true;
+                        if (holdTimer !== null) {
+                            clearTimeout(holdTimer);
+                            holdTimer = null;
+                        }
+                        const direction = side === 'left' ? 'back' : 'forward';
+                        console.log(`[Jellyfeatured] double-tap on ${side} panel → ${direction}`);
+                        clickSkipButton(direction);
+                        return;
+                    }
+                    lastTapTime = now;
+                }
+
                 holdTimer = setTimeout(() => {
                     holdTimer = null;
                     setPlaybackRate(2);
@@ -1151,6 +1173,10 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
             function onHoldEnd(e) {
                 e.preventDefault();
                 e.stopImmediatePropagation();
+                if (isDoubleTap) {
+                    isDoubleTap = false;
+                    return;
+                }
                 if (holdTimer !== null) {
                     clearTimeout(holdTimer);
                     holdTimer = null;
