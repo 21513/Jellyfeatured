@@ -1231,6 +1231,14 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
                 indicator.style.opacity = '1';
             }
 
+            // Reset the icon bounce animation on every skip
+            const img = indicator.querySelector('img');
+            if (img) {
+                img.style.animation = 'none';
+                void img.offsetWidth;
+                img.style.animation = '';
+            }
+
             const hide = setTimeout(() => {
                 indicator.style.opacity = '0';
                 if (direction === 'forward') { _skipForwardAccum = 0; } else { _skipBackAccum = 0; }

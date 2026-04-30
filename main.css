@@ -270,7 +270,7 @@
     align-items: center;
     justify-content: flex-end;
     color: #fff;
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     font-weight: 700;
     font-family: sans-serif;
     padding: 0.5rem 2rem;
@@ -282,6 +282,20 @@
 }
 .jellyfeaturedSkipIndicator.left  { top: 50%; left:  5%; transform: translateY(-50%); }
 .jellyfeaturedSkipIndicator.right { top: 50%; right: 5%; transform: translateY(-50%); }
+.jellyfeaturedSkipIndicator img { width: 1.5rem; height: 1.5rem; flex-shrink: 0; object-fit: contain; }
+
+@keyframes jellyfeaturedIconBounceLeft {
+    0%   { transform: translateX(0); }
+    50% { transform: translateX(-0.5rem); }
+    100%   { transform: translateX(0); }
+}
+@keyframes jellyfeaturedIconBounceRight {
+    0%   { transform: translateX(0); }
+    50% { transform: translateX(0.5rem); }
+    100%   { transform: translateX(0); }
+}
+.jellyfeaturedSkipIndicator.left  img { animation: jellyfeaturedIconBounceLeft  250ms ease-in-out; }
+.jellyfeaturedSkipIndicator.right img { animation: jellyfeaturedIconBounceRight 250ms ease-in-out; }
 
 .skeleton-title {
     height: 24px;
