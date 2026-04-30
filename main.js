@@ -1089,6 +1089,54 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
             } catch (e) {}
         }
 
+        function togglePlayPause() {
+            console.log('[Jellyfeatured] togglePlayPause');
+
+            // 1 — playbackManager.playPause()
+            try {
+                if (window.playbackManager && typeof window.playbackManager.playPause === 'function') {
+                    window.playbackManager.playPause();
+                    console.log('[Jellyfeatured] togglePlayPause via playbackManager.playPause()');
+                    return;
+                }
+            } catch (e) {}
+
+            // 2 — pause() / unpause() on the current player
+            try {
+                if (window.playbackManager) {
+                    const player = window.playbackManager.getCurrentPlayer();
+                    if (player) {
+                        const paused = typeof player.paused === 'function' ? player.paused() : player.paused;
+                        if (paused) {
+                            player.unpause();
+                        } else {
+                            player.pause();
+                        }
+                        console.log('[Jellyfeatured] togglePlayPause via player.pause/unpause');
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            // 3 — Space key (Jellyfin's built-in shortcut)
+            try {
+                const opts = { key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true, cancelable: true, composed: true };
+                document.dispatchEvent(new KeyboardEvent('keydown', opts));
+                document.dispatchEvent(new KeyboardEvent('keyup',   opts));
+                console.log('[Jellyfeatured] togglePlayPause via Space key event');
+                return;
+            } catch (e) {}
+
+            // 4 — Direct video element
+            try {
+                const video = document.querySelector('video');
+                if (video) {
+                    if (video.paused) { video.play(); } else { video.pause(); }
+                    console.log('[Jellyfeatured] togglePlayPause via video element');
+                }
+            } catch (e) {}
+        }
+
         // Speed indicator — shown centred on screen while 2x is active
         let _speedIndicatorTimer = null;
         const speedIndicator = document.createElement('div');
@@ -1117,7 +1165,7 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
             const panel = document.createElement('div');
             panel.className = 'jellyfeaturedPlayerPanel ' + side;
 
-            // Block ALL events from reaching the video/OSD beneath
+            // Block ALL pointer-generated events — we handle everything ourselves
             const blockEvents = ['click', 'mousedown', 'mouseup', 'touchstart', 'touchend', 'contextmenu'];
             blockEvents.forEach(type => {
                 panel.addEventListener(type, (e) => {
@@ -1127,7 +1175,7 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
                 }, { capture: true });
             });
 
-            // Double-click: seek forward/back
+            // Desktop double-click: seek forward/back
             panel.addEventListener('dblclick', (e) => {
                 e.preventDefault();
                 e.stopImmediatePropagation();
@@ -1178,8 +1226,10 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
                     return;
                 }
                 if (holdTimer !== null) {
+                    // Quick tap — toggle play/pause
                     clearTimeout(holdTimer);
                     holdTimer = null;
+                    togglePlayPause();
                 } else {
                     // Was held — restore speed
                     setPlaybackRate(1);
