@@ -21,7 +21,9 @@
     <EmbeddedResource Include="icons\fast-forward.svg" />
     <EmbeddedResource Include="icons\arrow-left.svg" />
     <EmbeddedResource Include="icons\arrow-right.svg" />
-    <EmbeddedResource Include="Configuration\dashboardPage.html" />
+    <EmbeddedResource Include="src\Configuration\dashboardPage.html">
+      <LogicalName>Jellyfeatured.Configuration.dashboardPage.html</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>
