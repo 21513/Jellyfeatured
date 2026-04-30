@@ -56,7 +56,37 @@ namespace Jellyfeatured.Controllers
             if (Plugin.Instance == null)
                 return NotFound();
 
-            var svg = await Plugin.Instance.GetEmbeddedSvgAsync("Jellyfeatured.fast-forward.svg");
+            var svg = await Plugin.Instance.GetEmbeddedSvgAsync("Jellyfeatured.icons.fast-forward.svg");
+            if (string.IsNullOrEmpty(svg))
+                return NotFound();
+
+            return Content(svg, "image/svg+xml");
+        }
+
+        [AllowAnonymous]
+        [HttpGet("arrow-left.svg")]
+        [Produces("image/svg+xml")]
+        public async Task<IActionResult> GetArrowLeftSvg()
+        {
+            if (Plugin.Instance == null)
+                return NotFound();
+
+            var svg = await Plugin.Instance.GetEmbeddedSvgAsync("Jellyfeatured.icons.arrow-left.svg");
+            if (string.IsNullOrEmpty(svg))
+                return NotFound();
+
+            return Content(svg, "image/svg+xml");
+        }
+
+        [AllowAnonymous]
+        [HttpGet("arrow-right.svg")]
+        [Produces("image/svg+xml")]
+        public async Task<IActionResult> GetArrowRightSvg()
+        {
+            if (Plugin.Instance == null)
+                return NotFound();
+
+            var svg = await Plugin.Instance.GetEmbeddedSvgAsync("Jellyfeatured.icons.arrow-right.svg");
             if (string.IsNullOrEmpty(svg))
                 return NotFound();
 

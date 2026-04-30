@@ -1177,10 +1177,22 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
         const skipIndicatorBack = document.createElement('div');
         skipIndicatorBack.id = 'jellyfeatured-skip-indicator-back';
         skipIndicatorBack.classList.add('jellyfeaturedSkipIndicator', 'left');
+        const skipBackIcon = document.createElement('img');
+        skipBackIcon.src = '/Plugins/Jellyfeatured/arrow-left.svg';
+        skipBackIcon.alt = '';
+        skipIndicatorBack.appendChild(skipBackIcon);
+        const skipBackLabel = document.createElement('span');
+        skipIndicatorBack.appendChild(skipBackLabel);
 
         const skipIndicatorForward = document.createElement('div');
         skipIndicatorForward.id = 'jellyfeatured-skip-indicator-forward';
         skipIndicatorForward.classList.add('jellyfeaturedSkipIndicator', 'right');
+        const skipForwardLabel = document.createElement('span');
+        skipIndicatorForward.appendChild(skipForwardLabel);
+        const skipForwardIcon = document.createElement('img');
+        skipForwardIcon.src = '/Plugins/Jellyfeatured/arrow-right.svg';
+        skipForwardIcon.alt = '';
+        skipIndicatorForward.appendChild(skipForwardIcon);
 
         let _skipBackTimer = null;
         let _skipForwardTimer = null;
@@ -1201,7 +1213,8 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
             }
             const total = direction === 'forward' ? _skipForwardAccum : _skipBackAccum;
 
-            indicator.textContent = `${prefix}${total}s`;
+            const label = indicator.querySelector('span');
+            if (label) { label.textContent = `${prefix}${total}s`; } else { indicator.textContent = `${prefix}${total}s`; }
             if (!document.body.contains(indicator)) document.body.appendChild(indicator);
 
             // Clear existing hide timer and restart it
