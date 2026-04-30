@@ -1184,24 +1184,44 @@ console.log('[Jellyfeatured] Script loaded. Recommendations count:', recommendat
 
         let _skipBackTimer = null;
         let _skipForwardTimer = null;
+        let _skipBackAccum = 0;
+        let _skipForwardAccum = 0;
 
         function showSkipIndicator(direction) {
             const skipMs = getConfiguredSkipMs(direction);
             const skipSec = Math.round(skipMs / 1000);
             const indicator = direction === 'forward' ? skipIndicatorForward : skipIndicatorBack;
-            const timerRef = direction === 'forward' ? _skipForwardTimer : _skipBackTimer;
             const prefix = direction === 'forward' ? '+' : '\u2212';
-            indicator.textContent = `${prefix}${skipSec}s`;
+
+            // Accumulate while the indicator is still visible
+            if (direction === 'forward') {
+                _skipForwardAccum += skipSec;
+            } else {
+                _skipBackAccum += skipSec;
+            }
+            const total = direction === 'forward' ? _skipForwardAccum : _skipBackAccum;
+
+            indicator.textContent = `${prefix}${total}s`;
             if (!document.body.contains(indicator)) document.body.appendChild(indicator);
+
+            // Clear existing hide timer and restart it
             if (direction === 'forward') {
                 if (_skipForwardTimer) clearTimeout(_skipForwardTimer);
             } else {
                 if (_skipBackTimer) clearTimeout(_skipBackTimer);
             }
-            indicator.style.opacity = '0';
-            void indicator.offsetWidth;
-            indicator.style.opacity = '1';
-            const hide = setTimeout(() => { indicator.style.opacity = '0'; }, 800);
+
+            // Only flash the fade-in on the first skip; subsequent ones just update the text
+            if (total === skipSec) {
+                indicator.style.opacity = '0';
+                void indicator.offsetWidth;
+                indicator.style.opacity = '1';
+            }
+
+            const hide = setTimeout(() => {
+                indicator.style.opacity = '0';
+                if (direction === 'forward') { _skipForwardAccum = 0; } else { _skipBackAccum = 0; }
+            }, 800);
             if (direction === 'forward') { _skipForwardTimer = hide; } else { _skipBackTimer = hide; }
         }
 
