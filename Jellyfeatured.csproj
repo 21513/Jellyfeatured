@@ -18,9 +18,10 @@
     <EmbeddedResource Include="main.html" />
     <EmbeddedResource Include="main.js" />
     <EmbeddedResource Include="main.css" />
-    <EmbeddedResource Include="icons\fast-forward.svg" />
-    <EmbeddedResource Include="icons\arrow-left.svg" />
-    <EmbeddedResource Include="icons\arrow-right.svg" />
+    <EmbeddedResource Include="assets\icons\fast-forward.svg" />
+    <EmbeddedResource Include="assets\icons\arrow-left.svg" />
+    <EmbeddedResource Include="assets\icons\arrow-right.svg" />
+    <EmbeddedResource Include="assets\images\vinyl.png" />
     <EmbeddedResource Include="src\Configuration\dashboardPage.html">
       <LogicalName>Jellyfeatured.Configuration.dashboardPage.html</LogicalName>
     </EmbeddedResource>
